@@ -6,5 +6,18 @@ aliases:
     - mattmoor
     - tcnghia
   wg-leads:
-    # TODO(leads): add yourselves to this list and optionally rename it with your
-    # WG name. If you choose to rename, update the alias name in the OWNERS file.
+    # eventing
+    - grantr
+    - Harwayne
+    - vaikas
+    - n3wscott
+    - matzew
+    - nachocano
+    - lionelvillard
+    # serving
+    - dprotaso        # API
+    - markusthoemmes  # Scaling
+    - mattmoor        # API
+    - mdemirhan       # Network
+    - tcnghia         # Network
+    - vagababov       # Scaling
