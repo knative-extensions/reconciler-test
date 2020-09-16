@@ -3,6 +3,8 @@ module knative.dev/reconciler-test
 go 1.14
 
 require (
+	github.com/cosiner/flag v0.4.0 // indirect
+	github.com/octago/sflags v0.2.0
 	github.com/onsi/gomega v1.10.2
 	k8s.io/apimachinery v0.18.8
 	knative.dev/pkg v0.0.0-20200916171541-6e0430fd94db

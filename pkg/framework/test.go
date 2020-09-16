@@ -19,7 +19,6 @@ package framework
 // Test defines functions for configuring and running a single test case
 type Test interface {
 
-
 	// Feature labels the test case as exercising a feature
 	Feature(name string) Test
 
