@@ -21,3 +21,10 @@ aliases:
     - mdemirhan       # Network
     - tcnghia         # Network
     - vagababov       # Scaling
+  productivity-approvers:
+    - chaodaiG
+    - chizhg
+  productivity-reviewers:
+    - chaodaiG
+    - chizhg
+    - yt3liu

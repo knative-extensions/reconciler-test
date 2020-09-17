@@ -1,0 +1,18 @@
+# The configuration file is loaded by the test suite
+# It provides default configuration values.
+# Each configuration parameters can be overridden by a command line
+# flag, e.g --components-eventing-version=nightly
+components:
+  eventing:
+    version: 0.17 # or nightly or local (from source)
+    sink.binding.selection.mode: inclusion
+  serving:
+    version: 0.17
+    network: istio
+  event.observer:
+    target: log
+
+requirements:
+  must: enabled
+  may: enabled
+  should: disabled
