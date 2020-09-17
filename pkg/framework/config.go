@@ -16,33 +16,8 @@
 
 package framework
 
-import (
-	"github.com/onsi/gomega"
-)
-
-// TestContext is the context when running a test case
-type TestContext interface {
-	ResourceContext
-
-	// --- testing.T
-
-	Error(args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fail()
-	FailNow()
-	Failed() bool
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Helper()
-	Log(args ...interface{})
-	Logf(format string, args ...interface{})
-	Skip(args ...interface{})
-	SkipNow()
-	Skipf(format string, args ...interface{})
-	Skipped() bool
-
-	// --- Assertion
-
-	// Gomega assertion
-	gomega.Gomega
+// Config is the test suite configuration
+type Config interface {
 }
+
+

@@ -17,32 +17,15 @@
 package framework
 
 import (
-	"github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// TestContext is the context when running a test case
-type TestContext interface {
-	ResourceContext
+// ResourceContext allows the manipulation (crud) of resources within
+// the current context (cluster and namespace_
+type ResourceContext interface {
+	// Create a resource from the given object (or fail)
+	CreateOrFail(obj runtime.Object)
 
-	// --- testing.T
-
-	Error(args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fail()
-	FailNow()
-	Failed() bool
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Helper()
-	Log(args ...interface{})
-	Logf(format string, args ...interface{})
-	Skip(args ...interface{})
-	SkipNow()
-	Skipf(format string, args ...interface{})
-	Skipped() bool
-
-	// --- Assertion
-
-	// Gomega assertion
-	gomega.Gomega
+	// CreateFromYAMLOrFail creates a resource from the given YAML specification (or fail)
+	CreateFromYAMLOrFail(yaml string)
 }

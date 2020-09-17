@@ -22,6 +22,13 @@ type Suite interface {
 	// ParseFlags parses defined flags in def
 	ParseFlags(def interface{}) Suite
 
+	// Require makes sure the cluster-scoped component
+	// is deployed and properly configured (ie. ready to be used)
+	//
+	// When the --build flag is set, Require first builds and installs
+	// the required component.
+	Require(component Component) Suite
+
 	// Run runs the tests
 	Run()
 }
