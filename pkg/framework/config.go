@@ -18,6 +18,21 @@ package framework
 
 // Config is the test suite configuration
 type Config interface {
+	GetBaseConfig() *BaseConfig
 }
 
+// BaseConfig represents all the configuration parameters
+// controlling the framework behavior.
+type BaseConfig struct {
+	Requirements Requirements
+}
 
+type Requirements struct {
+	Must   bool `desc:"run test mark as Must. Default is true"`
+	Should bool `desc:"run test mark as Should. Default is true"`
+	May    bool `desc:"run test mark as May. Default is true"`
+}
+
+func (b *BaseConfig) GetBaseConfig() *BaseConfig {
+	return b
+}

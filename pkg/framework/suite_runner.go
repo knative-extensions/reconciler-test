@@ -14,32 +14,50 @@
  * limitations under the License.
  */
 
-package testing
+package framework
 
 import (
-	"fmt"
+	"flag"
+	"os"
 	"testing"
 
-	"knative.dev/reconciler-test/pkg/framework"
+	"github.com/octago/sflags/gen/gflag"
 )
 
-type Config struct {
-	framework.BaseConfig
-	Broker string
+var config *BaseConfig
+
+type suite struct {
+	m *testing.M
 }
 
-var config = Config{}
-
-func TestMain(m *testing.M) {
-	framework.NewSuite(m).Configure(&config).Run()
+func newSuite(m *testing.M) Suite {
+	return &suite{m: m}
 }
 
-func TestUnwrapped(t *testing.T) {
-	fmt.Println("broker is " + config.Broker)
+func (s *suite) Configure(def Config) Suite {
+	// TODO: read config file
+
+	err := gflag.ParseToDef(def)
+	if err != nil {
+		panic(err)
+	}
+
+	flag.Parse()
+
+	config = def.GetBaseConfig()
+	return s
 }
 
-func TestWrapped(t *testing.T) {
-	framework.NewTest(t).Run(func(tc framework.TestContext) {
-		fmt.Println("broker is " + config.Broker)
-	})
+func (s *suite) Require(component Component) Suite {
+	// TODO: delegate to the component. Must first define configuration
+	return s
+}
+
+func (s *suite) Run() {
+	if config == nil {
+		// Use default configuration
+		s.Configure(&BaseConfig{})
+	}
+
+	os.Exit(s.m.Run())
 }

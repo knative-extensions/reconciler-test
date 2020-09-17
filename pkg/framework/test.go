@@ -16,6 +16,8 @@
 
 package framework
 
+import "testing"
+
 // Test defines functions for configuring and running a single test case
 type Test interface {
 
@@ -47,5 +49,10 @@ type Test interface {
 	// --- Runners
 
 	// Run the test, supplied as a lambda
-	Run(fn func(ctx TestContext))
+	Run(fn func(tc TestContext))
+}
+
+// NewTest creates a new test case
+func NewTest(t *testing.T) Test {
+	return newTest(t)
 }

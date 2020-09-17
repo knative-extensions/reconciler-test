@@ -16,11 +16,17 @@
 
 package framework
 
+import "testing"
+
 // Suite represents a collection of test cases.
 // There is only one suite per Go package and created in TestMain
 type Suite interface {
-	// ParseFlags parses defined flags in def
-	ParseFlags(def interface{}) Suite
+	// Configure assembles the suite configuration by
+	// - reading the configuration file in the test directory, up to the root project
+	// - overriding config values with the one provided on the command line
+	//
+	// Not calling this function is equivalent to calling it with BaseConfig.
+	Configure(def Config) Suite
 
 	// Require makes sure the cluster-scoped component
 	// is deployed and properly configured (ie. ready to be used)
@@ -31,4 +37,9 @@ type Suite interface {
 
 	// Run runs the tests
 	Run()
+}
+
+// NewSuite creates a new test suite
+func NewSuite(m *testing.M) Suite {
+	return newSuite(m)
 }

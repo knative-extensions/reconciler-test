@@ -17,67 +17,54 @@
 package framework
 
 import (
-	//g "github.com/onsi/gomega"
 	"fmt"
 	"testing"
 )
 
-type dummyTest struct {
+type test struct {
+	t *testing.T
 }
 
-func (d dummyTest) Feature(name string) Test {
+func newTest(t *testing.T) Test {
+	return &test{t: t}
+}
+
+func (t *test) Feature(name string) Test {
 	fmt.Print("🎁 " + name + " ")
-	return d
+	return t
 }
 
-func (d dummyTest) Alpha() Test {
+func (t *test) Alpha() Test {
 	fmt.Print("[alpha]")
-	return d
+	return t
 }
 
-func (d dummyTest) Beta() Test {
+func (t *test) Beta() Test {
 	fmt.Print("[beta]")
-	return d
+	return t
 }
 
-func (d dummyTest) Stable() Test {
+func (t *test) Stable() Test {
 	fmt.Print("[stable]")
-	return d
+	return t
 }
 
-func (d dummyTest) Must(name string) Test {
+func (t *test) Must(name string) Test {
 	fmt.Print("[must]")
-	return d
+	return t
 }
 
-func (d dummyTest) Should(name string) Test {
+func (t *test) Should(name string) Test {
 	fmt.Print("[should]")
-	return d
+	return t
 }
 
-func (d dummyTest) May(name string) Test {
+func (t *test) May(name string) Test {
 	fmt.Print("[may]")
-	return d
+	return t
 }
 
-func (d dummyTest) Run(fn func(ctx TestContext)) {
+func (t *test) Run(fn func(ctx TestContext)) {
 	fmt.Println()
 	fn(nil)
-}
-
-func NewTest(t *testing.T) Test {
-	return &dummyTest{}
-}
-
-func TestFeature(t *testing.T) {
-	NewTest(t).Feature("some feature").Run(SomeFeature)
-}
-
-func SomeFeature(tc TestContext) {
-	//tc.Helper()
-	//tc.Expect(true).To(g.BeTrue())
-}
-
-func TestAlphaFeature(t *testing.T) {
-	NewTest(t).Feature("some feature").Alpha().Run(SomeFeature)
 }
