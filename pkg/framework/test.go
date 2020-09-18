@@ -48,7 +48,7 @@ type Test interface {
 
 	// --- Runners
 
-	// Run the test, supplied as a lambda
+	// Run the test within the given context
 	Run(fn func(tc TestContext))
 }
 

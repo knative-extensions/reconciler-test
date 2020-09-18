@@ -2,6 +2,11 @@
 # It provides default configuration values.
 # Each configuration parameters can be overridden by a command line
 # flag, e.g --components-eventing-version=nightly
+requirements:
+  must: true
+  may: true
+  should: true
+
 components:
   eventing:
     version: 0.17 # or nightly or local (from source)
@@ -12,7 +17,3 @@ components:
   event.observer:
     target: log
 
-requirements:
-  must: enabled
-  may: enabled
-  should: disabled

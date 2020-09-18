@@ -39,7 +39,16 @@ func TestUnwrapped(t *testing.T) {
 }
 
 func TestWrapped(t *testing.T) {
-	framework.NewTest(t).Run(func(tc framework.TestContext) {
+	framework.NewTest(t).Feature("Broker").Run(func(tc framework.TestContext) {
 		fmt.Println("broker is " + config.Broker)
 	})
+}
+
+func TestMust(t *testing.T) {
+	framework.NewTest(t).
+		Feature("BrokerFeature").
+		Must("").
+		Run(func(tc framework.TestContext) {
+			fmt.Println("broker is " + config.Broker)
+		})
 }

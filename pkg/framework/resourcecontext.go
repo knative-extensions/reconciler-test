@@ -17,15 +17,28 @@
 package framework
 
 import (
+	"context"
+
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// ResourceContext allows the manipulation (crud) of resources within
-// the current context (cluster and namespace_
+// ResourceContext is the context in which resources
+// are managed.
 type ResourceContext interface {
+	context.Context
+
+	// Namespace returns the current namespace
+	Namespace() string
+
 	// Create a resource from the given object (or fail)
 	CreateOrFail(obj runtime.Object)
 
 	// CreateFromYAMLOrFail creates a resource from the given YAML specification (or fail)
 	CreateFromYAMLOrFail(yaml string)
+
+	// Delete deletes the resource specified in the given YAML
+	DeleteFromYAML(yaml string) error
+
+	// Delete deletes the resource specified in the given YAML (or fail)
+	DeleteFromYAMLOrFail(yaml string)
 }
