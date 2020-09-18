@@ -6,6 +6,7 @@ require (
 	github.com/octago/sflags v0.2.0
 	github.com/onsi/gomega v1.10.2
 	k8s.io/apimachinery v0.18.8
+	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	knative.dev/pkg v0.0.0-20200916171541-6e0430fd94db
 	knative.dev/test-infra v0.0.0-20200911201000-3f90e7c8f2fa
 )

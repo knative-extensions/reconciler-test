@@ -17,14 +17,28 @@
 package framework
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+
 	"github.com/octago/sflags/gen/gflag"
+	"k8s.io/client-go/rest"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/signals"
+	_ "knative.dev/pkg/system/testing"
 )
 
-var config *BaseConfig
+var (
+	config *BaseConfig
+	cfg    *rest.Config
+)
 
 type suite struct {
 	m *testing.M
@@ -35,6 +49,8 @@ func newSuite(m *testing.M) Suite {
 }
 
 func (s *suite) Configure(def Config) Suite {
+	def.SetDefaults()
+
 	// TODO: read config file
 
 	err := gflag.ParseToDef(def)
@@ -59,5 +75,29 @@ func (s *suite) Run() {
 		s.Configure(&BaseConfig{})
 	}
 
+	cfg = s.enableInjection()
+
 	os.Exit(s.m.Run())
+}
+
+func (s *suite) enableInjection() *rest.Config {
+	ctx := signals.NewContext()
+
+	cfg, err := sharedmain.GetConfig(config.serverURL, config.KubeConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx = injection.WithConfig(ctx, cfg)
+	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
+
+	// Start the injection clients and informers.
+	go func(ctx context.Context) {
+		if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
+			panic(fmt.Sprintf("Failed to start informers - %s", err))
+		}
+		<-ctx.Done()
+	}(ctx)
+
+	return cfg
 }

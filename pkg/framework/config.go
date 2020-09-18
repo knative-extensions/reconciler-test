@@ -18,12 +18,18 @@ package framework
 
 // Config is the test suite configuration
 type Config interface {
+	// SetDefaults sets the configuration defaults
+	SetDefaults()
+
+	// GetBaseConfig returns the base configuration to all tests
 	GetBaseConfig() *BaseConfig
 }
 
 // BaseConfig represents all the configuration parameters
 // controlling the framework behavior.
 type BaseConfig struct {
+	KubeConfig   string
+	serverURL    string
 	Requirements Requirements
 }
 
@@ -35,4 +41,10 @@ type Requirements struct {
 
 func (b *BaseConfig) GetBaseConfig() *BaseConfig {
 	return b
+}
+
+func (b *BaseConfig) SetDefaults() {
+	b.Requirements.Must = true
+	b.Requirements.Should = true
+	b.Requirements.May = true
 }
