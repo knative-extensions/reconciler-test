@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"knative.dev/pkg/injection"
+
+	// TODO: remove dependencies because of flags definition
 	pkgtest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
 
@@ -127,7 +129,6 @@ func (t *test) Run(fn func(TestContext)) {
 
 	// TODO: validate feature to match DNS-1123 label
 	namespace := helpers.AppendRandomString(strings.ToLower(t.feature))
-
 	ctx := t.withInjection(context.Background())
 
 	tc := &testContextImpl{

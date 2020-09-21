@@ -18,22 +18,35 @@ package framework
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 	"time"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"knative.dev/pkg/injection/clients/dynamicclient"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
+
+	"knative.dev/pkg/injection/clients/dynamicclient"
 )
 
 func (c *testContextImpl) Namespace() string {
 	return c.namespace
+}
+
+func (c *testContextImpl) ImageName(packageName string) string {
+	repository := config.ImageRepository
+	if repository == "ko" {
+		repository = os.Getenv("KO_DOCKER_REPO")
+		if repository == "" {
+			panic("error: KO_DOCKER_REPO environment variable is unset")
+		}
+	}
+	parts := strings.Split(packageName, "/")
+	return fmt.Sprintf("%s/%s", repository, parts[len(parts)-1])
 }
 
 func (c *testContextImpl) CreateOrFail(obj runtime.Object) {
@@ -57,6 +70,7 @@ func (c *testContextImpl) CreateOrFail(obj runtime.Object) {
 
 func (c *testContextImpl) CreateFromYAMLOrFail(yamlSpec string) {
 	c.t.Helper()
+
 	decoder := yaml.NewYAMLToJSONDecoder(strings.NewReader(yamlSpec))
 
 	out := unstructured.Unstructured{}

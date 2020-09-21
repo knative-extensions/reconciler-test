@@ -2,6 +2,15 @@
 # It provides default configuration values.
 # Each configuration parameters can be overridden by a command line
 # flag, e.g --components-eventing-version=nightly
+
+# whether to build and publish images before running tests.
+buildImages: false
+
+# image repository.
+# e.g. docker.io/user
+# when ko, use $KO_DOCKER_REPO environment variable
+imageRepository: ko
+
 requirements:
   must: true
   may: true

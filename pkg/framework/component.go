@@ -27,15 +27,12 @@ const (
 // Component is set of configuration files that can be installed
 // into a cluster
 type Component interface {
-	// Scope returns the component scope
+	// Scope returns the component scope.
 	Scope() ComponentScope
 
-	// Build builds and publishes the container image(s) required to
-	// install the component.
-	// Do nothing if container image(s) are pre-built.
-	BuildOrFail()
+	// Required marks the component as being required.
+	Required()
 
-	// Install deploys the component onto the cluster identified by rc.
-	// Do nothing if the component of the same version is already installed.
-	InstallOrFail(rc ResourceContext, config Config)
+	// Verify checks the component is ready to be used.
+	Verify()
 }

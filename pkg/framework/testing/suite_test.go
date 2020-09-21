@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"knative.dev/reconciler-test/pkg/components/sequencestepper"
+
 	"knative.dev/reconciler-test/pkg/framework"
 )
 
@@ -31,7 +33,11 @@ type Config struct {
 var config = Config{}
 
 func TestMain(m *testing.M) {
-	framework.NewSuite(m).Configure(&config).Run()
+	framework.
+		NewSuite(m).
+		Configure(&config).
+		Require(sequencestepper.Component).
+		Run()
 }
 
 func TestUnwrapped(t *testing.T) {
@@ -39,9 +45,11 @@ func TestUnwrapped(t *testing.T) {
 }
 
 func TestWrapped(t *testing.T) {
-	framework.NewTest(t).Feature("Broker").Run(func(tc framework.TestContext) {
-		fmt.Println("broker is " + config.Broker)
-	})
+	framework.NewTest(t).
+		Feature("Broker").
+		Run(func(tc framework.TestContext) {
+			fmt.Println("broker is " + config.Broker)
+		})
 }
 
 func TestMust(t *testing.T) {
@@ -50,5 +58,14 @@ func TestMust(t *testing.T) {
 		Must("").
 		Run(func(tc framework.TestContext) {
 			fmt.Println("broker is " + config.Broker)
+		})
+}
+
+func TestComponent(t *testing.T) {
+	framework.NewTest(t).
+		Feature("Broker").
+		Run(func(tc framework.TestContext) {
+			obj := sequencestepper.Deploy(tc)
+			fmt.Println(obj.Name)
 		})
 }

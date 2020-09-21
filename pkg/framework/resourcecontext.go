@@ -30,6 +30,9 @@ type ResourceContext interface {
 	// Namespace returns the current namespace
 	Namespace() string
 
+	// ImageName returns the image name corresponding to the given Go package name
+	ImageName(packageName string) string
+
 	// Create a resource from the given object (or fail)
 	CreateOrFail(obj runtime.Object)
 
@@ -41,4 +44,6 @@ type ResourceContext interface {
 
 	// Delete deletes the resource specified in the given YAML (or fail)
 	DeleteFromYAMLOrFail(yaml string)
+
+	// TODO: Get, Update, Apply
 }
