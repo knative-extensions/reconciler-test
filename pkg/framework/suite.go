@@ -19,7 +19,7 @@ package framework
 import "testing"
 
 // Suite represents a collection of test cases.
-// There is only one suite per Go package and created in TestMain
+// Must be instantiated in TestMain.
 type Suite interface {
 	// Configure assembles the suite configuration by
 	// - reading the configuration file in the test directory, up to the root project
@@ -28,11 +28,7 @@ type Suite interface {
 	// Not calling this function is equivalent to calling it with BaseConfig.
 	Configure(def Config) Suite
 
-	// Require makes sure the cluster-scoped component
-	// is deployed and properly configured (ie. ready to be used)
-	//
-	// When the --build flag is set, Require first builds and installs
-	// the required component.
+	// Require registers the given component
 	Require(component Component) Suite
 
 	// Run runs the tests

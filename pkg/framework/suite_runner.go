@@ -28,12 +28,23 @@ import (
 
 	"github.com/octago/sflags/gen/gflag"
 	"k8s.io/client-go/rest"
+
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/signals"
-	_ "knative.dev/pkg/system/testing"
+	"knative.dev/pkg/system"
+
+	"knative.dev/reconciler-test/pkg/installer"
 )
+
+func init() {
+	// Do not import pkg/test
+	if ns := os.Getenv(system.NamespaceEnvKey); ns != "" {
+		return
+	}
+	os.Setenv(system.NamespaceEnvKey, "knative-testing")
+}
 
 var (
 	config *BaseConfig
@@ -65,7 +76,7 @@ func (s *suite) Configure(def Config) Suite {
 }
 
 func (s *suite) Require(component Component) Suite {
-	// TODO: delegate to the component. Must first define configuration
+	component.Required()
 	return s
 }
 
@@ -74,16 +85,24 @@ func (s *suite) Run() {
 		// Use default configuration
 		s.Configure(&BaseConfig{})
 	}
-
 	cfg = s.enableInjection()
 
+	s.prepareComponents()
+
 	os.Exit(s.m.Run())
+}
+
+func (s *suite) prepareComponents() {
+	if config.BuildImages {
+		fmt.Println("building and publishing images")
+		installer.ProduceImages()
+	}
 }
 
 func (s *suite) enableInjection() *rest.Config {
 	ctx := signals.NewContext()
 
-	cfg, err := sharedmain.GetConfig(config.serverURL, config.KubeConfig)
+	cfg, err := sharedmain.GetConfig(config.ServerURL, config.KubeConfig)
 	if err != nil {
 		panic(err)
 	}

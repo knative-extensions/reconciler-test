@@ -28,9 +28,11 @@ type Config interface {
 // BaseConfig represents all the configuration parameters
 // controlling the framework behavior.
 type BaseConfig struct {
-	KubeConfig   string
-	serverURL    string
-	Requirements Requirements
+	KubeConfig      string
+	ServerURL       string
+	BuildImages     bool
+	ImageRepository string
+	Requirements    Requirements
 }
 
 type Requirements struct {
@@ -44,7 +46,11 @@ func (b *BaseConfig) GetBaseConfig() *BaseConfig {
 }
 
 func (b *BaseConfig) SetDefaults() {
+	b.BuildImages = false
+	b.ImageRepository = "ko"
+
 	b.Requirements.Must = true
 	b.Requirements.Should = true
 	b.Requirements.May = true
+
 }
