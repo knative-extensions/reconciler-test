@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package framework
+package eventing
 
-// BaseConfig defines the configuration parameters
-// controlling the framework behavior.
-type BaseConfig struct {
-	KubeConfig      string
-	ServerURL       string
-	BuildImages     bool
-	ImageRepository string
-	Requirements    Requirements
-}
+import "knative.dev/reconciler-test/pkg/components/eventing/sources"
 
-type Requirements struct {
-	Must   bool `desc:"run test mark as Must. Default is true"`
-	Should bool `desc:"run test mark as Should. Default is true"`
-	May    bool `desc:"run test mark as May. Default is true"`
+// EventingConfig is the aggregation of eventing configurations.
+type EventingConfig struct {
+	Sources sources.SourcesConfig
 }

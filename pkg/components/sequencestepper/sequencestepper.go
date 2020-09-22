@@ -18,6 +18,8 @@ package sequencestepper
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/reconciler-test/pkg/config"
+
 	"knative.dev/reconciler-test/pkg/framework"
 	"knative.dev/reconciler-test/pkg/installer"
 	"knative.dev/test-infra/pkg/helpers"
@@ -53,10 +55,6 @@ func (s *sequenceStepperComponent) Scope() framework.ComponentScope {
 	return framework.ComponentScopeResource
 }
 
-func (s *sequenceStepperComponent) Required() {
+func (s *sequenceStepperComponent) Required(rc framework.ResourceContext, cfg config.Config) {
 	installer.RegisterPackage(packageName)
-}
-
-func (s *sequenceStepperComponent) Verify() {
-	// TODO: check correct image has been built and publish
 }

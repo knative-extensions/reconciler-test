@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package framework
+package pkg
 
-// BaseConfig defines the configuration parameters
-// controlling the framework behavior.
-type BaseConfig struct {
-	KubeConfig      string
-	ServerURL       string
-	BuildImages     bool
-	ImageRepository string
-	Requirements    Requirements
-}
+import (
+	"knative.dev/reconciler-test/pkg/components"
+	"knative.dev/reconciler-test/pkg/framework"
+)
 
-type Requirements struct {
-	Must   bool `desc:"run test mark as Must. Default is true"`
-	Should bool `desc:"run test mark as Should. Default is true"`
-	May    bool `desc:"run test mark as May. Default is true"`
+// Config aggregates all the known configuration parameters
+// Can be embedded by downstream projects.
+type AllConfig struct {
+	framework.BaseConfig
+	Component components.ComponentConfig
 }

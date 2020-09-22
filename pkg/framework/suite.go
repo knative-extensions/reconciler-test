@@ -16,7 +16,11 @@
 
 package framework
 
-import "testing"
+import (
+	"testing"
+
+	"knative.dev/reconciler-test/pkg/config"
+)
 
 // Suite represents a collection of test cases.
 // Must be instantiated in TestMain.
@@ -26,9 +30,10 @@ type Suite interface {
 	// - overriding config values with the one provided on the command line
 	//
 	// Not calling this function is equivalent to calling it with BaseConfig.
-	Configure(def Config) Suite
+	Configure(def config.Config) Suite
 
-	// Require registers the given component
+	// Require indicates the given component is needed to
+	// run test cases.
 	Require(component Component) Suite
 
 	// Run runs the tests
