@@ -22,8 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"knative.dev/pkg/injection"
-
 	// TODO: remove dependencies because of flags definition
 	pkgtest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
@@ -99,13 +97,13 @@ func (t *test) May(name string) Test {
 }
 
 func (t *test) Run(fn func(TestContext)) {
-	if t.requirement == "must" && !config.Requirements.Must {
+	if t.requirement == "must" && !baseConfig.Requirements.Must {
 		t.t.Skip("skipping test marked as Must")
 	}
-	if t.requirement == "should" && !config.Requirements.Should {
+	if t.requirement == "should" && !baseConfig.Requirements.Should {
 		t.t.Skip("skipping test marked as Should")
 	}
-	if t.requirement == "may" && !config.Requirements.May {
+	if t.requirement == "may" && !baseConfig.Requirements.May {
 		t.t.Skip("skipping test marked as May")
 	}
 
@@ -129,13 +127,15 @@ func (t *test) Run(fn func(TestContext)) {
 
 	// TODO: validate feature to match DNS-1123 label
 	namespace := helpers.AppendRandomString(strings.ToLower(t.feature))
-	ctx := t.withInjection(context.Background())
+	ctx := withInjection(context.Background())
 
 	tc := &testContextImpl{
-		context:   ctx,
-		t:         t.t,
-		namespace: namespace,
-		WithT:     gomega.NewGomegaWithT(t.t),
+		resourceContextImpl: resourceContextImpl{
+			context:   ctx,
+			namespace: namespace,
+		},
+		t:     t.t,
+		WithT: gomega.NewGomegaWithT(t.t),
 	}
 
 	nsspec := fmt.Sprintf(namespaceTemplate, namespace)
@@ -156,83 +156,6 @@ func (t *test) Run(fn func(TestContext)) {
 	fn(tc)
 
 	cleanup()
-}
-
-func (t *test) withInjection(ctx context.Context) context.Context {
-	ctx = injection.WithConfig(ctx, cfg)
-	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
-	// do not start informers.
-	return ctx
-
-}
-
-type testContextImpl struct {
-	context   context.Context // I know
-	t         *testing.T
-	namespace string
-	*gomega.WithT
-}
-
-// --- testing.T wrapper
-
-func (c *testContextImpl) Error(args ...interface{}) {
-	c.t.Error(args...)
-}
-
-func (c *testContextImpl) Errorf(format string, args ...interface{}) {
-	c.t.Errorf(format, args...)
-}
-
-func (c *testContextImpl) Fail() {
-	c.t.Fail()
-}
-
-func (c *testContextImpl) FailNow() {
-	c.t.FailNow()
-}
-
-func (c *testContextImpl) Failed() bool {
-	return c.t.Failed()
-}
-
-func (c *testContextImpl) Fatal(args ...interface{}) {
-	c.t.Fatal(args...)
-}
-
-func (c *testContextImpl) Fatalf(format string, args ...interface{}) {
-	c.t.Fatalf(format, args)
-}
-
-func (c *testContextImpl) Helper() {
-	c.t.Helper()
-}
-
-func (c *testContextImpl) Log(args ...interface{}) {
-	c.t.Log(args...)
-}
-
-func (c *testContextImpl) Logf(format string, args ...interface{}) {
-	c.t.Logf(format, args...)
-}
-
-func (c *testContextImpl) Name() string {
-	return c.t.Name()
-}
-
-func (c *testContextImpl) Skip(args ...interface{}) {
-	c.t.Skip(args...)
-}
-
-func (c *testContextImpl) SkipNow() {
-	c.t.SkipNow()
-}
-
-func (c *testContextImpl) Skipf(format string, args ...interface{}) {
-	c.t.Skipf(format, args...)
-}
-
-func (c *testContextImpl) Skipped() bool {
-	return c.t.Skipped()
 }
 
 const namespaceTemplate = `

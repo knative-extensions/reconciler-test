@@ -20,35 +20,40 @@ import (
 	"fmt"
 	"testing"
 
-	"knative.dev/reconciler-test/pkg/components/sequencestepper"
+	"knative.dev/reconciler-test/pkg/components"
 
+	"knative.dev/reconciler-test/pkg/components/eventing/sources/github"
+
+	"knative.dev/reconciler-test/pkg/components/sequencestepper"
 	"knative.dev/reconciler-test/pkg/framework"
 )
 
 type Config struct {
 	framework.BaseConfig
-	Broker string
+	Components components.ComponentConfig
+	Broker     string
 }
 
-var config = Config{}
+var myconfig = Config{}
 
 func TestMain(m *testing.M) {
 	framework.
 		NewSuite(m).
-		Configure(&config).
+		Configure(&myconfig).
 		Require(sequencestepper.Component).
+		Require(github.Component).
 		Run()
 }
 
 func TestUnwrapped(t *testing.T) {
-	fmt.Println("broker is " + config.Broker)
+	fmt.Println("broker is " + myconfig.Broker)
 }
 
 func TestWrapped(t *testing.T) {
 	framework.NewTest(t).
 		Feature("Broker").
 		Run(func(tc framework.TestContext) {
-			fmt.Println("broker is " + config.Broker)
+			fmt.Println("broker is " + myconfig.Broker)
 		})
 }
 
@@ -57,7 +62,7 @@ func TestMust(t *testing.T) {
 		Feature("BrokerFeature").
 		Must("").
 		Run(func(tc framework.TestContext) {
-			fmt.Println("broker is " + config.Broker)
+			fmt.Println("broker is " + myconfig.Broker)
 		})
 }
 

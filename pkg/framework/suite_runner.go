@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 
+	"knative.dev/reconciler-test/pkg/config"
 	"knative.dev/reconciler-test/pkg/installer"
 )
 
@@ -47,8 +48,10 @@ func init() {
 }
 
 var (
-	config *BaseConfig
-	cfg    *rest.Config
+	fullConfig config.Config
+	baseConfig *BaseConfig
+	cfg        *rest.Config
+	rc         *resourceContextImpl
 )
 
 type suite struct {
@@ -59,11 +62,10 @@ func newSuite(m *testing.M) Suite {
 	return &suite{m: m}
 }
 
-func (s *suite) Configure(def Config) Suite {
-	def.SetDefaults()
+func (s *suite) Configure(def config.Config) Suite {
+	config.ParseConfigFile(def)
 
-	// TODO: read config file
-
+	// Overrides loaded configuration
 	err := gflag.ParseToDef(def)
 	if err != nil {
 		panic(err)
@@ -71,29 +73,48 @@ func (s *suite) Configure(def Config) Suite {
 
 	flag.Parse()
 
-	config = def.GetBaseConfig()
+	fullConfig = def
+
+	bcfg, ok := config.GetConfig(def, "BaseConfig").(BaseConfig)
+	if !ok {
+		panic("Configuration must embed framework.BaseConfig")
+	}
+	baseConfig = &bcfg
+
+	cfg = s.enableInjection()
+
+	rc = &resourceContextImpl{
+		context:   withInjection(context.Background()),
+		namespace: "",
+	}
+
 	return s
 }
 
 func (s *suite) Require(component Component) Suite {
-	component.Required()
+	s.mayConfigure()
+
+	component.Required(rc, fullConfig)
+
 	return s
 }
 
 func (s *suite) Run() {
-	if config == nil {
-		// Use default configuration
-		s.Configure(&BaseConfig{})
-	}
-	cfg = s.enableInjection()
+	s.mayConfigure()
 
 	s.prepareComponents()
 
 	os.Exit(s.m.Run())
 }
 
+func (s *suite) mayConfigure() {
+	if baseConfig == nil {
+		s.Configure(&BaseConfig{})
+	}
+}
+
 func (s *suite) prepareComponents() {
-	if config.BuildImages {
+	if baseConfig.BuildImages {
 		fmt.Println("building and publishing images")
 		installer.ProduceImages()
 	}
@@ -102,7 +123,7 @@ func (s *suite) prepareComponents() {
 func (s *suite) enableInjection() *rest.Config {
 	ctx := signals.NewContext()
 
-	cfg, err := sharedmain.GetConfig(config.ServerURL, config.KubeConfig)
+	cfg, err := sharedmain.GetConfig(baseConfig.ServerURL, baseConfig.KubeConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -119,4 +140,12 @@ func (s *suite) enableInjection() *rest.Config {
 	}(ctx)
 
 	return cfg
+}
+
+func withInjection(ctx context.Context) context.Context {
+	ctx = injection.WithConfig(ctx, cfg)
+	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
+	// do not start informers.
+	return ctx
+
 }

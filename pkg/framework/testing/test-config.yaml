@@ -1,0 +1,7 @@
+broker: kafka
+
+components:
+  eventing:
+    sources:
+      github:
+        version: 0.17.0

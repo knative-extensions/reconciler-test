@@ -16,6 +16,8 @@
 
 package framework
 
+import "knative.dev/reconciler-test/pkg/config"
+
 type ComponentScope string
 
 const (
@@ -31,8 +33,5 @@ type Component interface {
 	Scope() ComponentScope
 
 	// Required marks the component as being required.
-	Required()
-
-	// Verify checks the component is ready to be used.
-	Verify()
+	Required(rc ResourceContext, cfg config.Config)
 }

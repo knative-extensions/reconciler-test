@@ -17,6 +17,8 @@
 package framework
 
 import (
+	"testing"
+
 	"github.com/onsi/gomega"
 )
 
@@ -24,16 +26,11 @@ import (
 type TestContext interface {
 	ResourceContext
 
-	// --- testing.T
+	// --- The rest of testing.T
 
-	Error(args ...interface{})
-	Errorf(format string, args ...interface{})
 	Fail()
 	FailNow()
 	Failed() bool
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
-	Helper()
 	Log(args ...interface{})
 	Logf(format string, args ...interface{})
 	Skip(args ...interface{})
@@ -45,4 +42,75 @@ type TestContext interface {
 
 	// Gomega assertion
 	gomega.Gomega
+}
+
+// --- Default implementation
+
+type testContextImpl struct {
+	resourceContextImpl
+
+	t *testing.T
+	*gomega.WithT
+}
+
+// --- testing.T wrapper
+
+func (c *testContextImpl) Error(args ...interface{}) {
+	c.t.Error(args...)
+}
+
+func (c *testContextImpl) Errorf(format string, args ...interface{}) {
+	c.t.Errorf(format, args...)
+}
+
+func (c *testContextImpl) Fail() {
+	c.t.Fail()
+}
+
+func (c *testContextImpl) FailNow() {
+	c.t.FailNow()
+}
+
+func (c *testContextImpl) Failed() bool {
+	return c.t.Failed()
+}
+
+func (c *testContextImpl) Fatal(args ...interface{}) {
+	c.t.Fatal(args...)
+}
+
+func (c *testContextImpl) Fatalf(format string, args ...interface{}) {
+	c.t.Fatalf(format, args...)
+}
+
+func (c *testContextImpl) Helper() {
+	c.t.Helper()
+}
+
+func (c *testContextImpl) Log(args ...interface{}) {
+	c.t.Log(args...)
+}
+
+func (c *testContextImpl) Logf(format string, args ...interface{}) {
+	c.t.Logf(format, args...)
+}
+
+func (c *testContextImpl) Name() string {
+	return c.t.Name()
+}
+
+func (c *testContextImpl) Skip(args ...interface{}) {
+	c.t.Skip(args...)
+}
+
+func (c *testContextImpl) SkipNow() {
+	c.t.SkipNow()
+}
+
+func (c *testContextImpl) Skipf(format string, args ...interface{}) {
+	c.t.Skipf(format, args...)
+}
+
+func (c *testContextImpl) Skipped() bool {
+	return c.t.Skipped()
 }
