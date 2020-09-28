@@ -25,7 +25,7 @@ import (
 	"knative.dev/test-infra/pkg/helpers"
 )
 
-const packageName = "knative.dev/reconciler-test/pkg/images/sequencestepper"
+const packageName = "knative.dev/reconciler-test/images/sequencestepper"
 
 var (
 	Component = &sequenceStepperComponent{}
