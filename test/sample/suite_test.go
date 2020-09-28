@@ -1,3 +1,5 @@
+// +build e2e
+
 /*
  * Copyright 2020 The Knative Authors
  *
@@ -14,15 +16,13 @@
  * limitations under the License.
  */
 
-package testing
+package sample
 
 import (
 	"fmt"
 	"testing"
 
 	"knative.dev/reconciler-test/pkg/components"
-
-	"knative.dev/reconciler-test/pkg/components/eventing/sources/github"
 
 	"knative.dev/reconciler-test/pkg/components/sequencestepper"
 	"knative.dev/reconciler-test/pkg/framework"
@@ -41,7 +41,6 @@ func TestMain(m *testing.M) {
 		NewSuite(m).
 		Configure(&myconfig).
 		Require(sequencestepper.Component).
-		Require(github.Component).
 		Run()
 }
 
