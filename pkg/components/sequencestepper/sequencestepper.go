@@ -36,8 +36,15 @@ func Deploy(rc framework.ResourceContext) corev1.ObjectReference {
 	image := rc.ImageName(packageName)
 	name := helpers.AppendRandomString("seq-stepper")
 
-	rc.CreateFromYAMLOrFail(installer.ExecuteTemplate(podTemplate, map[string]interface{}{"Name": name, "Image": image}))
-	rc.CreateFromYAMLOrFail(installer.ExecuteTemplate(serviceTemplate, map[string]interface{}{"Name": name}))
+	data := struct {
+		Name  string
+		Image string
+	}{
+		Name:  name,
+		Image: image,
+	}
+
+	rc.WithYAML(podTemplate, data).WithYAML(serviceTemplate, data).Apply()
 
 	return corev1.ObjectReference{
 		Namespace: rc.Namespace(),

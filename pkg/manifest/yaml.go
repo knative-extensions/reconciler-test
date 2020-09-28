@@ -41,7 +41,6 @@ import (
 // 5. pathname = combination of all previous cases, the string can contain
 //    multiple records (file, directory or url) separated by comma
 func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
-
 	pathnames := strings.Split(pathname, ",")
 	var aggregated []unstructured.Unstructured
 	for _, pth := range pathnames {

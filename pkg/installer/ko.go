@@ -13,17 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package pkg
+package installer
 
 import (
-	"knative.dev/reconciler-test/pkg/components"
-	"knative.dev/reconciler-test/pkg/framework"
+	"fmt"
 )
 
-// Config aggregates all the known configuration parameters
-// Can be embedded by downstream projects.
-type AllConfig struct {
-	framework.BaseConfig
-	Components components.ComponentConfig
+// Use ko to publish the image.
+func KoPublish(path string) (string, error) {
+	out, err := runCmd(fmt.Sprintf("ko publish %s", path))
+	if err != nil {
+		return "", err
+	}
+	return out, nil
+}
+
+// Use ko to apply filename
+func KoApply(filename string) (string, error) {
+	out, err := runCmd(fmt.Sprintf("ko apply -f %s", filename))
+	if err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+// Use ko to delete filename
+func KoDelete(filename string) (string, error) {
+	out, err := runCmd(fmt.Sprintf("ko delete -f %s", filename))
+	if err != nil {
+		return out, err
+	}
+	return out, nil
 }

@@ -29,7 +29,7 @@ import (
 // ParseTemplates walks through all the template yaml file in the given directory
 // and produces instantiated yaml file in a temporary directory.
 // Return the name of the temporary directory
-func ParseTemplates(path string, config map[string]interface{}) string {
+func ParseTemplates(path string, config interface{}) (string, error) {
 	dir, err := ioutil.TempDir("", "processed_yaml")
 	if err != nil {
 		panic(err)
@@ -59,9 +59,9 @@ func ParseTemplates(path string, config map[string]interface{}) string {
 	})
 	log.Print("new files in ", dir)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return dir
+	return dir, nil
 }
 
 // ExecuteTemplate instantiates the given template with data

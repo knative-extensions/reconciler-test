@@ -19,12 +19,14 @@ package github
 import (
 	"fmt"
 
+	"knative.dev/reconciler-test/pkg/manifest"
+
 	"knative.dev/reconciler-test/pkg/config"
 	"knative.dev/reconciler-test/pkg/framework"
 )
 
 const (
-	artifactURITemplate = "https://github.com/knative/eventing-contrib/releases/download/v%s/github.yaml"
+	artifactURLTemplate = "https://github.com/knative/eventing-contrib/releases/download/v%s/github.yaml"
 )
 
 var (
@@ -45,8 +47,8 @@ func (s *githubComponent) Required(rc framework.ResourceContext, cfg config.Conf
 	ghcfg := config.GetConfig(cfg, "components/eventing/sources/github").(GithubConfig)
 
 	// TODO: validate configuration
-
-	artifactURI := fmt.Sprintf(artifactURITemplate, ghcfg.Version)
-	rc.CreateFromURIOrFail(artifactURI, false)
-
+	// TODO: check cluster for existing source
+	artifactURL := fmt.Sprintf(artifactURLTemplate, ghcfg.Version)
+	rc.Logf("installing GitHubSource release ", ghcfg.Version)
+	rc.Apply(manifest.FromURL(artifactURL))
 }
