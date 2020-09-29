@@ -152,6 +152,7 @@ github.com/jmespath/go-jmespath
 # github.com/json-iterator/go v1.1.10
 github.com/json-iterator/go
 # github.com/kelseyhightower/envconfig v1.4.0
+## explicit
 github.com/kelseyhightower/envconfig
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
@@ -856,6 +857,7 @@ knative.dev/pkg/profiling
 knative.dev/pkg/reconciler
 knative.dev/pkg/signals
 knative.dev/pkg/system
+knative.dev/pkg/system/testing
 knative.dev/pkg/test
 knative.dev/pkg/test/helpers
 knative.dev/pkg/test/ingress
