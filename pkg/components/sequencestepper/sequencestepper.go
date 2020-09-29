@@ -19,6 +19,7 @@ package sequencestepper
 import (
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/reconciler-test/pkg/config"
+	"knative.dev/reconciler-test/pkg/manifest"
 
 	"knative.dev/reconciler-test/pkg/framework"
 	"knative.dev/reconciler-test/pkg/installer"
@@ -44,7 +45,8 @@ func Deploy(rc framework.ResourceContext) corev1.ObjectReference {
 		Image: image,
 	}
 
-	rc.WithYAML(podTemplate, data).WithYAML(serviceTemplate, data).Apply()
+	rc.Apply(manifest.FromString(podTemplate), data)
+	rc.Apply(manifest.FromString(serviceTemplate), data)
 
 	return corev1.ObjectReference{
 		Namespace: rc.Namespace(),
