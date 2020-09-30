@@ -1,0 +1,18 @@
+components:
+  serving:
+    require: ">0.15.x"
+    version: 0.18.0
+
+  networking:
+    name: kourier
+    require: ">0.15.x"
+    version: 0.18.0
+
+  eventing:
+    sources:
+      github:
+        # The required version (a pin version, a version range or devel)
+        require: 0.17.x
+
+        # The resolved version (mandatory)
+        version: 0.17.0

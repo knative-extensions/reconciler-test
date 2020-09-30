@@ -16,9 +16,20 @@
 
 package components
 
-import "knative.dev/reconciler-test/pkg/components/eventing"
+import (
+	"knative.dev/pkg/apis"
+	"knative.dev/reconciler-test/pkg/components/eventing"
+	"knative.dev/reconciler-test/pkg/components/networking"
+	"knative.dev/reconciler-test/pkg/components/serving"
+)
 
-// ComponentConfig is the aggregation of component configurations.
-type ComponentConfig struct {
-	Eventing eventing.EventingConfig
+// Config is the aggregation of component configurations.
+type Config struct {
+	Eventing   eventing.Config
+	Serving    serving.Config
+	Networking networking.Config
+}
+
+func (c *Config) Validate() *apis.FieldError {
+	return nil
 }

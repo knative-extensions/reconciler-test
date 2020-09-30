@@ -55,11 +55,12 @@ var (
 )
 
 type suite struct {
-	m *testing.M
+	m  *testing.M
+	cm ComponentManager
 }
 
 func newSuite(m *testing.M) Suite {
-	return &suite{m: m}
+	return &suite{m: m, cm: NewComponentManager()}
 }
 
 func (s *suite) Configure(def config.Config) Suite {
@@ -75,11 +76,17 @@ func (s *suite) Configure(def config.Config) Suite {
 
 	fullConfig = def
 
-	bcfg, ok := config.GetConfig(def, "BaseConfig").(BaseConfig)
-	if !ok {
-		panic("Configuration must embed framework.BaseConfig")
+	errors := def.Validate()
+	if errors != nil {
+		panic(fmt.Sprintf("☠️ invalid configuration: %v", errors))
 	}
-	baseConfig = &bcfg
+	fmt.Println("✅ Base configuration checked")
+
+	bcfg, ok := config.GetConfig(def, "BaseConfig").(*BaseConfig)
+	if !ok {
+		panic("️☠️ configuration must embed framework.BaseConfig")
+	}
+	baseConfig = bcfg
 
 	cfg = s.enableInjection()
 
@@ -94,7 +101,7 @@ func (s *suite) Configure(def config.Config) Suite {
 func (s *suite) Require(component Component) Suite {
 	s.mayConfigure()
 
-	component.Required(rc, fullConfig)
+	s.cm.Required(rc, component, fullConfig)
 
 	return s
 }
@@ -115,9 +122,11 @@ func (s *suite) mayConfigure() {
 
 func (s *suite) prepareComponents() {
 	if baseConfig.BuildImages {
-		fmt.Println("building and publishing images")
+		fmt.Println("🏃 building and publishing images")
 		installer.ProduceImages()
 	}
+
+	s.cm.Wait(rc)
 }
 
 func (s *suite) enableInjection() *rest.Config {

@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package release
 
-package github
-
-import (
-	"knative.dev/pkg/apis"
-	"knative.dev/reconciler-test/pkg/config"
-)
-
-// Config represents the github source configuration
-type Config struct {
-	config.VersionSpec
-}
-
-func (c *Config) Validate() *apis.FieldError {
-	return c.VersionSpec.Validate()
+type Release struct {
+	Owner      string
+	Repository string
+	Artifacts  []string
 }

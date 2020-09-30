@@ -16,22 +16,31 @@
 
 package framework
 
-import "knative.dev/reconciler-test/pkg/config"
-
-type ComponentScope string
-
-const (
-	ComponentScopeResource  = ComponentScope("resource")
-	ComponentScopeNamespace = ComponentScope("namespace")
-	ComponentScopeCluster   = ComponentScope("cluster")
+import (
+	"knative.dev/reconciler-test/pkg/config"
 )
 
 // Component is set of configuration files that can be installed
 // into a cluster
 type Component interface {
-	// Scope returns the component scope.
-	Scope() ComponentScope
+	// QName returns the fully qualified component name (e.g. components/eventing/sources/github)
+	QName() string
+}
 
-	// Required marks the component as being required.
-	Required(rc ResourceContext, cfg config.Config)
+type ClusterComponent interface {
+	Component
+
+	// InstalledVersion returns the installed version of the component.
+	// Return empty when the component is not installed
+	InstalledVersion(rc ResourceContext) string
+
+	// Install triggers the installation of the component
+	Install(rc ResourceContext, gcfg config.Config)
+}
+
+type ContainerComponent interface {
+	Component
+
+	// Required indicates this component will be used.
+	Required(rc ResourceContext, gcfg config.Config)
 }

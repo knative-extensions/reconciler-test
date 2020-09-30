@@ -125,6 +125,15 @@ type ResourceContext interface {
 	CreateFromURIOrFail(uri string, recursive bool)
 }
 
+// --- Constructors
+
+func NewResourceContext(parent ResourceContext, namespace string) ResourceContext {
+	return &resourceContextImpl{
+		context:   parent,
+		namespace: namespace,
+	}
+}
+
 // --- Default implementation
 
 type resourceContextImpl struct {
@@ -175,7 +184,7 @@ func (c *resourceContextImpl) ApplyOrError(provider manifest.Provider, data ...i
 		flags = append(flags, "-n", c.namespace)
 	}
 
-	c.Logf("running ko apply -f %s %s", path, strings.Join(flags, " "))
+	c.Logf("🏃 running ko apply -f %s %s", path, strings.Join(flags, " "))
 	o, err := installer.KoApply(path, flags...)
 	if err != nil {
 		// We care about the command output more than the exit code
@@ -209,7 +218,7 @@ func (c *resourceContextImpl) DeleteOrError(provider manifest.Provider, data ...
 		flags = append(flags, "-n", c.namespace)
 	}
 
-	c.Logf("running ko delete -f %s %s", path, strings.Join(flags, " "))
+	c.Logf("🏃 running ko delete -f %s %s", path, strings.Join(flags, " "))
 	o, err := installer.KoDelete(path, flags...)
 	if err != nil {
 		// We care about the command output more than the exit code

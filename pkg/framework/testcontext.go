@@ -44,6 +44,18 @@ type TestContext interface {
 	gomega.Gomega
 }
 
+// --- Constructors
+
+func NewTestContext(parent TestContext, namespace string) TestContext {
+	impl := parent.(*testContextImpl)
+
+	return &testContextImpl{
+		resourceContextImpl: impl.resourceContextImpl,
+		t:                   impl.t,
+		WithT:               impl.WithT,
+	}
+}
+
 // --- Default implementation
 
 type testContextImpl struct {

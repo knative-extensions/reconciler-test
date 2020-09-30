@@ -16,9 +16,16 @@
 
 package eventing
 
-import "knative.dev/reconciler-test/pkg/components/eventing/sources"
+import (
+	"knative.dev/pkg/apis"
+	"knative.dev/reconciler-test/pkg/components/eventing/sources"
+)
 
-// EventingConfig is the aggregation of eventing configurations.
-type EventingConfig struct {
-	Sources sources.SourcesConfig
+// Config is the aggregation of eventing configurations.
+type Config struct {
+	Sources sources.Config
+}
+
+func (c *Config) Validate() *apis.FieldError {
+	return nil
 }

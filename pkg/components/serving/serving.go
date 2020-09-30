@@ -14,60 +14,54 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package github
+package serving
 
 import (
 	"path"
 
-	"github.com/blang/semver"
+	"knative.dev/reconciler-test/pkg/release"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"knative.dev/reconciler-test/pkg/config"
 	"knative.dev/reconciler-test/pkg/framework"
 	"knative.dev/reconciler-test/pkg/manifest"
-	"knative.dev/reconciler-test/pkg/release"
 )
 
 var (
-	Component = &githubComponent{}
+	Component = &servingComponent{}
 
-	contribRelease = release.Release{
+	servingRelease = release.Release{
 		Owner:      "knative",
-		Repository: "eventing-contrib",
-		Artifacts:  []string{"github.yaml"},
-	}
-
-	githubRelease = release.Release{
-		Owner:      "knative-sandbox",
-		Repository: "eventing-github",
-		Artifacts:  []string{"github.yaml"},
+		Repository: "serving",
+		Artifacts:  []string{"serving-crds.yaml", "serving-core.yaml"},
 	}
 )
 
-type githubComponent struct {
+type servingComponent struct {
 }
 
-var _ framework.Component = (*githubComponent)(nil)
+var _ framework.Component = (*servingComponent)(nil)
 
-func (s *githubComponent) QName() string {
-	return "components/eventing/sources/github"
+func (s *servingComponent) QName() string {
+	return "components/serving"
 }
 
-func (s *githubComponent) InstalledVersion(rc framework.ResourceContext) string {
-	rc = framework.NewResourceContext(rc, "knative-sources")
+func (s *servingComponent) InstalledVersion(rc framework.ResourceContext) string {
+	rc = framework.NewResourceContext(rc, "knative-serving")
 	var obj apiextensionsv1.CustomResourceDefinition
-	_, err := rc.GetOrError("customresourcedefinitions", "githubsources.sources.knative.dev", &obj)
+	_, err := rc.GetOrError("customresourcedefinitions", "services.serving.knative.dev", &obj)
 
 	if err != nil {
 		return ""
 	}
-	if v, ok := obj.Labels["contrib.eventing.knative.dev/release"]; ok {
+	if v, ok := obj.Labels["serving.knative.dev/release"]; ok {
 		return v
 	}
 	return ""
 }
 
-func (s *githubComponent) Install(rc framework.ResourceContext, gcfg config.Config) {
+func (s *servingComponent) Install(rc framework.ResourceContext, gcfg config.Config) {
 	cfg, ok := gcfg.(*Config)
 	if !ok {
 		rc.Errorf("invalid configuration type for %s", s.QName())
@@ -78,9 +72,5 @@ func (s *githubComponent) Install(rc framework.ResourceContext, gcfg config.Conf
 		return
 	}
 
-	if semver.MustParse(cfg.Version).LT(semver.MustParse("0.18.0")) {
-		contribRelease.Install(rc, cfg.Version)
-	} else {
-		githubRelease.Install(rc, cfg.Version)
-	}
+	servingRelease.Install(rc, cfg.Version)
 }

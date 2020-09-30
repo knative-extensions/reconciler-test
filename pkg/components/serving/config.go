@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package github
+package serving
 
 import (
 	"knative.dev/pkg/apis"
 	"knative.dev/reconciler-test/pkg/config"
 )
 
-// Config represents the github source configuration
+//  Config is the Serving configuration
 type Config struct {
 	config.VersionSpec
 }

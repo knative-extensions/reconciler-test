@@ -22,12 +22,14 @@ components:
   eventing:
     sources:
       github:
-        version: main # from source.
+        require: main # from source.
 
   serving:
-    core:
-      version: 0.17
-      network: istio
+    require: 0.17
+
+  networking:
+    name: istio
+    require: 0.17
+
   event.observer:
     target: log
-

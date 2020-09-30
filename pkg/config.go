@@ -17,13 +17,18 @@
 package pkg
 
 import (
+	"knative.dev/pkg/apis"
 	"knative.dev/reconciler-test/pkg/components"
 	"knative.dev/reconciler-test/pkg/framework"
 )
 
-// Config aggregates all the known configuration parameters
-// Can be embedded by downstream projects.
+// AllConfig aggregates all the known configuration parameters
+// Can be embedded in downstream project configuration
 type AllConfig struct {
 	framework.BaseConfig
-	Components components.ComponentConfig
+	Components components.Config
+}
+
+func (c *AllConfig) Validate() *apis.FieldError {
+	return c.BaseConfig.Validate()
 }

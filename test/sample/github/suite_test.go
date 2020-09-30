@@ -1,3 +1,5 @@
+// +build e2e
+
 /*
  * Copyright 2020 The Knative Authors
  *
@@ -17,15 +19,23 @@
 package github
 
 import (
-	"knative.dev/pkg/apis"
-	"knative.dev/reconciler-test/pkg/config"
+	"testing"
+
+	"knative.dev/reconciler-test/pkg"
+	"knative.dev/reconciler-test/pkg/components/eventing/sources/github"
+	"knative.dev/reconciler-test/pkg/components/networking"
+	"knative.dev/reconciler-test/pkg/components/serving"
+	"knative.dev/reconciler-test/pkg/framework"
 )
 
-// Config represents the github source configuration
-type Config struct {
-	config.VersionSpec
-}
+var myconfig = pkg.AllConfig{}
 
-func (c *Config) Validate() *apis.FieldError {
-	return c.VersionSpec.Validate()
+func TestMain(m *testing.M) {
+	framework.
+		NewSuite(m).
+		Configure(&myconfig).
+		Require(serving.Component).
+		Require(networking.Component).
+		Require(github.Component).
+		Run()
 }

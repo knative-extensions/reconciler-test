@@ -16,6 +16,8 @@
 
 package framework
 
+import "knative.dev/pkg/apis"
+
 // BaseConfig defines the configuration parameters
 // controlling the framework behavior.
 type BaseConfig struct {
@@ -30,4 +32,8 @@ type Requirements struct {
 	Must   bool `desc:"run test mark as Must. Default is true"`
 	Should bool `desc:"run test mark as Should. Default is true"`
 	May    bool `desc:"run test mark as May. Default is true"`
+}
+
+func (c *BaseConfig) Validate() *apis.FieldError {
+	return nil
 }

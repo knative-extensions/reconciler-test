@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-package github
+package networking
 
 import (
 	"knative.dev/pkg/apis"
 	"knative.dev/reconciler-test/pkg/config"
 )
 
-// Config represents the github source configuration
+// Config is the Networking configuration
 type Config struct {
 	config.VersionSpec
+	Name string `desc:"the name of the networking layer"`
 }
 
 func (c *Config) Validate() *apis.FieldError {
-	return c.VersionSpec.Validate()
+	errs := c.VersionSpec.Validate()
+
+	// TODO: other networking layer
+	if c.Name != "kourier" {
+		errs = apis.ErrInvalidValue("c.Name", "name").Also(errs)
+	}
+	return errs
 }

@@ -59,9 +59,8 @@ type sequenceStepperComponent struct {
 
 var _ framework.Component = (*sequenceStepperComponent)(nil)
 
-// Scope returns the component scope
-func (s *sequenceStepperComponent) Scope() framework.ComponentScope {
-	return framework.ComponentScopeResource
+func (s *sequenceStepperComponent) QName() string {
+	return "components/sqequencestepper"
 }
 
 func (s *sequenceStepperComponent) Required(rc framework.ResourceContext, cfg config.Config) {

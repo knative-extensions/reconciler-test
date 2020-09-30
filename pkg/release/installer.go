@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package github
+package release
 
 import (
-	"knative.dev/pkg/apis"
-	"knative.dev/reconciler-test/pkg/config"
+	"fmt"
+
+	"knative.dev/reconciler-test/pkg/framework"
+	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-// Config represents the github source configuration
-type Config struct {
-	config.VersionSpec
-}
+func (r Release) Install(rc framework.ResourceContext, version string) {
+	baseArtifactURL := fmt.Sprintf("https://github.com/%s/%s/releases/download/v%s/", r.Owner, r.Repository, version)
 
-func (c *Config) Validate() *apis.FieldError {
-	return c.VersionSpec.Validate()
+	for _, artifact := range r.Artifacts {
+		rc.Apply(manifest.FromURL(fmt.Sprintf("%s/%s", baseArtifactURL, artifact)))
+	}
 }

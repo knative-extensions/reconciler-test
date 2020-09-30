@@ -16,9 +16,16 @@
 
 package sources
 
-import "knative.dev/reconciler-test/pkg/components/eventing/sources/github"
+import (
+	"knative.dev/pkg/apis"
+	"knative.dev/reconciler-test/pkg/components/eventing/sources/github"
+)
 
-// SourcesConfig is the aggregation of eventing sources configurations.
-type SourcesConfig struct {
-	GitHub github.GithubConfig
+// Config is the aggregation of eventing sources configurations.
+type Config struct {
+	GitHub github.Config
+}
+
+func (c *Config) Validate() *apis.FieldError {
+	return nil
 }

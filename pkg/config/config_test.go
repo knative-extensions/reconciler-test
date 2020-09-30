@@ -18,6 +18,8 @@ package config
 
 import (
 	"testing"
+
+	"knative.dev/pkg/apis"
 )
 
 type UpstreamStruct struct {
@@ -39,97 +41,63 @@ type downsstreamStruct struct {
 	Field2 string
 }
 
+func (*UpstreamStruct) Validate() *apis.FieldError {
+	return nil
+}
+
+func (*UpstreamStruct1) Validate() *apis.FieldError {
+	return nil
+}
+
+func (*UpstreamStruct2) Validate() *apis.FieldError {
+	return nil
+}
+
+func (*downsstreamStruct) Validate() *apis.FieldError {
+	return nil
+}
+
 func TestGetConfig(t *testing.T) {
+	v1 := downsstreamStruct{
+		UpstreamStruct: UpstreamStruct{},
+		Field2:         "value2",
+	}
+
+	v2 := downsstreamStruct{
+		UpstreamStruct: UpstreamStruct{},
+		Field2:         "value2",
+	}
+
+	v3 := downsstreamStruct{
+		UpstreamStruct: UpstreamStruct{
+			Field1: "value1",
+		},
+		Field2: "value2",
+	}
+
 	tests := []struct {
 		name     string
-		value    downsstreamStruct
+		value    Config
 		path     string
-		expected interface{}
+		expected Config
 	}{
 		{
-			name: "empty path",
-			value: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{},
-				Field2:         "value2",
-			},
-			path: "",
-			expected: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{},
-				Field2:         "value2",
-			},
+			name:     "empty path",
+			value:    &v1,
+			path:     "",
+			expected: &v1,
 		},
 		{
-			name: "path to nothing",
-			value: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{},
-				Field2:         "value2",
-			},
+			name:     "path to nothing",
+			value:    &v2,
 			path:     "path/to/nothing",
 			expected: nil,
 		},
 		{
-			name: "top-level field",
-			value: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{},
-				Field2:         "value2",
-			},
-			path:     "field2",
-			expected: "value2",
-		},
-		{
-			name: "nested one level, anonymous",
-			value: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{
-					Field1: "value1",
-				},
-				Field2: "value2",
-			},
-			path:     "field1",
-			expected: "value1",
-		},
-		{
-			name: "nested one level, return anonymous config",
-			value: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{
-					Field1: "value1",
-				},
-				Field2: "value2",
-			},
-			path: "UpstreamStruct",
-			expected: UpstreamStruct{
-				Field1: "value1",
-			},
-		},
-		{
-			name: "nested two levels, not anonymous",
-			value: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{
-					Field1: "value1",
-					Nested1: UpstreamStruct1{
-						Field1_1: "value3",
-					},
-				},
-				Field2: "value2",
-			},
-			path:     "nested1/field1_1",
-			expected: "value3",
-		},
-		{
-			name: "nested three levels, not anonymous, anonymous",
-			value: downsstreamStruct{
-				UpstreamStruct: UpstreamStruct{
-					Field1: "value1",
-					Nested1: UpstreamStruct1{
-						Field1_1: "value3",
-						UpstreamStruct2: UpstreamStruct2{
-							Field2_1: "value4",
-						},
-					},
-				},
-				Field2: "value2",
-			},
-			path:     "nested1/field2_1",
-			expected: "value4",
+			name:     "nested one level, return anonymous config",
+			value:    &v3,
+			path:     "UpstreamStruct",
+			expected: &v3.UpstreamStruct,
 		},
 	}
 
@@ -139,7 +107,7 @@ func TestGetConfig(t *testing.T) {
 			actual := GetConfig(tc.value, tc.path)
 
 			if actual != tc.expected {
-				t.Fatalf("expected %v, got %v", tc.expected, actual)
+				t.Fatalf("expected %+v, got %+v", tc.expected, actual)
 			}
 		})
 

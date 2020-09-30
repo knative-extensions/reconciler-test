@@ -17,6 +17,7 @@
 package manifest
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -38,6 +39,15 @@ func (p *urlProvider) GetPath() (string, error) {
 		}
 		defer resp.Body.Close()
 
+		buffer, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("%d %s", resp.StatusCode, buffer)
+		}
+
 		u, _ := url.Parse(p.url) // no error (see isURL)
 		stem := strings.TrimRight(path.Base(u.Path), ".yaml")
 
@@ -46,11 +56,6 @@ func (p *urlProvider) GetPath() (string, error) {
 			return "", err
 		}
 		defer f.Close()
-
-		buffer, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return "", err
-		}
 
 		_, err = f.Write(buffer)
 		if err != nil {
