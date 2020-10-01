@@ -126,7 +126,7 @@ func (t *test) Run(fn func(TestContext)) {
 	}
 
 	// TODO: validate feature to match DNS-1123 label
-	namespace := helpers.AppendRandomString(strings.ToLower(t.feature))
+	namespace := helpers.AppendRandomString(strings.ToLower(t.t.Name()))
 	ctx := withInjection(context.Background())
 
 	tc := &testContextImpl{

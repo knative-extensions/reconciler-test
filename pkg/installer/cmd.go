@@ -13,17 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package pkg
+package installer
 
 import (
-	"knative.dev/reconciler-test/pkg/components"
-	"knative.dev/reconciler-test/pkg/framework"
+	"os"
+	"os/exec"
+	"strings"
 )
 
-// Config aggregates all the known configuration parameters
-// Can be embedded by downstream projects.
-type AllConfig struct {
-	framework.BaseConfig
-	Components components.ComponentConfig
+// Helper functions to run shell commands.
+
+func cmd(dir string, cmdLine string) *exec.Cmd {
+	cmdSplit := strings.Split(cmdLine, " ")
+	cmd := cmdSplit[0]
+	args := cmdSplit[1:]
+	c := exec.Command(cmd, args...)
+	c.Dir = dir
+	return c
+}
+
+func runCmd(cmdLine string) (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	cmd := cmd(dir, cmdLine)
+
+	cmdOut, err := cmd.CombinedOutput()
+	return string(cmdOut), err
 }

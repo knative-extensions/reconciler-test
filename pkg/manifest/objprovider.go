@@ -14,16 +14,34 @@
  * limitations under the License.
  */
 
-package pkg
+package manifest
 
 import (
-	"knative.dev/reconciler-test/pkg/components"
-	"knative.dev/reconciler-test/pkg/framework"
+	"io/ioutil"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 )
 
-// Config aggregates all the known configuration parameters
-// Can be embedded by downstream projects.
-type AllConfig struct {
-	framework.BaseConfig
-	Components components.ComponentConfig
+type objProvider struct {
+	obj runtime.Object
+}
+
+func (p *objProvider) GetPath() (string, error) {
+	f, err := ioutil.TempFile("", "manifest-*.yaml")
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	serializer := json.NewSerializerWithOptions(json.DefaultMetaFactory, nil, nil, json.SerializerOptions{Yaml: true})
+	err = serializer.Encode(p.obj, f)
+	if err != nil {
+		return "", nil
+	}
+	return f.Name(), nil
+}
+
+func (p *objProvider) Recursive() bool {
+	return false
 }

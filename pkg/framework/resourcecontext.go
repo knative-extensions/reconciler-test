@@ -19,10 +19,13 @@ package framework
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"knative.dev/reconciler-test/pkg/installer"
 
 	"knative.dev/reconciler-test/pkg/manifest"
 
@@ -40,11 +43,59 @@ import (
 type ResourceContext interface {
 	context.Context
 
+	// --- Context getters
+
 	// Namespace returns the current namespace
 	Namespace() string
 
 	// ImageName returns the image name corresponding to the given Go package name
 	ImageName(packageName string) string
+
+	// --- Context operations
+
+	// Apply applies the manifest returned by provider.
+	// When data is set, it instantiates the manifest template
+	// before applying it.
+	// When the manifest includes import path references, it
+	// builds them into Go binaries, containerizes them, publishes them,
+	// before applying it. Current limitation: can only be used with local, non-templated manifest.
+	//
+	// The test is marked as Fail when Apply fails
+	Apply(provider manifest.Provider, data ...interface{})
+
+	// ApplyOrError applies the manifest returned by provider. after
+	// When data is set, it instantiates the manifest template
+	// before applying it.
+	// When the manifest includes import path references, it
+	// builds them into Go binaries, containerizes them, publishes them,
+	// before applying it. Current limitation: can only be used with local, non-templated manifest.
+	//
+	// Returns an error when ApplyOrError fails
+	ApplyOrError(provider manifest.Provider, data ...interface{}) error
+
+	// Delete deletes the resources returned by provider.
+	// When data is set, it instantiates the manifest template
+	// before deleting it.
+	// The test is marked as Fail when Delete fails
+	Delete(provider manifest.Provider, data ...interface{})
+
+	// DeleteOrError deletes the  resources returned by provider.
+	// When data is set, it instantiates the manifest template
+	// before deleting it.
+	// Returns an error when DeleteOrError fails
+	DeleteOrError(provider manifest.Provider, data ...interface{}) error
+
+	// --- Logging, Failures. Subset of testing.T
+
+	Helper()
+	Log(args ...interface{})
+	Logf(format string, args ...interface{})
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+
+	// --- Deprecation
 
 	// Create a resource from the given object (or fail)
 	CreateOrFail(obj runtime.Object)
@@ -62,22 +113,6 @@ type ResourceContext interface {
 	// 5. pathname = combination of all previous cases, the string can contain
 	//    multiple records (file, directory or url) separated by comma
 	CreateFromURIOrFail(uri string, recursive bool)
-
-	// Delete deletes the resource specified in the given YAML
-	DeleteFromYAML(yaml string) error
-
-	// Delete deletes the resource specified in the given YAML (or fail)
-	DeleteFromYAMLOrFail(yaml string)
-
-	// TODO: Get, Update, Apply
-
-	// --- Failures. Subset of testing.T
-
-	Helper()
-	Error(args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatal(args ...interface{})
-	Fatalf(format string, args ...interface{})
 }
 
 // --- Default implementation
@@ -102,6 +137,75 @@ func (c *resourceContextImpl) ImageName(packageName string) string {
 	parts := strings.Split(packageName, "/")
 	return fmt.Sprintf("%s/%s", repository, parts[len(parts)-1])
 }
+
+func (c *resourceContextImpl) Apply(provider manifest.Provider, data ...interface{}) {
+	c.Helper()
+	err := c.ApplyOrError(provider, data...)
+	if err != nil {
+		c.Fatal(err)
+	}
+}
+
+func (c *resourceContextImpl) ApplyOrError(provider manifest.Provider, data ...interface{}) error {
+	c.Helper()
+	path, err := provider.GetPath()
+	if err != nil {
+		return err
+	}
+
+	if len(data) > 0 {
+		path, err = installer.ParseTemplates(path, data)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Attempt to run ko apply -f path
+	c.Logf("running ko apply -f %s\n", path)
+	o, err := installer.KoApply(path)
+	if err != nil {
+		// We care about the command output more than the exit code
+		c.Logf("running ko apply -f %s\n", path)
+
+		return errors.New(o)
+	}
+	return nil
+}
+
+// Delete deletes the resources returned by provider.
+// The test is marked as Fail when Delete fails
+func (c *resourceContextImpl) Delete(provider manifest.Provider, data ...interface{}) {
+	err := c.DeleteOrError(provider, data...)
+	if err != nil {
+		c.Fatal(err)
+	}
+}
+
+// DeleteOrError deletes the  resources returned by provider.
+// Returns an error when DeleteOrError fails
+func (c *resourceContextImpl) DeleteOrError(provider manifest.Provider, data ...interface{}) error {
+	path, err := provider.GetPath()
+	if err != nil {
+		return err
+	}
+
+	if len(data) > 0 {
+		path, err = installer.ParseTemplates(path, data)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Attempt to run ko delete -f path
+	o, err := installer.KoDelete(path)
+	if err != nil {
+		// We care about the command output more than the exit code
+		return errors.New(o)
+	}
+	return nil
+}
+
+// --- Deprecated
 
 func (c *resourceContextImpl) CreateOrFail(obj runtime.Object) {
 	c.Helper()
@@ -203,6 +307,14 @@ func (c *resourceContextImpl) Fatal(args ...interface{}) {
 
 func (c *resourceContextImpl) Fatalf(format string, args ...interface{}) {
 	c.Errorf(format, args...)
+}
+
+func (c *resourceContextImpl) Log(args ...interface{}) {
+	fmt.Println(args...)
+}
+
+func (c *resourceContextImpl) Logf(format string, args ...interface{}) {
+	fmt.Printf(format, args...)
 }
 
 // --- context.Context

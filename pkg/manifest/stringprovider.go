@@ -14,16 +14,33 @@
  * limitations under the License.
  */
 
-package pkg
+package manifest
 
 import (
-	"knative.dev/reconciler-test/pkg/components"
-	"knative.dev/reconciler-test/pkg/framework"
+	"io/ioutil"
 )
 
-// Config aggregates all the known configuration parameters
-// Can be embedded by downstream projects.
-type AllConfig struct {
-	framework.BaseConfig
-	Components components.ComponentConfig
+type stringProvider struct {
+	str string
+}
+
+func (p *stringProvider) GetPath() (string, error) {
+	// TODO: check string is valid YAML?
+
+	f, err := ioutil.TempFile("", "manifest-*.yaml")
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(p.str)
+	if err != nil {
+		return "", err
+	}
+
+	return f.Name(), nil
+}
+
+func (p *stringProvider) Recursive() bool {
+	return false
 }
