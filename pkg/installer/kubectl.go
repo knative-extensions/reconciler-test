@@ -20,37 +20,14 @@ import (
 	"strings"
 )
 
-// Use ko to publish the image.
-func KoPublish(path string) (string, error) {
-	out, err := runCmd(fmt.Sprintf("ko publish %s", path))
-	if err != nil {
-		return "", err
-	}
-	return out, nil
-}
-
-// Use ko to apply filename
-func KoApply(filename string, flags ...string) (string, error) {
+// Use ko to get a resource
+func KubectlGet(resource, name string, flags ...string) (string, error) {
 	extra := ""
 	if len(flags) > 0 {
 		extra = " " + strings.Join(flags, " ")
 	}
 
-	out, err := runCmd(fmt.Sprintf("ko apply -f %s%s", filename, extra))
-	if err != nil {
-		return out, err
-	}
-	return out, nil
-}
-
-// Use ko to delete filename
-func KoDelete(filename string, flags ...string) (string, error) {
-	extra := ""
-	if len(flags) > 0 {
-		extra = " " + strings.Join(flags, " ")
-	}
-
-	out, err := runCmd(fmt.Sprintf("ko delete -f %s%s", filename, extra))
+	out, err := runCmd(fmt.Sprintf("kubectl get %s %s%s -oyaml", resource, name, extra))
 	if err != nil {
 		return out, err
 	}
