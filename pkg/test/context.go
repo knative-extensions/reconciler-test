@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"flag"
 	"reflect"
 	"testing"
 
@@ -69,6 +70,23 @@ func (b *BaseContext) Setup(c Context, t *testing.T) {
 func (b *BaseContext) Copy() Context {
 	cpy := *b
 	return &cpy
+}
+
+// AddFlags adds requirement and feature state flags to the FlagSet.
+// The flagset will modify this context instance
+//
+// Calling AddFlags will also default the requirement level and
+// feature states to test everything
+func (b *BaseContext) AddFlags(fs *flag.FlagSet) {
+	if b.RequirementLevels == 0 {
+		b.RequirementLevels = requirement.All
+	}
+	if b.FeatureStates == 0 {
+		b.FeatureStates = feature.All
+	}
+
+	b.RequirementLevels.AddFlags(fs)
+	b.FeatureStates.AddFlags(fs)
 }
 
 // Must invokes f as a subtest if the context has the requirement level MUST

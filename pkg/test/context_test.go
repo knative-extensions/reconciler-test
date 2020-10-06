@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"flag"
 	"os"
 	"os/exec"
 	"testing"
@@ -31,6 +32,25 @@ type mockContext struct {
 
 func (c *mockContext) Copy() Context {
 	return c
+}
+
+func TestFlags(t *testing.T) {
+	ctx := mockContext{}
+
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	ctx.AddFlags(fs)
+
+	if err := fs.Parse(nil); err != nil {
+		t.Fatal("failed to parse", err)
+	}
+
+	if got, want := ctx.RequirementLevels, requirement.All; got != want {
+		t.Errorf("wrong requirement level - got: %s want: %s", got, want)
+	}
+
+	if got, want := ctx.FeatureStates, feature.All; got != want {
+		t.Errorf("wrong requirement level - got: %s want: %s", got, want)
+	}
 }
 
 func TestRunInvocation(t *testing.T) {
