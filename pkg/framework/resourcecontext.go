@@ -79,11 +79,21 @@ type ResourceContext interface {
 	// The test is marked as Fail when Delete fails
 	Delete(provider manifest.Provider, data ...interface{})
 
-	// DeleteOrError deletes the  resources returned by provider.
+	// DeleteOrError deletes the resources returned by provider.
 	// When data is set, it instantiates the manifest template
 	// before deleting it.
 	// Returns an error when DeleteOrError fails
 	DeleteOrError(provider manifest.Provider, data ...interface{}) error
+
+	// Get fetches the resource of the given name and populates object.
+	// Returns object so that Get can be used in Gomega assertions.
+	// The test is marked as Fail when Get fails
+	Get(resource string, name string, object runtime.Object) runtime.Object
+
+	// GetOrError fetches the resource of the given name and populates object.
+	// Returns object so that GetOrError can be used in Gomega assertions.
+	// Returns an error when GetOrError fails
+	GetOrError(resource string, name string, object runtime.Object) (runtime.Object, error)
 
 	// --- Logging, Failures. Subset of testing.T
 
@@ -160,20 +170,20 @@ func (c *resourceContextImpl) ApplyOrError(provider manifest.Provider, data ...i
 		}
 	}
 
-	// Attempt to run ko apply -f path
-	c.Logf("running ko apply -f %s\n", path)
-	o, err := installer.KoApply(path)
+	var flags []string
+	if c.namespace != "" {
+		flags = append(flags, "-n", c.namespace)
+	}
+
+	c.Logf("running ko apply -f %s %s", path, strings.Join(flags, " "))
+	o, err := installer.KoApply(path, flags...)
 	if err != nil {
 		// We care about the command output more than the exit code
-		c.Logf("running ko apply -f %s\n", path)
-
 		return errors.New(o)
 	}
 	return nil
 }
 
-// Delete deletes the resources returned by provider.
-// The test is marked as Fail when Delete fails
 func (c *resourceContextImpl) Delete(provider manifest.Provider, data ...interface{}) {
 	err := c.DeleteOrError(provider, data...)
 	if err != nil {
@@ -181,8 +191,6 @@ func (c *resourceContextImpl) Delete(provider manifest.Provider, data ...interfa
 	}
 }
 
-// DeleteOrError deletes the  resources returned by provider.
-// Returns an error when DeleteOrError fails
 func (c *resourceContextImpl) DeleteOrError(provider manifest.Provider, data ...interface{}) error {
 	path, err := provider.GetPath()
 	if err != nil {
@@ -196,13 +204,50 @@ func (c *resourceContextImpl) DeleteOrError(provider manifest.Provider, data ...
 		}
 	}
 
-	// Attempt to run ko delete -f path
-	o, err := installer.KoDelete(path)
+	var flags []string
+	if c.namespace != "" {
+		flags = append(flags, "-n", c.namespace)
+	}
+
+	c.Logf("running ko delete -f %s %s", path, strings.Join(flags, " "))
+	o, err := installer.KoDelete(path, flags...)
 	if err != nil {
 		// We care about the command output more than the exit code
 		return errors.New(o)
 	}
 	return nil
+}
+
+func (c *resourceContextImpl) Get(resource string, name string, obj runtime.Object) runtime.Object {
+	c.Helper()
+	obj, err := c.GetOrError(resource, name, obj)
+	if err != nil {
+		c.Error(err)
+	}
+	return obj
+}
+
+func (c *resourceContextImpl) GetOrError(resource string, name string, obj runtime.Object) (runtime.Object, error) {
+	c.Helper()
+
+	// REVISIT: for now using `kubectl` to avoid dealing with namespaced-scoped vs cluster-scoped resources
+
+	var flags []string
+	if c.namespace != "" {
+		flags = append(flags, "-n", c.namespace)
+	}
+
+	c.Logf("running ko get %s %s %s", resource, name, strings.Join(flags, " "))
+	o, err := installer.KubectlGet(resource, name, flags...)
+	if err != nil {
+		return nil, errors.New(o)
+	}
+
+	decoder := yaml.NewYAMLToJSONDecoder(strings.NewReader(o))
+	if err := decoder.Decode(&obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
 // --- Deprecated
@@ -314,7 +359,7 @@ func (c *resourceContextImpl) Log(args ...interface{}) {
 }
 
 func (c *resourceContextImpl) Logf(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	c.Log(fmt.Sprintf(format, args...))
 }
 
 // --- context.Context
