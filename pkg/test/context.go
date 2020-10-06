@@ -26,21 +26,22 @@ import (
 	"knative.dev/reconciler-test/pkg/test/requirement"
 )
 
-// Context interface defines the methods required by a test context
-type Context interface {
-	// Copy should return a copy of the existing context
-	Copy() Context
+// C interface defines the methods required by T to clone and
+// setup subtests
+type C interface {
+	// Copy should return a copy of T
+	Copy() C
 
 	// Setup should initialize the context with a test
 	//
 	// Note: implementations shouldn't need to implement this
-	// if they embed a BaseContext struct
-	Setup(c Context, t *testing.T)
+	// if they embed a T struct
+	Setup(c C, t *testing.T)
 }
 
-// BaseContext extends testing.T with additional behaviour
+// T extends testing.T with additional behaviour
 // to test various requirement levels & feature states
-type BaseContext struct {
+type T struct {
 	*testing.T
 
 	RequirementLevels requirement.Levels
@@ -55,20 +56,20 @@ type BaseContext struct {
 	// ctx.Alpha("name", func(ctx *SomeTestContext) {...})
 	//
 	// This helps avoid excessive casting in downstream tests
-	c Context
+	c C
 }
 
-var _ Context = (*BaseContext)(nil)
+var _ C = (*T)(nil)
 
-// Setup implements the Context interface
-func (b *BaseContext) Setup(c Context, t *testing.T) {
-	b.c = c
-	b.T = t
+// Setup implements the C interface
+func (t *T) Setup(c C, test *testing.T) {
+	t.c = c
+	t.T = test
 }
 
-// Copy implements the Context interface
-func (b *BaseContext) Copy() Context {
-	cpy := *b
+// Copy implements the C interface
+func (t *T) Copy() C {
+	cpy := *t
 	return &cpy
 }
 
@@ -77,129 +78,129 @@ func (b *BaseContext) Copy() Context {
 //
 // Calling AddFlags will also default the requirement level and
 // feature states to test everything
-func (b *BaseContext) AddFlags(fs *flag.FlagSet) {
-	if b.RequirementLevels == 0 {
-		b.RequirementLevels = requirement.All
+func (t *T) AddFlags(fs *flag.FlagSet) {
+	if t.RequirementLevels == 0 {
+		t.RequirementLevels = requirement.All
 	}
-	if b.FeatureStates == 0 {
-		b.FeatureStates = feature.All
+	if t.FeatureStates == 0 {
+		t.FeatureStates = feature.All
 	}
 
-	b.RequirementLevels.AddFlags(fs)
-	b.FeatureStates.AddFlags(fs)
+	t.RequirementLevels.AddFlags(fs)
+	t.FeatureStates.AddFlags(fs)
 }
 
 // Must invokes f as a subtest if the context has the requirement level MUST
-func (b *BaseContext) Must(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeLevel(requirement.Must, name, f)
+func (t *T) Must(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeLevel(requirement.Must, name, f)
 }
 
 // MustNot invokes f as a subtest only if the context has the requirement level MUST NOT
-func (b *BaseContext) MustNot(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeLevel(requirement.MustNot, name, f)
+func (t *T) MustNot(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeLevel(requirement.MustNot, name, f)
 }
 
 // Should invokes f as a subtest only if the context has the requirement level SHOULD
-func (b *BaseContext) Should(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeLevel(requirement.Should, name, f)
+func (t *T) Should(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeLevel(requirement.Should, name, f)
 }
 
 // ShouldNot invokes f as a subtest only if the context has the requirement level SHOULD NOT
-func (b *BaseContext) ShouldNot(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeLevel(requirement.ShouldNot, name, f)
+func (t *T) ShouldNot(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeLevel(requirement.ShouldNot, name, f)
 }
 
 // May invokes f as a subtest only if the context has the requirement level MAY
-func (b *BaseContext) May(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeLevel(requirement.May, name, f)
+func (t *T) May(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeLevel(requirement.May, name, f)
 }
 
 // Alpha invokes f as a subtest only if the context has the 'Alpha' feature state enabled
-func (b *BaseContext) Alpha(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeFeature(feature.Alpha, name, f)
+func (t *T) Alpha(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeFeature(feature.Alpha, name, f)
 }
 
 // Beta invokes f as a subtest only if the context has the 'Beta' feature state enabled
-func (b *BaseContext) Beta(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeFeature(feature.Beta, name, f)
+func (t *T) Beta(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeFeature(feature.Beta, name, f)
 }
 
 // Stable invokes f as a subtest only if the context has the 'Stable' feature state enabled
-func (b *BaseContext) Stable(name string, f interface{}) bool {
-	b.Helper()
-	return b.invokeFeature(feature.Stable, name, f)
+func (t *T) Stable(name string, f interface{}) bool {
+	t.Helper()
+	return t.invokeFeature(feature.Stable, name, f)
 }
 
 // ObjectNameForTest returns a unique resource name based on the test name
-func (b *BaseContext) ObjectNameForTest() string {
-	return helpers.ObjectNameForTest(b.T)
+func (t *T) ObjectNameForTest() string {
+	return helpers.ObjectNameForTest(t.T)
 }
 
 // Run invokes f as a subtest
-func (b *BaseContext) Run(name string, f interface{}) bool {
-	b.Helper()
-	b.validateCallback(f)
+func (t *T) Run(name string, f interface{}) bool {
+	t.Helper()
+	t.validateCallback(f)
 
-	return b.T.Run(name, func(t *testing.T) {
-		b.invoke(f, t)
+	return t.T.Run(name, func(test *testing.T) {
+		t.invoke(f, test)
 	})
 }
 
-func (b *BaseContext) invokeFeature(state feature.States, name string, f interface{}) bool {
-	b.Helper()
-	b.validateCallback(f)
+func (t *T) invokeFeature(state feature.States, name string, f interface{}) bool {
+	t.Helper()
+	t.validateCallback(f)
 
-	return b.T.Run(name, func(t *testing.T) {
-		if b.FeatureStates&state == 0 {
-			t.Skipf("%s features not enabled for testing", state)
+	return t.T.Run(name, func(test *testing.T) {
+		if t.FeatureStates&state == 0 {
+			test.Skipf("%s features not enabled for testing", state)
 		}
-		b.invoke(f, t)
+		t.invoke(f, test)
 	})
 }
 
-func (b *BaseContext) invokeLevel(levels requirement.Levels, name string, f interface{}) bool {
-	b.Helper()
-	b.validateCallback(f)
+func (t *T) invokeLevel(levels requirement.Levels, name string, f interface{}) bool {
+	t.Helper()
+	t.validateCallback(f)
 
-	return b.T.Run(name, func(t *testing.T) {
-		if b.RequirementLevels&levels == 0 {
-			t.Skipf("%s requirement not enabled for testing", levels)
+	return t.T.Run(name, func(test *testing.T) {
+		if t.RequirementLevels&levels == 0 {
+			test.Skipf("%s requirement not enabled for testing", levels)
 		}
 
-		b.invoke(f, t)
+		t.invoke(f, test)
 	})
 }
 
-func (b *BaseContext) invoke(f interface{}, t *testing.T) {
-	newCtx := b.c.Copy()
-	newCtx.Setup(newCtx, t)
+func (t *T) invoke(f interface{}, test *testing.T) {
+	newCtx := t.c.Copy()
+	newCtx.Setup(newCtx, test)
 
 	in := []reflect.Value{reflect.ValueOf(newCtx)}
 	reflect.ValueOf(f).Call(in)
 }
 
-func (b *BaseContext) validateCallback(f interface{}) {
-	b.Helper()
+func (t *T) validateCallback(f interface{}) {
+	t.Helper()
 
 	if f == nil {
-		b.Fatal("callback should not be nil")
+		t.Fatal("callback should not be nil")
 	}
 
 	fType := reflect.TypeOf(f)
 	if fType.Kind() != reflect.Func {
-		b.Fatal("callback should be a function")
+		t.Fatal("callback should be a function")
 	}
 
-	contextType := reflect.TypeOf(b.c)
+	contextType := reflect.TypeOf(t.c)
 
 	if fType.NumIn() != 1 || fType.In(0) != contextType {
-		b.Fatalf("callback should take a single argument of %v", contextType)
+		t.Fatalf("callback should take a single argument of %v", contextType)
 	}
 }

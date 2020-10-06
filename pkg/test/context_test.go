@@ -27,10 +27,10 @@ import (
 )
 
 type mockContext struct {
-	BaseContext
+	T
 }
 
-func (c *mockContext) Copy() Context {
+func (c *mockContext) Copy() C {
 	return c
 }
 
