@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-// Use ko to get a resource
+// Use kubectl to get a resource
 func KubectlGet(resource, name string, flags ...string) (string, error) {
 	extra := ""
 	if len(flags) > 0 {
@@ -28,6 +28,20 @@ func KubectlGet(resource, name string, flags ...string) (string, error) {
 	}
 
 	out, err := runCmd(fmt.Sprintf("kubectl get %s %s%s -oyaml", resource, name, extra))
+	if err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+// Use kubectl to patch a resource
+func KubectlPatch(resource, name string, flags ...string) (string, error) {
+	extra := ""
+	if len(flags) > 0 {
+		extra = " " + strings.Join(flags, " ")
+	}
+
+	out, err := runCmd(fmt.Sprintf("kubectl patch %s %s%s -oyaml", resource, name, extra))
 	if err != nil {
 		return out, err
 	}

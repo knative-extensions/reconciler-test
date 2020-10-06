@@ -19,6 +19,10 @@ package networking
 import (
 	"path"
 
+	"knative.dev/reconciler-test/pkg/installer"
+
+	"github.com/blang/semver"
+
 	"knative.dev/reconciler-test/pkg/release"
 
 	corev1 "k8s.io/api/core/v1"
@@ -66,10 +70,42 @@ func (s *networkingComponent) Install(rc framework.ResourceContext, gcfg config.
 		rc.Errorf("invalid configuration type for %s", s.QName())
 	}
 
+	// TODO: check prerequisites (serving)
+
 	if cfg.Version == "devel" {
 		rc.Apply(manifest.FromURL(path.Join(cfg.Path, "config")))
 		return
 	}
 
 	kourierRelease.Install(rc, cfg.Version)
+
+	v, _ := semver.Parse(cfg.Version)
+	if hasBuild(v.Build, "kind") {
+		// expose kourier service via nodeport
+		rc.Apply(manifest.FromString(nodePortService))
+
+		installer.KubectlPatch("configmap", "config-network",
+			"-n", "knative-serving",
+			"--type", "merge",
+			"--patch", `{"data":{"ingress.class":"kourier.ingress.networking.knative.dev"}}`)
+
+		installer.KubectlPatch("configmap", "config-domain",
+			"-n", "knative-serving",
+			"--type", "merge",
+			"--patch", `{"data":{"127.0.0.1.nip.io":""}}`)
+	}
+
+}
+
+func hasBuild(build []string, name string) bool {
+	if build == nil {
+		return false
+	}
+
+	for _, b := range build {
+		if b == name {
+			return true
+		}
+	}
+	return false
 }

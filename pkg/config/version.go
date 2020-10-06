@@ -32,6 +32,7 @@ type VersionSpec struct {
 	// ActualVersion is the version of the deployed component
 	ActualVersion string `flag:"-"`
 
+	// Parsed Required
 	vrange semver.Range `flag:"-"`
 }
 
@@ -60,7 +61,7 @@ func (spec *VersionSpec) Validate() *apis.FieldError {
 			return apis.ErrGeneric(fmt.Sprintf("mismatch required and resolved version (%s != %s)", spec.Version, spec.Require), "require", "version")
 
 		}
-		spec.Version = spec.Require
+		spec.Version = StripBuild(spec.Require)
 		return nil
 	}
 
@@ -117,4 +118,14 @@ func (spec *VersionSpec) Compare(version string) CompareType {
 	return CompareOutOfRange
 
 	return CompareEmptyVersion
+}
+
+// StripBuild returns version without build meta-data
+func StripBuild(version string) string {
+	v, err := semver.Parse(version)
+	if err != nil {
+		panic(err)
+	}
+	v.Build = nil
+	return v.String()
 }
