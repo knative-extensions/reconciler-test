@@ -43,24 +43,6 @@ const (
 	// May means that an item is truly optional
 	May
 
-	// TODO(dprotaso) Do we want these aliases?
-	// // Required means that the definition is an absolute requirement of the specification.
-	// Required = Must
-
-	// // Shall means that the definition is an absolute requirement of the specification.
-	// Shall = Must
-
-	// // ShallNot means that the definition is an absolute prohibition of the specification.
-	// ShallNot = MustNot
-
-	// // Recommended means that there may exist valid reasons in particular circumstances to
-	// // ignore a particular item
-	// Recommended = Should
-
-	// // NotRecommended means that there may exist valid reasons in particular circumstances when the
-	// // particular behavior is acceptable or even useful
-	// NotRecommended = ShouldNot
-
 	// All flag enables all requirement levels
 	All = Must | MustNot | Should | ShouldNot | May
 )
