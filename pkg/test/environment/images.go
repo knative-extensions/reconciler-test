@@ -40,7 +40,7 @@ func (i *Images) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&i.Tag, "env.image.tag", "latest", "Provide the version tag for the test images.")
 }
 
-func (i *Images) ImagePath(name string) string {
+func (i *Images) Path(name string) string {
 	tpl, err := template.New("image").Parse(i.Template)
 	if err != nil {
 		panic("could not parse image template: " + err.Error())

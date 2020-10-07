@@ -21,12 +21,12 @@ import (
 	"time"
 )
 
-type Spoofing struct {
+type Spoof struct {
 	RequestInterval time.Duration // SpoofRequestInterval is the interval between requests in SpoofingClient
 	RequestTimeout  time.Duration // SpoofRequestTimeout is the timeout for polling requests in SpoofingClient
 }
 
-func (s *Spoofing) AddFlags(fs *flag.FlagSet) {
+func (s *Spoof) AddFlags(fs *flag.FlagSet) {
 	fs.DurationVar(&s.RequestInterval, "env.spoof.interval", 1*time.Second,
 		"Provide an interval between requests for the SpoofingClient")
 
