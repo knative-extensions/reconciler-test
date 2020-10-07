@@ -79,24 +79,31 @@ func TestLevelInvocation(t *testing.T) {
 		{"ShouldNot", requirement.ShouldNot, (*mockContext).ShouldNot},
 		{"May", requirement.May, (*mockContext).May},
 
-		{"Must", requirement.All, (*mockContext).Must},
-		{"MustNot", requirement.All, (*mockContext).MustNot},
-		{"Should", requirement.All, (*mockContext).Should},
-		{"ShouldNot", requirement.All, (*mockContext).ShouldNot},
-		{"May", requirement.All, (*mockContext).May},
+		{"All Must", requirement.All, (*mockContext).Must},
+		{"All MustNot", requirement.All, (*mockContext).MustNot},
+		{"All Should", requirement.All, (*mockContext).Should},
+		{"All ShouldNot", requirement.All, (*mockContext).ShouldNot},
+		{"All May", requirement.All, (*mockContext).May},
 	}
 
 	for _, c := range cases {
 		t.Run(c.level.String(), func(t *testing.T) {
 			ctx := &mockContext{}
 			ctx.Setup(ctx, t)
-			ctx.RequirementLevels = c.level
 
 			invoked := false
-			c.f(ctx, "subtest", func(m *mockContext) {
-				invoked = true
-			})
+			subtest := func(m *mockContext) { invoked = true }
 
+			ctx.RequirementLevels = ^c.level
+			c.f(ctx, "off", subtest)
+			if invoked {
+				t.Errorf("unexpected invocation of %s method when invoked with requirements %s",
+					c.level, ctx.RequirementLevels)
+			}
+
+			invoked = false
+			ctx.RequirementLevels = c.level
+			c.f(ctx, "on", subtest)
 			if !invoked {
 				t.Errorf("level %s did not invoke %s", c.level, c.name)
 			}
@@ -114,22 +121,29 @@ func TestStateInvocation(t *testing.T) {
 		{"Beta", feature.Beta, (*mockContext).Beta},
 		{"Stable", feature.Stable, (*mockContext).Stable},
 
-		{"Alpha", feature.All, (*mockContext).Alpha},
-		{"Beta", feature.All, (*mockContext).Beta},
-		{"Stable", feature.All, (*mockContext).Stable},
+		{"All Alpha", feature.All, (*mockContext).Alpha},
+		{"All Beta", feature.All, (*mockContext).Beta},
+		{"All Stable", feature.All, (*mockContext).Stable},
 	}
 
 	for _, c := range cases {
 		t.Run(c.state.String(), func(t *testing.T) {
 			ctx := &mockContext{}
 			ctx.Setup(ctx, t)
-			ctx.FeatureStates = c.state
 
 			invoked := false
-			c.f(ctx, "subtest", func(m *mockContext) {
-				invoked = true
-			})
+			subtest := func(m *mockContext) { invoked = true }
 
+			ctx.FeatureStates = ^c.state
+			c.f(ctx, "off", subtest)
+			if invoked {
+				t.Errorf("unexpected invocation of %s method when invoked with states %s",
+					c.state, ctx.FeatureStates)
+			}
+
+			invoked = false
+			ctx.FeatureStates = c.state
+			c.f(ctx, "on", subtest)
 			if !invoked {
 				t.Errorf("state %s did not invoke %s", c.state, c.name)
 			}
@@ -168,7 +182,7 @@ func TestBadCallback(t *testing.T) {
 				return
 			}
 			// Anything but an exit code 1 is abnormal
-			// ie. 2 = something paniced
+			// ie. 2 = something panicked
 			t.Fatalf("process ran with err %v, want exit status 1", err)
 		})
 	}
