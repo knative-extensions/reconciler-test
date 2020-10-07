@@ -7,3 +7,4 @@ approvers:
 # copy the approvers to the reviewers list too.
 reviewers:
 - wg-leads
+- tayarani
