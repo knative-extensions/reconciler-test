@@ -25,6 +25,8 @@ import (
 
 type Levels uint8
 
+// Descriptions from: https://tools.ietf.org/html/rfc2119
+
 const (
 	// Must means that the definition is an absolute requirement of the specification.
 	Must Levels = 1 << iota

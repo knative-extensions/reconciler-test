@@ -30,7 +30,6 @@ import (
 type Cluster struct {
 	Name       string // K8s cluster (defaults to cluster in kubeconfig)
 	KubeConfig string // Path to kubeconfig (defaults to ./kube/config)
-	Namespace  string // K8s namespace (blank by default, to be overwritten by test suite)
 }
 
 func (s *Cluster) AddFlags(fs *flag.FlagSet) {
@@ -50,9 +49,6 @@ func (s *Cluster) AddFlags(fs *flag.FlagSet) {
 	// Allow for --kubeconfig on the cmd line to override the above logic
 	fs.StringVar(&s.KubeConfig, "env.cluster.kubeconfig", defaultKubeconfig,
 		"Provide the path to the `kubeconfig` file you'd like to use for these tests. The `current-context` will be used.")
-
-	fs.StringVar(&s.Namespace, "env.cluster.namespace", "",
-		"Provide the namespace you would like to use for these tests.")
 }
 
 func (c *Cluster) ClientConfig() *rest.Config {
