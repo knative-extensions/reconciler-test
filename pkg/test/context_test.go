@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package test_test
 
 import (
 	"flag"
@@ -22,11 +22,14 @@ import (
 	"os/exec"
 	"testing"
 
+	"knative.dev/reconciler-test/pkg/test"
 	"knative.dev/reconciler-test/pkg/test/feature"
 	"knative.dev/reconciler-test/pkg/test/requirement"
 )
 
-type mockContext struct{ T }
+type mockContext struct {
+	test.T
+}
 
 func TestFlags(t *testing.T) {
 	ctx := mockContext{}
@@ -49,7 +52,7 @@ func TestFlags(t *testing.T) {
 
 func TestRunInvocation(t *testing.T) {
 	ctx := &mockContext{}
-	Init(ctx, t)
+	test.Init(ctx, t)
 
 	invoked := false
 	ctx.Run("subtest", func(m *mockContext) {
@@ -83,7 +86,7 @@ func TestLevelInvocation(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.level.String(), func(t *testing.T) {
 			ctx := &mockContext{}
-			Init(ctx, t)
+			test.Init(ctx, t)
 
 			invoked := false
 			subtest := func(m *mockContext) { invoked = true }
@@ -123,7 +126,7 @@ func TestStateInvocation(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.state.String(), func(t *testing.T) {
 			ctx := &mockContext{}
-			Init(ctx, t)
+			test.Init(ctx, t)
 
 			invoked := false
 			subtest := func(m *mockContext) { invoked = true }
@@ -149,19 +152,19 @@ func TestBadCallback(t *testing.T) {
 	if os.Getenv("CRASH") == "1" {
 		t.Run("nil", func(t *testing.T) {
 			ctx := &mockContext{}
-			Init(ctx, t)
+			test.Init(ctx, t)
 			ctx.Run("subtest", nil)
 		})
 
 		t.Run("non-func", func(t *testing.T) {
 			ctx := &mockContext{}
-			Init(ctx, t)
+			test.Init(ctx, t)
 			ctx.Run("subtest", 1)
 		})
 
 		t.Run("bad-type", func(t *testing.T) {
 			ctx := &mockContext{}
-			Init(ctx, t)
+			test.Init(ctx, t)
 			ctx.Run("subtest", func(int) {})
 		})
 		return
@@ -187,26 +190,26 @@ type noEmbeddedT struct{}
 func TestBadInitParam(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
-			t.Error("Init should panic when passed a type that doesn't embed test.T")
+			t.Error("test.Init should panic when passed a type that doesn't embed test.T")
 		}
 	}()
-	Init(noEmbeddedT{}, t)
+	test.Init(noEmbeddedT{}, t)
 }
 
 type customSetup struct {
-	T
-	test *testing.T
+	test.T
+	setupArg *testing.T
 }
 
 func (c *customSetup) Setup(t *testing.T) {
-	c.test = t
+	c.setupArg = t
 }
 
 func TestCustomSetup(t *testing.T) {
 	cs := &customSetup{}
-	Init(cs, t)
+	test.Init(cs, t)
 
-	if cs.test != t {
+	if cs.setupArg != t {
 		t.Error("expected Setup to be called")
 	}
 }
