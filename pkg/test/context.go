@@ -38,6 +38,12 @@ import (
 //    environment.Cluster
 //  }
 //
+// Per test setup can be accomplished by adding a Setup(*testing.T) method
+//
+//  func (m *MyT) Setup(t *testing.T) {
+//    / * init some clients */
+//  }
+//
 // Authors should avoid globals and duplicate setup code by
 // leveraging this contextual test struct. This allows tests
 // to be authored in the following way:
@@ -52,9 +58,9 @@ import (
 //       t.Alpha("subfeature", func(t *MyT) {...}
 //   }
 //
-// Enabling subtest invocation requires implementing the interface C.
-// A default Setup(...) method is implemented by embedding test.T.
-// You only need to implement the Copy(...) method.
+// Enabling subtest invocation requires implementing the interface C
+// which requires a Copy() method
+//
 // Here's a basic example:
 //
 //   func (t *MyT) Copy() test.C {
@@ -92,15 +98,8 @@ type T struct {
 	RequirementLevels requirement.Levels
 	FeatureStates     feature.States
 
-	// Implemention note:
-	//
-	// To make authoring tests easier we want to support
-	// tests invocations
-	//
-	// ctx := SomeTestContext{...}
-	// ctx.Alpha("name", func(ctx *SomeTestContext) {...})
-	//
-	// This helps avoid excessive casting in downstream tests
+	// Implemention note: we need a reference to an interface
+	// so that calling Copy() copies the derived struct ie. MyT
 	self C
 }
 
@@ -109,18 +108,37 @@ type T struct {
 type C interface {
 	// Copy should return a copy of T
 	Copy() C
-
-	// Setup should initialize the context with a test
-	//
-	// Note: implementations shouldn't need to implement this
-	// if they embed a T struct
-	Setup(c C, t *testing.T)
 }
 
-// Setup implements the C interface
-func (t *T) Setup(self C, test *testing.T) {
-	t.self = self
-	t.T = test
+// Init initializes types that embed T with an testing.T instance.
+// If c has an optional Setup(*testing.T) method it will be invoked.
+//
+// This function will panic if c does not embed T
+func Init(c C, t *testing.T) {
+	type (
+		internal interface {
+			set(c C, t *testing.T)
+		}
+
+		setup interface {
+			Setup(t *testing.T)
+		}
+	)
+
+	if i, ok := c.(internal); ok {
+		i.set(c, t)
+	} else {
+		panic("Init should be invoked with a struct that embeds test.T")
+	}
+
+	if s, ok := c.(setup); ok {
+		s.Setup(t)
+	}
+}
+
+func (t *T) set(c C, gotest *testing.T) {
+	t.self = c
+	t.T = gotest
 }
 
 // AddFlags adds requirement and feature state flags to the FlagSet.
@@ -230,7 +248,7 @@ func (t *T) invokeLevel(levels requirement.Levels, name string, f interface{}) b
 
 func (t *T) invoke(f interface{}, test *testing.T) {
 	newCtx := t.self.Copy()
-	newCtx.Setup(newCtx, test)
+	Init(newCtx, test)
 
 	in := []reflect.Value{reflect.ValueOf(newCtx)}
 	reflect.ValueOf(f).Call(in)

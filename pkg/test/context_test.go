@@ -55,7 +55,7 @@ func TestFlags(t *testing.T) {
 
 func TestRunInvocation(t *testing.T) {
 	ctx := &mockContext{}
-	ctx.Setup(ctx, t)
+	Init(ctx, t)
 
 	invoked := false
 	ctx.Run("subtest", func(m *mockContext) {
@@ -89,7 +89,7 @@ func TestLevelInvocation(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.level.String(), func(t *testing.T) {
 			ctx := &mockContext{}
-			ctx.Setup(ctx, t)
+			Init(ctx, t)
 
 			invoked := false
 			subtest := func(m *mockContext) { invoked = true }
@@ -129,7 +129,7 @@ func TestStateInvocation(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.state.String(), func(t *testing.T) {
 			ctx := &mockContext{}
-			ctx.Setup(ctx, t)
+			Init(ctx, t)
 
 			invoked := false
 			subtest := func(m *mockContext) { invoked = true }
@@ -155,19 +155,19 @@ func TestBadCallback(t *testing.T) {
 	if os.Getenv("CRASH") == "1" {
 		t.Run("nil", func(t *testing.T) {
 			ctx := &mockContext{}
-			ctx.Setup(ctx, t)
+			Init(ctx, t)
 			ctx.Run("subtest", nil)
 		})
 
 		t.Run("non-func", func(t *testing.T) {
 			ctx := &mockContext{}
-			ctx.Setup(ctx, t)
+			Init(ctx, t)
 			ctx.Run("subtest", 1)
 		})
 
 		t.Run("bad-type", func(t *testing.T) {
 			ctx := &mockContext{}
-			ctx.Setup(ctx, t)
+			Init(ctx, t)
 			ctx.Run("subtest", func(int) {})
 		})
 		return
@@ -185,5 +185,37 @@ func TestBadCallback(t *testing.T) {
 			// ie. 2 = something panicked
 			t.Fatalf("process ran with err %v, want exit status 1", err)
 		})
+	}
+}
+
+type noEmbeddedT struct{}
+
+func (n noEmbeddedT) Copy() C { return n }
+
+func TestBadInitParam(t *testing.T) {
+	defer func() {
+		if err := recover(); err == nil {
+			t.Error("Init should panic when passed a type that doesn't embed test.T")
+		}
+	}()
+	Init(noEmbeddedT{}, t)
+}
+
+type customSetup struct {
+	T
+	test *testing.T
+}
+
+func (c *customSetup) Copy() C { return c }
+func (c *customSetup) Setup(t *testing.T) {
+	c.test = t
+}
+
+func TestCustomSetup(t *testing.T) {
+	cs := &customSetup{}
+	Init(cs, t)
+
+	if cs.test != t {
+		t.Error("expected Setup to be called")
 	}
 }
