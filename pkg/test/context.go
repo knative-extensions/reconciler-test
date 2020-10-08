@@ -58,16 +58,6 @@ import (
 //       t.Alpha("subfeature", func(t *MyT) {...}
 //   }
 //
-// Enabling subtest invocation requires implementing the interface C
-// which requires a Copy() method
-//
-// Here's a basic example:
-//
-//   func (t *MyT) Copy() test.C {
-//     newT := *t /* shallow copy */
-//     return &newT
-//   }
-//
 // To run your tests with T you can setup it as follows:
 //
 //   func TestConformance(t *testing.T) {
@@ -98,26 +88,19 @@ type T struct {
 	RequirementLevels requirement.Levels
 	FeatureStates     feature.States
 
-	// Implemention note: we need a reference to an interface
-	// so that calling Copy() copies the derived struct ie. MyT
-	self C
-}
-
-// C interface defines the methods required by T to clone and
-// setup subtests. See T for more info.
-type C interface {
-	// Copy should return a copy of T
-	Copy() C
+	// Implemention note: we need a reference to the derived struct
+	// so we can make shallow copies for subtests
+	self interface{}
 }
 
 // Init initializes types that embed T with an testing.T instance.
 // If c has an optional Setup(*testing.T) method it will be invoked.
 //
 // This function will panic if c does not embed T
-func Init(c C, t *testing.T) {
+func Init(c interface{}, t *testing.T) {
 	type (
 		internal interface {
-			set(c C, t *testing.T)
+			set(c interface{}, t *testing.T)
 		}
 
 		setup interface {
@@ -136,7 +119,7 @@ func Init(c C, t *testing.T) {
 	}
 }
 
-func (t *T) set(c C, gotest *testing.T) {
+func (t *T) set(c interface{}, gotest *testing.T) {
 	t.self = c
 	t.T = gotest
 }
@@ -247,7 +230,7 @@ func (t *T) invokeLevel(levels requirement.Levels, name string, f interface{}) b
 }
 
 func (t *T) invoke(f interface{}, test *testing.T) {
-	newCtx := t.self.Copy()
+	newCtx := shallowCopy(t.self)
 	Init(newCtx, test)
 
 	in := []reflect.Value{reflect.ValueOf(newCtx)}
@@ -271,4 +254,21 @@ func (t *T) validateCallback(f interface{}) {
 	if fType.NumIn() != 1 || fType.In(0) != contextType {
 		t.Fatalf("callback should take a single argument of %v", contextType)
 	}
+}
+
+func shallowCopy(x interface{}) interface{} {
+	// non-pointer type
+	derivedType := reflect.TypeOf(x).Elem()
+	derivedValue := reflect.ValueOf(x)
+
+	// as if calling new(derivedType)
+	y := reflect.New(derivedType)
+
+	// *y = *x
+	// both are pointer to struct types so it's a shallow value copy
+	derefSource := reflect.Indirect(derivedValue)
+	derefTarget := reflect.Indirect(y)
+	derefTarget.Set(derefSource)
+
+	return y.Interface()
 }

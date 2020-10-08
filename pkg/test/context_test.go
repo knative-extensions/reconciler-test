@@ -26,13 +26,7 @@ import (
 	"knative.dev/reconciler-test/pkg/test/requirement"
 )
 
-type mockContext struct {
-	T
-}
-
-func (c *mockContext) Copy() C {
-	return c
-}
+type mockContext struct{ T }
 
 func TestFlags(t *testing.T) {
 	ctx := mockContext{}
@@ -190,8 +184,6 @@ func TestBadCallback(t *testing.T) {
 
 type noEmbeddedT struct{}
 
-func (n noEmbeddedT) Copy() C { return n }
-
 func TestBadInitParam(t *testing.T) {
 	defer func() {
 		if err := recover(); err == nil {
@@ -206,7 +198,6 @@ type customSetup struct {
 	test *testing.T
 }
 
-func (c *customSetup) Copy() C { return c }
 func (c *customSetup) Setup(t *testing.T) {
 	c.test = t
 }
