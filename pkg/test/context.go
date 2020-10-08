@@ -61,7 +61,9 @@ import (
 // To run your tests with T you can setup it as follows:
 //
 //   func TestConformance(t *testing.T) {
-//     myT := test.New(MyT{}, t)
+//     myT := MyT{}
+//     test.Init(MyT{}, t)
+//
 //     myT.Stable("some feature", TestFeature)
 //   }
 //
