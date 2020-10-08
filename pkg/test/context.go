@@ -26,21 +26,66 @@ import (
 	"knative.dev/reconciler-test/pkg/test/requirement"
 )
 
-// C interface defines the methods required by T to clone and
-// setup subtests
-type C interface {
-	// Copy should return a copy of T
-	Copy() C
-
-	// Setup should initialize the context with a test
-	//
-	// Note: implementations shouldn't need to implement this
-	// if they embed a T struct
-	Setup(c C, t *testing.T)
-}
-
-// T extends testing.T with additional behaviour
-// to test various requirement levels & feature states
+// T extends testing.T with additional behaviour to annotate
+// assertions with various requirement levels and feature states.
+// Downstream implemenations should create their own struct that
+// embeds type T and include their own additional properties.
+//
+//  type MyT struct {
+//    test.T
+//
+//    /* additional properties */
+//    environment.Cluster
+//  }
+//
+// Authors should avoid globals and duplicate setup code by
+// leveraging this contextual test struct. This allows tests
+// to be authored in the following way:
+//
+//   func TestSomeFeature(t *MyT) {
+//       if err := t.Cluster.KubeClient.Create(...); err != nil {
+//         t.Fatal(err)
+//       }
+//
+//       t.Must("have some side-effect", func(t *MyT) {...}
+//       t.May("do something optional", func(t *MyT) {...}
+//       t.Alpha("subfeature", func(t *MyT) {...}
+//   }
+//
+// Enabling subtest invocation requires implementing the interface C.
+// A default Setup(...) method is implemented by embedding test.T.
+// You only need to implement the Copy(...) method.
+// Here's a basic example:
+//
+//   func (t *MyT) Copy() test.C {
+//     newT := *t /* shallow copy */
+//     return &newT
+//   }
+//
+// To run your tests with T you can setup it as follows:
+//
+//   func TestConformance(t *testing.T) {
+//     myT := test.New(MyT{}, t)
+//     myT.Stable("some feature", TestFeature)
+//   }
+//
+//  func TestFeature(t *MyT) {
+//    ...
+//  }
+//
+// If users want to customize the test invocation via the
+// `go test` command line you will need to add flags to
+// the global FlagSet - flag.CommandLine
+//
+// In a test file create a package instance variable
+// and in an `init` function add your flags to flag.CommandLine
+//
+//   var myT = MyT{}
+//
+//   func init() {
+//     myT.AddFlags(flag.CommandLine)
+//   }
+//
 type T struct {
 	*testing.T
 
@@ -56,21 +101,26 @@ type T struct {
 	// ctx.Alpha("name", func(ctx *SomeTestContext) {...})
 	//
 	// This helps avoid excessive casting in downstream tests
-	c C
+	self C
 }
 
-var _ C = (*T)(nil)
+// C interface defines the methods required by T to clone and
+// setup subtests. See T for more info.
+type C interface {
+	// Copy should return a copy of T
+	Copy() C
+
+	// Setup should initialize the context with a test
+	//
+	// Note: implementations shouldn't need to implement this
+	// if they embed a T struct
+	Setup(c C, t *testing.T)
+}
 
 // Setup implements the C interface
-func (t *T) Setup(c C, test *testing.T) {
-	t.c = c
+func (t *T) Setup(self C, test *testing.T) {
+	t.self = self
 	t.T = test
-}
-
-// Copy implements the C interface
-func (t *T) Copy() C {
-	cpy := *t
-	return &cpy
 }
 
 // AddFlags adds requirement and feature state flags to the FlagSet.
@@ -179,7 +229,7 @@ func (t *T) invokeLevel(levels requirement.Levels, name string, f interface{}) b
 }
 
 func (t *T) invoke(f interface{}, test *testing.T) {
-	newCtx := t.c.Copy()
+	newCtx := t.self.Copy()
 	newCtx.Setup(newCtx, test)
 
 	in := []reflect.Value{reflect.ValueOf(newCtx)}
@@ -198,7 +248,7 @@ func (t *T) validateCallback(f interface{}) {
 		t.Fatal("callback should be a function")
 	}
 
-	contextType := reflect.TypeOf(t.c)
+	contextType := reflect.TypeOf(t.self)
 
 	if fType.NumIn() != 1 || fType.In(0) != contextType {
 		t.Fatalf("callback should take a single argument of %v", contextType)
