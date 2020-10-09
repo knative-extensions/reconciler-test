@@ -30,25 +30,33 @@ import (
 type Cluster struct {
 	Name       string // K8s cluster (defaults to cluster in kubeconfig)
 	KubeConfig string // Path to kubeconfig (defaults to ./kube/config)
+	DomainName string // ie. cluster.local
 }
 
 func (s *Cluster) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&s.Name, "env.cluster.name", "",
 		"Provide the cluster to test against. Defaults to the current cluster in kubeconfig.")
 
+	// Allow for --env.cluster.kubeconfig to override the KUBECONFIG env var
+	fs.StringVar(&s.KubeConfig, "env.cluster.kubeconfig", defaultKubeConfig(),
+		"Provide the path to the `kubeconfig` file you'd like to use for these tests. The `current-context` will be used.")
+
+	// Allows the test to use a different cluster domain - ie. if it's not cluster.local
+	fs.StringVar(&s.DomainName, "env.cluster.domain", "cluster.local",
+		"Provide the path to the `kubeconfig` file you'd like to use for these tests. The `current-context` will be used.")
+}
+
+func defaultKubeConfig() string {
 	// Use KUBECONFIG if available
-	defaultKubeconfig := os.Getenv("KUBECONFIG")
+	kubeconfig := os.Getenv("KUBECONFIG")
 
 	// If KUBECONFIG env var isn't set then look for $HOME/.kube/config
-	if defaultKubeconfig == "" {
+	if kubeconfig == "" {
 		if usr, err := user.Current(); err == nil {
-			defaultKubeconfig = path.Join(usr.HomeDir, ".kube/config")
+			kubeconfig = path.Join(usr.HomeDir, ".kube/config")
 		}
 	}
-
-	// Allow for --kubeconfig on the cmd line to override the above logic
-	fs.StringVar(&s.KubeConfig, "env.cluster.kubeconfig", defaultKubeconfig,
-		"Provide the path to the `kubeconfig` file you'd like to use for these tests. The `current-context` will be used.")
+	return kubeconfig
 }
 
 func (c *Cluster) ClientConfig() *rest.Config {
