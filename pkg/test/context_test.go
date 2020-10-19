@@ -41,6 +41,17 @@ func TestFlags(t *testing.T) {
 		t.Fatal("failed to parse", err)
 	}
 
+	if got, want := ctx.RequirementLevels, requirement.Levels(0); got != want {
+		t.Errorf("wrong requirement level - got: %s want: %s", got, want)
+	}
+
+	if got, want := ctx.FeatureStates, feature.States(0); got != want {
+		t.Errorf("wrong requirement level - got: %s want: %s", got, want)
+	}
+
+	// defaulting
+	test.Init(&ctx, t)
+
 	if got, want := ctx.RequirementLevels, requirement.All; got != want {
 		t.Errorf("wrong requirement level - got: %s want: %s", got, want)
 	}

@@ -122,6 +122,13 @@ func Init(c interface{}, t *testing.T) {
 }
 
 func (t *T) set(c interface{}, gotest *testing.T) {
+	// Default to all
+	if t.RequirementLevels == 0 {
+		t.RequirementLevels = requirement.All
+	}
+	if t.FeatureStates == 0 {
+		t.FeatureStates = feature.All
+	}
 	t.self = c
 	t.T = gotest
 }
@@ -132,13 +139,6 @@ func (t *T) set(c interface{}, gotest *testing.T) {
 // Calling AddFlags will also default the requirement level and
 // feature states to test everything
 func (t *T) AddFlags(fs *flag.FlagSet) {
-	if t.RequirementLevels == 0 {
-		t.RequirementLevels = requirement.All
-	}
-	if t.FeatureStates == 0 {
-		t.FeatureStates = feature.All
-	}
-
 	t.RequirementLevels.AddFlags(fs)
 	t.FeatureStates.AddFlags(fs)
 }
