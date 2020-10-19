@@ -90,7 +90,7 @@ type T struct {
 
 	// If this context is not set it will be initialized to
 	// context.Background() when Init is invoked
-	Context context.Context
+	Ctx context.Context
 
 	RequirementLevels requirement.Levels
 	FeatureStates     feature.States
@@ -137,8 +137,8 @@ func (t *T) set(c interface{}, gotest *testing.T) {
 	t.self = c
 	t.T = gotest
 
-	if t.Context == nil {
-		t.Context = context.Background()
+	if t.Ctx == nil {
+		t.Ctx = context.Background()
 	}
 }
 
