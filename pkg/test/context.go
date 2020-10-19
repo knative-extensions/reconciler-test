@@ -88,9 +88,9 @@ import (
 type T struct {
 	*testing.T
 
-	// If this context is not set it will be initialized to
-	// context.Background() when Init is invoked
-	Context context.Context
+	// C is the context.Context for the test. If it is not set it will
+	// be initialized to context.Background() when Init is invoked
+	C context.Context
 
 	RequirementLevels requirement.Levels
 	FeatureStates     feature.States
@@ -137,8 +137,8 @@ func (t *T) set(c interface{}, gotest *testing.T) {
 	t.self = c
 	t.T = gotest
 
-	if t.Context == nil {
-		t.Context = context.Background()
+	if t.C == nil {
+		t.C = context.Background()
 	}
 }
 
