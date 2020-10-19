@@ -88,7 +88,7 @@ import (
 type T struct {
 	*testing.T
 
-	// If this context is not set it will be initalized to
+	// If this context is not set it will be initialized to
 	// context.Background() when Init is invoked
 	Context context.Context
 
