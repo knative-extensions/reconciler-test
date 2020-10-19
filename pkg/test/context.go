@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"context"
 	"flag"
 	"reflect"
 	"testing"
@@ -87,6 +88,10 @@ import (
 type T struct {
 	*testing.T
 
+	// If this context is not set it will be initalized to
+	// context.Background() when Init is invoked
+	Context context.Context
+
 	RequirementLevels requirement.Levels
 	FeatureStates     feature.States
 
@@ -124,6 +129,10 @@ func Init(c interface{}, t *testing.T) {
 func (t *T) set(c interface{}, gotest *testing.T) {
 	t.self = c
 	t.T = gotest
+
+	if t.Context == nil {
+		t.Context = context.Background()
+	}
 }
 
 // AddFlags adds requirement and feature state flags to the FlagSet.
