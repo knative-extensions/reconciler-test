@@ -135,7 +135,7 @@ func UpdateExporterFromConfigMapWithOpts(ctx context.Context, opts ExporterOptio
 // and updating the current exporter.
 func UpdateExporter(ctx context.Context, ops ExporterOptions, logger *zap.SugaredLogger) error {
 	// TODO(https://github.com/knative/pkg/issues/1273): check if ops.secrets is `nil` after new metrics plan lands
-	newConfig, err := createMetricsConfig(ctx, ops, logger)
+	newConfig, err := createMetricsConfig(ctx, ops)
 	if err != nil {
 		if getCurMetricsConfig() == nil {
 			// Fail the process if there doesn't exist an exporter.
@@ -196,7 +196,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 	// If there is a Prometheus Exporter server running, stop it.
 	resetCurPromSrv()
 
-	// TODO(https://github.com/knative/pkg/issues/866): Move Stackdriver and Promethus
+	// TODO(https://github.com/knative/pkg/issues/866): Move Stackdriver and Prometheus
 	// operations before stopping to an interface.
 	if se, ok := curMetricsExporter.(stoppable); ok {
 		se.StopMetricsExporter()
@@ -213,7 +213,7 @@ func newMetricsExporter(config *metricsConfig, logger *zap.SugaredLogger) (view.
 
 	ff := factory[config.backendDestination]
 	if ff == nil {
-		return nil, nil, fmt.Errorf("unsuppored metrics backend %v", config.backendDestination)
+		return nil, nil, fmt.Errorf("unsupported metrics backend %v", config.backendDestination)
 	}
 	return ff(config, logger)
 }

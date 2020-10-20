@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/cloudevents/sdk-go/v2 v2.2.0
+	github.com/google/go-cmp v0.5.2
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/octago/sflags v0.2.0
 	github.com/onsi/gomega v1.10.2
@@ -12,8 +13,9 @@ require (
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/pkg v0.0.0-20200916171541-6e0430fd94db
-	knative.dev/test-infra v0.0.0-20200911201000-3f90e7c8f2fa
+	k8s.io/klog v1.0.0
+	knative.dev/pkg v0.0.0-20201020163359-385c8b9c0e97
+	knative.dev/test-infra v0.0.0-20201015231956-d236fb0ea9ff
 )
 
 replace (
