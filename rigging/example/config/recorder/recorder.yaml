@@ -1,10 +1,10 @@
-# Copyright 2020 The Rigging Authors
+# Copyright 2020 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,51 +15,40 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testbed
+  name: recorder
   namespace: {{ .namespace }}
-  labels:
-    app: testbed
 spec:
   replicas: 1
   selector:
-    matchLabels:
-      app: testbed
+    matchLabels: &labels
+      app: recorder
   template:
     metadata:
-      labels:
-        app: testbed
+      labels: *labels
     spec:
+      serviceAccount: recorder
       containers:
-        - name: testbed
-          image: {{ .images.testbed }}
-          ports:
-            - containerPort: 8080
+        - name: recorder
+          image: {{ .images.recorder }}
           env:
             - name: SYSTEM_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+              value: {{ .namespace }}
+            - name: OBSERVER_NAME
+              value: recorder-{{ .namespace }}
+            - name: K8S_EVENT_SINK
+              value: '{"apiVersion": "v1", "kind": "Namespace", "name": "{{ .namespace }}"}'
 
-          volumeMounts:
-            - mountPath: /var/bindings/manifests
-              name: manifests
-              readOnly: true
-      volumes:
-        - name: manifests
-          configMap:
-            name: manifests
 ---
 
-apiVersion: v1
 kind: Service
+apiVersion: v1
 metadata:
-  name: testbed
+  name: recorder
   namespace: {{ .namespace }}
 spec:
   selector:
-    app: testbed
+    app: recorder
   ports:
-    - name: http
+    - protocol: TCP
       port: 80
-      protocol: TCP
       targetPort: 8080

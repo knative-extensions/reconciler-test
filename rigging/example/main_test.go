@@ -19,6 +19,7 @@ limitations under the License.
 package example
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -33,14 +34,19 @@ import (
 	"knative.dev/reconciler-test/rigging/pkg/lifecycle"
 )
 
+var (
+	test_context context.Context
+)
+
+func Context() context.Context {
+	return test_context
+}
+
 func TestMain(m *testing.M) {
-
-	fmt.Println("TestMain")
-
-	ctx, _ := injection.EnableInjectionOrDie(nil, nil)
-
+	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
 	lifecycle.InjectClients(ctx)
-
+	test_context = ctx
+	startInformers()
 	os.Exit(m.Run())
 }
 
@@ -53,7 +59,8 @@ func TestKoPublish(t *testing.T) {
 
 	templateString := `
 	rigging.WithImages(map[string]string{
-		{{ range $key, $value := . }}"{{ $key }}": "{{ $value }}",{{ end }}
+		{{ range $key, $value := . }}"{{ $key }}": "{{ $value }}",
+		{{ end }}
 	}),`
 
 	tp := template.New("t")
@@ -73,31 +80,12 @@ func TestKoPublish(t *testing.T) {
 
 // TestEcho is an example simple test.
 func TestEcho(t *testing.T) {
+	t.Parallel()
 	EchoTestImpl(t)
 }
 
-// TestBed is an example testbed test.
-func TestBed(t *testing.T) {
-	t.Skip("test bed not implemented.")
-	BedTestImpl(t)
+// TestRecorder is an example simple test.
+func TestRecorder(t *testing.T) {
+	t.Parallel()
+	RecorderTestImpl(t)
 }
-
-//func TestDiff(t *testing.T) {
-//	org := map[string]string{
-//		"foo": "bar",
-//		"baz": "baf",
-//	}
-//
-//	now := map[string]string{
-//		"foo": "bar",
-//		"baf": "baz",
-//		"baz": "boo",
-//	}
-//
-//	if diff := cmp.Diff(org, now); diff != "" {
-//		t.Log("FYI, diff on", diff)
-//	} else {
-//		t.Log("org or now are the same.")
-//	}
-//
-//}
