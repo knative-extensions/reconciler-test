@@ -26,7 +26,6 @@ spec:
       containers:
         - name: echo
           image: {{ .images.echo }}
-          imagePullPolicy: Always
           env:
             - name: ECHO
               value: "{{ .echo }}"
