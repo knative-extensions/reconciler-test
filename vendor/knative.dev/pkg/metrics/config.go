@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"go.opencensus.io/stats"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -174,7 +173,7 @@ func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ro
 	return mc.recorder(ctx, mss, ros...)
 }
 
-func createMetricsConfig(ctx context.Context, ops ExporterOptions, logger *zap.SugaredLogger) (*metricsConfig, error) {
+func createMetricsConfig(ctx context.Context, ops ExporterOptions) (*metricsConfig, error) {
 	var mc metricsConfig
 
 	if ops.Domain == "" {
@@ -347,7 +346,7 @@ func prometheusPort() (int, error) {
 
 // JsonToMetricsOptions converts a json string of a
 // ExporterOptions. Returns a non-nil ExporterOptions always.
-func JsonToMetricsOptions(jsonOpts string) (*ExporterOptions, error) {
+func JsonToMetricsOptions(jsonOpts string) (*ExporterOptions, error) { //nolint // No rename due to backwards incompatibility.
 	var opts ExporterOptions
 	if jsonOpts == "" {
 		return nil, errors.New("json options string is empty")
@@ -361,7 +360,7 @@ func JsonToMetricsOptions(jsonOpts string) (*ExporterOptions, error) {
 }
 
 // MetricsOptionsToJson converts a ExporterOptions to a json string.
-func MetricsOptionsToJson(opts *ExporterOptions) (string, error) {
+func MetricsOptionsToJson(opts *ExporterOptions) (string, error) { //nolint // No rename due to backwards incompatibility.
 	if opts == nil {
 		return "", nil
 	}

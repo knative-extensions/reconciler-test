@@ -39,12 +39,6 @@ import (
 	"go.opencensus.io/trace"
 )
 
-const (
-	// Name of the temporary HTTP header that is added to http.Request to indicate that
-	// it is a SpoofClient.Poll request. This header is removed before making call to backend.
-	pollReqHeader = "X-Kn-Poll-Request-Do-Not-Trace"
-)
-
 // Response is a stripped down subset of http.Response. The is primarily useful
 // for ResponseCheckers to inspect the response body without consuming it.
 // Notably, Body is a byte slice instead of an io.ReadCloser.
@@ -62,7 +56,7 @@ func (r *Response) String() string {
 // https://medium.com/stupid-gopher-tricks/ensuring-go-interface-satisfaction-at-compile-time-1ed158e8fa17
 var dialContext = (&net.Dialer{}).DialContext
 
-// ResponseChecker is used to determine when SpoofinClient.Poll is done polling.
+// ResponseChecker is used to determine when SpoofingClient.Poll is done polling.
 // This allows you to predicate wait.PollImmediate on the request's http.Response.
 //
 // See the apimachinery wait package:
@@ -92,7 +86,7 @@ type TransportOption func(transport *http.Transport) *http.Transport
 // If that's a problem, see test/request.go#WaitForEndpointState for oneshot spoofing.
 func New(
 	ctx context.Context,
-	kubeClientset *kubernetes.Clientset,
+	kubeClientset kubernetes.Interface,
 	logf logging.FormatLogger,
 	domain string,
 	resolvable bool,
@@ -139,7 +133,7 @@ func New(
 
 // ResolveEndpoint resolves the endpoint address considering whether the domain is resolvable and taking into
 // account whether the user overrode the endpoint address externally
-func ResolveEndpoint(ctx context.Context, kubeClientset *kubernetes.Clientset, domain string, resolvable bool, endpointOverride string) (string, func(string) string, error) {
+func ResolveEndpoint(ctx context.Context, kubeClientset kubernetes.Interface, domain string, resolvable bool, endpointOverride string) (string, func(string) string, error) {
 	id := func(in string) string { return in }
 	// If the domain is resolvable, it can be used directly
 	if resolvable {
