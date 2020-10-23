@@ -33,7 +33,7 @@ type Cluster struct {
 	DomainName string // ie. cluster.local
 }
 
-func (s *Cluster) AddFlags(fs *flag.FlagSet) {
+func (s *Cluster) InitFlags(fs *flag.FlagSet) {
 	fs.StringVar(&s.Name, "env.cluster.name", "",
 		"Provide the cluster to test against. Defaults to the current cluster in kubeconfig.")
 

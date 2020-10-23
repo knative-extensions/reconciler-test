@@ -71,7 +71,7 @@ func (l Levels) String() string {
 	return b.String()
 }
 
-func (l *Levels) AddFlags(fs *flag.FlagSet) {
+func (l *Levels) InitFlags(fs *flag.FlagSet) {
 	for _, entry := range mapping {
 		flagName := "requirement." + strings.ReplaceAll(strings.ToLower(entry.name), " ", "")
 		usage := fmt.Sprintf("toggles %q requirement assertions", entry.name)

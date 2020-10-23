@@ -29,7 +29,7 @@ type Images struct {
 	Tag        string // Tag for test images
 }
 
-func (i *Images) AddFlags(fs *flag.FlagSet) {
+func (i *Images) InitFlags(fs *flag.FlagSet) {
 	defaultRepo := os.Getenv("KO_DOCKER_REPO")
 	fs.StringVar(&i.Repository, "env.image.repo", defaultRepo,
 		"Provide the uri of the docker repo you have uploaded the test image to using `uploadtestimage.sh`. Defaults to $KO_DOCKER_REPO")

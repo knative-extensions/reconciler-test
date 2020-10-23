@@ -24,7 +24,7 @@ type Ingress struct {
 	Namespace        string // K8s Service namespace acting as an ingress
 }
 
-func (i *Ingress) AddFlags(fs *flag.FlagSet) {
+func (i *Ingress) InitFlags(fs *flag.FlagSet) {
 	fs.StringVar(&i.EndpointOverride, "env.ingress.endpoint", "",
 		"Provide a static endpoint url to the ingress server used during tests.")
 

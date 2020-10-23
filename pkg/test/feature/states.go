@@ -61,7 +61,7 @@ func (s States) String() string {
 	return b.String()
 }
 
-func (s *States) AddFlags(fs *flag.FlagSet) {
+func (s *States) InitFlags(fs *flag.FlagSet) {
 	for _, entry := range mapping {
 		flagName := "feature." + strings.ReplaceAll(strings.ToLower(entry.name), " ", "")
 		usage := fmt.Sprintf("toggles %q feature assertions", entry.name)
