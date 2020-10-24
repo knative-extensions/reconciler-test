@@ -20,7 +20,10 @@ package example
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"knative.dev/reconciler-test/pkg/test"
+	"knative.dev/reconciler-test/rigging/v2"
 	"os"
 	"testing"
 	"text/template"
@@ -36,6 +39,7 @@ import (
 
 var (
 	test_context context.Context
+	global       rigging.GlobalEnvironment
 )
 
 func Context() context.Context {
@@ -45,16 +49,23 @@ func Context() context.Context {
 func TestMain(m *testing.M) {
 	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
 	lifecycle.InjectClients(ctx)
+
+	global = test.NewGlobalEnvironment(ctx)
+	global.InitFlags(flag.CommandLine)
+	flag.Parse()
+
 	test_context = ctx
 	startInformers()
+
 	os.Exit(m.Run())
 }
 
 // This test is more for debugging the ko publish process.
 func TestKoPublish(t *testing.T) {
+	fmt.Println("TestKoPublish")
 	ic, err := installer.ProduceImages()
 	if err != nil {
-		t.Fatalf("failed to produce images, %s", err)
+		panic(fmt.Errorf("failed to produce images, %s", err))
 	}
 
 	templateString := `
@@ -77,15 +88,33 @@ func TestKoPublish(t *testing.T) {
 }
 
 // Rest of e2e tests go below:
+//
+//// TestEcho is an example simple test.
+//func TestEcho(t *testing.T) {
+//	t.Skip("not right now.")
+//	t.Parallel()
+//	EchoTestImpl(t)
+//}
 
-// TestEcho is an example simple test.
-func TestEcho(t *testing.T) {
-	t.Parallel()
-	EchoTestImpl(t)
-}
+//// TestRecorder is an example simple test.
+//func TestRecorder(t *testing.T) {
+//	t.Skip("not right now.")
+//	t.Parallel()
+//	RecorderTestImpl(t)
+//}
 
 // TestRecorder is an example simple test.
-func TestRecorder(t *testing.T) {
+func TestRecorder2(t *testing.T) {
 	t.Parallel()
-	RecorderTestImpl(t)
+	env := global.Environment()
+
+	ctx, runner := env.NewRunner() // maybe can combine the runner into the environment as a hidden thing.
+
+	// Now is your chance to inject extra things into context.
+
+	f := RecorderFeature()
+
+	runner.Test(ctx, t, f)
+
+	env.Finish()
 }

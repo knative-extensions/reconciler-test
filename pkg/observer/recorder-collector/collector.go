@@ -19,6 +19,7 @@ package recorder_collector
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	recorder_vent "knative.dev/reconciler-test/pkg/observer/recorder-vent"
 
@@ -51,7 +52,7 @@ type collector struct {
 func (c *collector) List(ctx context.Context, from duckv1.KReference, filters ...FilterFn) ([]observer.Observed, error) {
 	var lister v1.EventInterface
 	if from.Kind == "Namespace" {
-		lister = c.client.CoreV1().Events(from.Name)
+		lister = c.client.CoreV1().Events("")
 	} else {
 		lister = c.client.CoreV1().Events(from.Namespace) // TODO: I do not understand how to do cluster scoped objects.
 	}
@@ -59,6 +60,8 @@ func (c *collector) List(ctx context.Context, from duckv1.KReference, filters ..
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("Listed ", len(events.Items), " k8s events.")
 
 	obs := make([]observer.Observed, 0)
 
@@ -82,7 +85,9 @@ func (c *collector) List(ctx context.Context, from duckv1.KReference, filters ..
 			}
 
 			obs = append(obs, ob)
-			// TODO: worry about v.Count
+		// TODO: worry about v.Count
+		default:
+			fmt.Println("skipped: ", v.Reason)
 		}
 	}
 

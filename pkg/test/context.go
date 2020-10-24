@@ -20,6 +20,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"knative.dev/reconciler-test/rigging/pkg/installer"
+	"knative.dev/reconciler-test/rigging/pkg/lifecycle"
+	"knative.dev/reconciler-test/rigging/pkg/namers"
 	"sync"
 	"testing"
 
@@ -28,32 +31,44 @@ import (
 	rigging "knative.dev/reconciler-test/rigging/v2"
 )
 
-func NewGlobalEnvironment() rigging.GlobalEnvironment {
-	return &MagicEnvironment{}
+func NewGlobalEnvironment(ctx context.Context) rigging.GlobalEnvironment {
+	return &MagicGlobalEnvironment{
+		c: ctx,
+	}
 }
 
-type MagicEnvironment struct {
+type MagicGlobalEnvironment struct {
+	c context.Context
+
 	RequirementLevel requirement.Levels
 	FeatureState     feature.States
 
 	FlagSets []rigging.FlagSetFn
 }
 
-func (mr *MagicEnvironment) Environment() rigging.Environment {
-	return &MagicRunner{
-		l: mr.RequirementLevel,
-		s: mr.FeatureState,
-	}
+type MagicEnvironment struct {
+	c context.Context
+	l requirement.Levels
+	s feature.States
+
+	client *lifecycle.Client
+
+	images    map[string]string
+	namespace string
 }
 
-func (mr *MagicEnvironment) WithFlags(fn rigging.FlagSetFn) {
+func (mr *MagicEnvironment) Finish() {
+	mr.client.DeleteNamespaceIfNeeded()
+}
+
+func (mr *MagicGlobalEnvironment) WithFlags(fn rigging.FlagSetFn) {
 	if mr.FlagSets == nil {
 		mr.FlagSets = make([]rigging.FlagSetFn, 0)
 	}
 	mr.FlagSets = append(mr.FlagSets, fn)
 }
 
-func (mr *MagicEnvironment) InitFlags(fs *flag.FlagSet) {
+func (mr *MagicGlobalEnvironment) InitFlags(fs *flag.FlagSet) {
 	mr.WithFlags(mr.RequirementLevel.InitFlags)
 	mr.WithFlags(mr.FeatureState.InitFlags)
 
@@ -62,32 +77,74 @@ func (mr *MagicEnvironment) InitFlags(fs *flag.FlagSet) {
 	}
 }
 
-func NewRunner(env rigging.Environment) rigging.FeatureTester {
-	return &MagicRunner{
-		l: env.RequirementLevel(),
-		s: env.FeatureState(),
+func (mr *MagicGlobalEnvironment) Environment() rigging.Environment {
+	images, err := installer.ProduceImages()
+	if err != nil {
+		panic(err)
+	}
+
+	namespace := namers.MakeK8sNamePrefix(namers.AppendRandomString("rigging2"))
+
+	// TODO: this might be the wrong place for this but for now here,
+	client, err := lifecycle.NewClient(namespace)
+	if err != nil {
+		panic(fmt.Errorf("could not initialize clients: %v", err))
+	}
+	if err := client.CreateNamespaceIfNeeded(); err != nil {
+		panic(err)
+	}
+
+	return &MagicEnvironment{
+		c:         mr.c,
+		l:         mr.RequirementLevel,
+		s:         mr.FeatureState,
+		images:    images,
+		namespace: namespace,
+		client:    client,
+	}
+}
+
+func (mr *MagicEnvironment) NewRunner() (context.Context, rigging.FeatureTester) {
+	ctx := rigging.WithEnv(mr.c, mr) // save the environment inside context for the runner.
+	return ctx, &MagicRunner{
+		l:         mr.RequirementLevel(),
+		s:         mr.FeatureState(),
+		namespace: mr.Namespace(),
 	}
 }
 
 type MagicRunner struct {
 	l requirement.Levels
 	s feature.States
+
+	namespace string
 }
 
-func (mr *MagicRunner) RequirementLevel() requirement.Levels {
+func (mr *MagicEnvironment) Images() map[string]string {
+	// TODO: implement me.
+	return map[string]string{"foo": "bar"}
+}
+
+func (mr *MagicEnvironment) TemplateConfig(base map[string]interface{}) map[string]interface{} {
+	cfg := make(map[string]interface{})
+	for k, v := range base {
+		cfg[k] = v
+	}
+	cfg["images"] = mr.images
+	cfg["namespace"] = mr.namespace
+	return cfg
+}
+
+func (mr *MagicEnvironment) RequirementLevel() requirement.Levels {
 	return mr.l
 }
 
-func (mr *MagicRunner) FeatureState() feature.States {
+func (mr *MagicEnvironment) FeatureState() feature.States {
 	return mr.s
 }
 
-func (mr *MagicRunner) Namespace() string {
-	panic("implement me")
-}
-
-func (mr *MagicRunner) Context() context.Context {
-	panic("implement me")
+func (mr *MagicEnvironment) Namespace() string {
+	return mr.namespace
 }
 
 func (mr *MagicRunner) Test(ctx context.Context, t *testing.T, f *rigging.Feature) {
@@ -102,36 +159,54 @@ func (mr *MagicRunner) Test(ctx context.Context, t *testing.T, f *rigging.Featur
 
 	// do it the slow way first.
 	pwg := &sync.WaitGroup{}
-	for _, p := range f.Preconditions {
-		pwg.Add(1)
-		p := p
-		t.Run(fmt.Sprintf("%s [pre] %s", f.Name, p.Name), func(t *testing.T) {
-			t.Helper() // Helper marks the calling function as a test helper function.
+	pwg.Add(1)
 
-			p.P(ctx, t)
+	t.Run("preconditions", func(t *testing.T) {
+		t.Helper() // Helper marks the calling function as a test helper function.
+		t.Log(len(f.Preconditions), " preconditions.")
+		defer pwg.Done() // Outer wait.
 
-			pwg.Done()
-		})
-	}
+		for _, p := range f.Preconditions {
+			pwg.Add(1)
+			p := p
+			t.Run(p.Name, func(t *testing.T) {
+				t.Helper() // Helper marks the calling function as a test helper function.
+
+				p.P(ctx, t)
+
+				pwg.Done()
+			})
+		}
+	})
+
 	pwg.Wait()
 
 	awg := &sync.WaitGroup{}
-	for _, a := range f.Assertions {
-		a := a
-		if mr.s&a.S == 0 {
-			t.Skipf("%s features not enabled for testing", a.S)
-		}
-		if mr.l&a.L == 0 {
-			t.Skipf("%s requirement not enabled for testing", a.L)
-		}
-		awg.Add(1)
-		t.Run(fmt.Sprintf("%s [assert] %s", f.Name, a.Name), func(t *testing.T) {
-			t.Helper() // Helper marks the calling function as a test helper function.
+	awg.Add(1)
 
-			a.A(ctx, t)
+	t.Run("assertions", func(t *testing.T) {
+		t.Helper() // Helper marks the calling function as a test helper function.
+		t.Log(len(f.Assertions), " assertions.")
+		defer awg.Done() // Outer wait.
 
-			awg.Done()
-		})
-	}
-	awg.Done()
+		for _, a := range f.Assertions {
+			a := a
+			if mr.s&a.S == 0 {
+				t.Skipf("%s features not enabled for testing", a.S)
+			}
+			if mr.l&a.L == 0 {
+				t.Skipf("%s requirement not enabled for testing", a.L)
+			}
+			awg.Add(1)
+			t.Run(fmt.Sprintf("[%s/%s]%s", a.S, a.L, a.Name), func(t *testing.T) {
+				t.Helper() // Helper marks the calling function as a test helper function.
+
+				a.A(ctx, t)
+
+				awg.Done()
+			})
+		}
+	})
+
+	awg.Wait()
 }

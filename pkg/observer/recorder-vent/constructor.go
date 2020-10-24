@@ -80,7 +80,7 @@ func NewEventLog(ctx context.Context, agentName string, ref duckv1.KReference) o
 	if ref.Namespace == "" {
 		on, err = dynamicclient.Get(ctx).Resource(gvr).Get(ctx, ref.Name, metav1.GetOptions{})
 	} else {
-		on, err = dynamicclient.Get(ctx).Resource(gvr).Get(ctx, ref.Name, metav1.GetOptions{})
+		on, err = dynamicclient.Get(ctx).Resource(gvr).Namespace(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 	}
 	if err != nil {
 		logging.FromContext(ctx).Fatalf("failed to fetch object ref, %+v, %s", ref, err)

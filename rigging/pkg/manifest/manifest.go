@@ -82,7 +82,7 @@ func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
 		return err
 	}
 	if current == nil {
-		klog.Info("Creating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+		klog.Info("Creating type ", spec.GroupVersionKind(), " name ", spec.GetName())
 		gvr, _ := meta.UnsafeGuessKindToResource(spec.GroupVersionKind())
 		if _, err := f.client.Resource(gvr).Namespace(spec.GetNamespace()).Create(context.Background(), spec, v1.CreateOptions{}); err != nil {
 			return err
@@ -90,7 +90,7 @@ func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
 	} else {
 		// Update existing one
 		if UpdateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
-			klog.Info("Updating", "type", spec.GroupVersionKind(), "name", spec.GetName())
+			klog.Info("Updating type ", spec.GroupVersionKind(), " name ", spec.GetName())
 
 			gvr, _ := meta.UnsafeGuessKindToResource(spec.GroupVersionKind())
 			if _, err = f.client.Resource(gvr).Namespace(current.GetNamespace()).Update(context.Background(), current, v1.UpdateOptions{}); err != nil {
@@ -121,7 +121,7 @@ func (f *YamlManifest) Delete(spec *unstructured.Unstructured) error {
 	if current == nil && err == nil {
 		return nil
 	}
-	klog.Info("Deleting ", "type ", spec.GroupVersionKind(), "name ", spec.GetName())
+	klog.Info("Deleting type ", spec.GroupVersionKind(), " name ", spec.GetName())
 	gvr, _ := meta.UnsafeGuessKindToResource(spec.GroupVersionKind())
 	if err := f.client.Resource(gvr).Namespace(spec.GetNamespace()).Delete(context.Background(), spec.GetName(), v1.DeleteOptions{}); err != nil {
 		// ignore GC race conditions triggered by owner references

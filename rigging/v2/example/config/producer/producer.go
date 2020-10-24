@@ -14,11 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package example
+package producer
 
 import (
+	"context"
+	"fmt"
+	"knative.dev/pkg/network"
 	"knative.dev/reconciler-test/rigging"
 	riggingv2 "knative.dev/reconciler-test/rigging/v2"
+	"knative.dev/reconciler-test/rigging/v2/example/config"
+	"testing"
 )
 
 func init() {
@@ -27,33 +32,16 @@ func init() {
 	)
 }
 
-const producerTemplate = `
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: producer
-  namespace: {{ .namespace }}
-spec:
-  replicas: 1
-  selector:
-    matchLabels: &labels
-      app: producer
-  template:
-    metadata:
-      labels: *labels
-    spec:
-      containers:
-        - name: producer
-          image: {{ .images.producer }}
-          env:
-            - name: COUNT
-              value: '{{ .producerCount }}'
-            - name: K_SINK
-              # TODO: was trying to inject the namespace but it is unknown at the time this is passed.
-              value: 'http://{{ .producerSink }}.{{ .namespace }}.svc.{{ .clusterDomainName }}'
-`
+func Install(sendCount int, sinkName string) riggingv2.PreConFn {
+	return func(ctx context.Context, t *testing.T) {
+		env := riggingv2.EnvFromContext(ctx)
 
-func InstallProducer(t riggingv2.PT, e riggingv2.Environment) {
-	// Install the producer.
-
+		if err := config.InstallLocalYaml(ctx, map[string]interface{}{
+			"count": fmt.Sprint(sendCount),
+			"sink": fmt.Sprintf("http://%s.%s.svc.%s",
+				sinkName, env.Namespace(), network.GetClusterDomainName()),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
 }

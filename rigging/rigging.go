@@ -233,6 +233,7 @@ func (r *riggingImpl) createEnvironment() error {
 	return nil
 }
 
+// Template config
 func (r *riggingImpl) updateConfig(config map[string]string) (map[string]interface{}, error) {
 	if r.images == nil {
 		ic, err := installer.ProduceImages()

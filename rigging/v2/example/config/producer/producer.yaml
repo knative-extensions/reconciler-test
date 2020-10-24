@@ -31,7 +31,7 @@ spec:
           image: {{ .images.producer }}
           env:
             - name: COUNT
-              value: '{{ .producerCount }}'
+              value: '{{ .count }}'
             - name: K_SINK
               # TODO: was trying to inject the namespace but it is unknown at the time this is passed.
-              value: 'http://{{ .producerSink }}.{{ .namespace }}.svc.{{ .clusterDomainName }}'
+              value: '{{ .sink }}'

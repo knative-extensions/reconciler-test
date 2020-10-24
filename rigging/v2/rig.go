@@ -25,10 +25,14 @@ type GlobalEnvironment interface {
 }
 
 type Environment interface {
+	NewRunner() (context.Context, FeatureTester)
 	RequirementLevel() requirement.Levels
 	FeatureState() feature.States
 	Namespace() string
-	Context() context.Context
+	Images() map[string]string
+	TemplateConfig(base map[string]interface{}) map[string]interface{}
+
+	Finish()
 }
 
 type FlagSetFn func(flagset *flag.FlagSet)
@@ -39,9 +43,9 @@ type Feature struct {
 	Assertions    []Assertion
 }
 
-type AssertFn func(ctx context.Context, t T)
+type AssertFn func(ctx context.Context, t *testing.T)
 
-type PreConFn func(ctx context.Context, t T)
+type PreConFn func(ctx context.Context, t *testing.T)
 
 type Precondition struct {
 	Name string
@@ -135,16 +139,6 @@ type Assertion struct {
 
 type FeatureTester interface {
 	Test(ctx context.Context, t *testing.T, f *Feature)
-}
-
-type FilterFlagMagic struct{}
-
-func (magic FilterFlagMagic) Test(ctx context.Context, t *testing.T, f *Feature) {
-	panic("implement me")
-}
-
-func GlobalRunner() FeatureTester {
-	return &FilterFlagMagic{}
 }
 
 // --------------------------

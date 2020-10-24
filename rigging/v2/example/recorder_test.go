@@ -17,100 +17,77 @@ limitations under the License.
 package example
 
 import (
+	"context"
 	"fmt"
+	riggingv2 "knative.dev/reconciler-test/rigging/v2"
+	"knative.dev/reconciler-test/rigging/v2/example/config/producer"
+	"knative.dev/reconciler-test/rigging/v2/example/config/recorder"
 	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/network"
 	"knative.dev/reconciler-test/pkg/observer"
 	recorder_collector "knative.dev/reconciler-test/pkg/observer/recorder-collector"
-	"knative.dev/reconciler-test/rigging"
 )
 
-// RecorderTestImpl a very simple example test implementation.
-//
-func RecorderTestImpl(t *testing.T) {
-	sendCount := 5
-	opts := []rigging.Option{}
+func RecorderFeature() *riggingv2.Feature {
+	count := 5
 
-	rig, err := rigging.NewInstall(opts, []string{"producer", "recorder"}, map[string]string{
-		"producerCount":     fmt.Sprint(sendCount),
-		"producerSink":      "recorder",
-		"clusterDomainName": network.GetClusterDomainName(),
-	})
-	if err != nil {
-		t.Fatalf("failed to create rig, %s", err)
+	f := new(riggingv2.Feature)
+
+	f.Precondition("install recorder", recorder.Install())
+	f.Precondition("install producer", producer.Install(count, "recorder")) // TODO: it would have been nice to know the name of the recorder programmatically
+
+	whoFn := func(namespace string) (string, duckv1.KReference) {
+		from := duckv1.KReference{
+			Kind:       "Namespace",
+			Name:       namespace,
+			APIVersion: "v1",
+		}
+		to := "recorder-" + namespace
+		return to, from
 	}
 
-	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
+	f.Alpha("direct sending between a producer and a recorder").
+		Must("the recorder received all sent events within the time",
+			AssertDelivery(whoFn, count, 1*time.Second, 20*time.Second))
 
-	// Uninstall deferred.
-	defer func() {
-		if err := rig.Uninstall(); err != nil {
-			t.Errorf("failed to uninstall, %s", err)
-		}
-	}()
-
-	// TODO: need to validate set events.
-	ctx := Context() // TODO: there needs to be a better way to do this.
-	c := recorder_collector.New(ctx)
-
-	from := duckv1.KReference{
-		Kind:       "Namespace",
-		Name:       "default",
-		APIVersion: "v1",
-	}
-
-	obsName := "recorder-" + rig.Namespace()
-
-	err = wait.PollImmediate(5*time.Second, 1*time.Minute, func() (bool, error) {
-		events, err := c.List(ctx, from, func(ob observer.Observed) bool {
-			return ob.Observer == obsName
-		})
-		if err != nil {
-			return false, err
-		}
-
-		for i, e := range events {
-			fmt.Printf("[%d]: seen by %q\n%s\n", i, e.Observer, e.Event)
-		}
-
-		got := len(events)
-		want := sendCount
-		if want != got {
-			t.Logf("dod not observe the correct number of events, want: %d, got: %d", want, got)
-			return false, nil
-		} else {
-			return true, nil
-		}
-	})
-	if err != nil {
-		t.Error("failed to observe the correct number of events, ", err)
-	}
-
-	// Pass!
+	return f
 }
 
-//
-//func ExampleImpl(t *testing.T) {
-//	f := new(riggingv2.Feature)
-//
-//	f.Precondition("install producer", InstallProducer)
-//	f.Precondition("install recorder", InstallRecorder)
-//
-//	f.Alpha("for a real feature").
-//		Must("feature a", AssertSomething).
-//		Must("feature b", AssertSomething).
-//		MustNot("scope creep", AssertSomething).
-//		May("optional feature", AssertSomething).
-//		Should("add an inline function", func(t riggingv2.PT, e riggingv2.Environment) {
-//			// todo
-//		}).
-//		ShouldNot("do this other bad thing but we will ignore it", func(t riggingv2.PT, e riggingv2.Environment) {
-//			// todo: more
-//		})
-//
-//}
+type whoFn = func(namespace string) (string, duckv1.KReference)
+
+func AssertDelivery(who whoFn, count int, interval, timeout time.Duration) riggingv2.AssertFn {
+	return func(ctx context.Context, t *testing.T) {
+		to, from := who(riggingv2.EnvFromContext(ctx).Namespace())
+
+		c := recorder_collector.New(ctx)
+		if err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+			events, err := c.List(ctx, from, func(ob observer.Observed) bool {
+				fmt.Printf("[filter]: %q - %s : %t\n", ob.Observer, ob.Event.Type(), ob.Observer == to)
+				return ob.Observer == to
+			})
+			if err != nil {
+				return false, err
+			}
+
+			for i, e := range events {
+				fmt.Printf("[%d]: seen by %q\n%s\n", i, e.Observer, e.Event)
+			}
+
+			got := len(events)
+			want := count
+			if want != got {
+				t.Logf("did not observe the correct number of events, want: %d, got: %d", want, got)
+				return false, nil
+			} else {
+				return true, nil
+			}
+		}); err != nil {
+			t.Error("failed to observe the correct number of events, ", err)
+		}
+	}
+
+}
