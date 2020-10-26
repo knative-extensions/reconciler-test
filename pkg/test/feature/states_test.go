@@ -37,7 +37,7 @@ func TestTurnOn(t *testing.T) {
 
 		fs := &flag.FlagSet{}
 		fs.SetOutput(ioutil.Discard)
-		l.InitFlags(fs)
+		l.AddFlags(fs)
 
 		if err := fs.Parse([]string{tc.flag}); err != nil {
 			t.Fatal(err)
@@ -55,7 +55,7 @@ func TestTurnOff(t *testing.T) {
 
 		fs := &flag.FlagSet{}
 		fs.SetOutput(ioutil.Discard)
-		l.InitFlags(fs)
+		l.AddFlags(fs)
 
 		if err := fs.Parse([]string{tc.flag + "=false"}); err != nil {
 			t.Fatal(err)
