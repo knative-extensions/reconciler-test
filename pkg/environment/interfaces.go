@@ -18,7 +18,6 @@ package environment
 
 import (
 	"context"
-	"flag"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -45,5 +44,3 @@ type Environment interface {
 
 	Finish()
 }
-
-type FlagSetFn func(flagset *flag.FlagSet)
