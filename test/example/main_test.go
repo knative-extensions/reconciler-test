@@ -99,6 +99,9 @@ func TestEcho(t *testing.T) {
 
 	env.Test(ctx, t, f)
 
+	// we can run other features in this environment if we understand the side-effects.
+	env.Test(ctx, t, RecorderFeature())
+
 	// Calling finish on the environment cleans it up and removes the namespace.
 	env.Finish()
 }
@@ -106,18 +109,7 @@ func TestEcho(t *testing.T) {
 // TestRecorder is an example simple test.
 func TestRecorder(t *testing.T) {
 	t.Parallel()
-
-	// Create an environment to run the tests in from the global environment.
 	ctx, env := global.Environment()
-
-	// Now is the chance to inject extra things into context.
-
-	f := RecorderFeature()
-
-	// Now is the chance to modify the feature to add additional preconditions or assertions.
-
-	env.Test(ctx, t, f)
-
-	// Calling finish on the environment cleans it up and removes the namespace.
+	env.Test(ctx, t, RecorderFeature())
 	env.Finish()
 }
