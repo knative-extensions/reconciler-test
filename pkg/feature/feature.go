@@ -23,67 +23,82 @@ import (
 )
 
 type Feature struct {
-	Name          string
-	Preconditions []Precondition
-	Assertions    []Assertion
+	Name  string
+	Steps []Step
 }
 
-type AssertFn func(ctx context.Context, t *testing.T)
+type StepFn func(ctx context.Context, t *testing.T)
 
-type PreConFn func(ctx context.Context, t *testing.T)
-
-type Precondition struct {
+type Step struct {
 	Name string
-	P    PreConFn
+	S    States
+	L    Levels
+	T    Timing
+	Fn   StepFn
 }
 
-func (f *Feature) Precondition(name string, fn PreConFn) {
-	if f.Preconditions == nil {
-		f.Preconditions = make([]Precondition, 0)
+func (s *Step) TestName() string {
+	switch s.T {
+	case Assert:
+		return fmt.Sprintf("[%s/%s]%s", s.S, s.L, s.Name)
+	default:
+		return s.Name
 	}
-	f.Preconditions = append(f.Preconditions, Precondition{
+}
+
+func (f *Feature) Setup(name string, fn StepFn) {
+	f.AddStep(Step{
 		Name: name,
-		P:    fn,
+		S:    Any,
+		L:    All,
+		T:    Setup,
+		Fn:   fn,
+	})
+}
+
+func (f *Feature) Requirement(name string, fn StepFn) {
+	f.AddStep(Step{
+		Name: name,
+		S:    Any,
+		L:    All,
+		T:    Requirement,
+		Fn:   fn,
+	})
+}
+
+func (f *Feature) Teardown(name string, fn StepFn) {
+	f.AddStep(Step{
+		Name: name,
+		S:    Any,
+		L:    All,
+		T:    Teardown,
+		Fn:   fn,
+	})
+}
+
+func (f *Feature) AddStep(step ...Step) {
+	if f.Steps == nil {
+		f.Steps = make([]Step, 0)
+	}
+	f.Steps = append(f.Steps, step...)
+}
+
+func (a *Asserter) Assert(l Levels, name string, fn StepFn) {
+	a.f.AddStep(Step{
+		Name: fmt.Sprintf("%s %s", a.name, name),
+		S:    a.s,
+		L:    l,
+		T:    Assert,
+		Fn:   fn,
 	})
 }
 
 type Assertable interface {
-	Must(name string, fn AssertFn) Assertable
-	Should(name string, fn AssertFn) Assertable
-	May(name string, fn AssertFn) Assertable
-	MustNot(name string, fn AssertFn) Assertable
-	ShouldNot(name string, fn AssertFn) Assertable
-}
-
-type Asserter struct {
-	f    *Feature
-	name string
-	s    States
-}
-
-func (a *Asserter) Must(name string, fn AssertFn) Assertable {
-	a.Assert(Must, name, fn)
-	return a
-}
-
-func (a *Asserter) Should(name string, fn AssertFn) Assertable {
-	a.Assert(Should, name, fn)
-	return a
-}
-
-func (a *Asserter) May(name string, fn AssertFn) Assertable {
-	a.Assert(May, name, fn)
-	return a
-}
-
-func (a *Asserter) MustNot(name string, fn AssertFn) Assertable {
-	a.Assert(MustNot, name, fn)
-	return a
-}
-
-func (a *Asserter) ShouldNot(name string, fn AssertFn) Assertable {
-	a.Assert(ShouldNot, name, fn)
-	return a
+	Must(name string, fn StepFn) Assertable
+	Should(name string, fn StepFn) Assertable
+	May(name string, fn StepFn) Assertable
+	MustNot(name string, fn StepFn) Assertable
+	ShouldNot(name string, fn StepFn) Assertable
 }
 
 func (f *Feature) Alpha(name string) Assertable {
@@ -106,18 +121,33 @@ func (f *Feature) asserter(s States, name string) Assertable {
 	}
 }
 
-func (a *Asserter) Assert(l Levels, name string, fn AssertFn) {
-	a.f.Assertions = append(a.f.Assertions, Assertion{
-		Name: fmt.Sprintf("%s %s", a.name, name),
-		A:    fn,
-		S:    a.s,
-		L:    l,
-	})
+type Asserter struct {
+	f    *Feature
+	name string
+	s    States
 }
 
-type Assertion struct {
-	Name string
-	S    States
-	L    Levels
-	A    AssertFn
+func (a *Asserter) Must(name string, fn StepFn) Assertable {
+	a.Assert(Must, name, fn)
+	return a
+}
+
+func (a *Asserter) Should(name string, fn StepFn) Assertable {
+	a.Assert(Should, name, fn)
+	return a
+}
+
+func (a *Asserter) May(name string, fn StepFn) Assertable {
+	a.Assert(May, name, fn)
+	return a
+}
+
+func (a *Asserter) MustNot(name string, fn StepFn) Assertable {
+	a.Assert(MustNot, name, fn)
+	return a
+}
+
+func (a *Asserter) ShouldNot(name string, fn StepFn) Assertable {
+	a.Assert(ShouldNot, name, fn)
+	return a
 }

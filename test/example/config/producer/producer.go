@@ -33,7 +33,7 @@ func init() {
 	)
 }
 
-func Install(sendCount int, svcName string) feature.PreConFn {
+func Install(sendCount int, svcName string) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
 		env := environment.FromContext(ctx)
 

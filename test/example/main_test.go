@@ -33,18 +33,19 @@ import (
 	"knative.dev/reconciler-test/pkg/environment"
 )
 
-var (
-	global environment.GlobalEnvironment
-)
+var global environment.GlobalEnvironment
+
+func init() {
+	environment.InitFlags(flag.CommandLine)
+}
 
 func TestMain(m *testing.M) {
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
-
-	global = environment.NewGlobalEnvironment(ctx)
-	global.InitFlags(flag.CommandLine)
 	flag.Parse()
 
+	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
 	startInformers()
+
+	global = environment.NewGlobalEnvironment(ctx)
 
 	os.Exit(m.Run())
 }

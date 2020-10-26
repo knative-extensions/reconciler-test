@@ -27,9 +27,6 @@ import (
 
 type GlobalEnvironment interface {
 	Environment() (context.Context, Environment)
-
-	WithFlags(fn FlagSetFn)
-	InitFlags(flagset *flag.FlagSet)
 }
 
 type Environment interface {

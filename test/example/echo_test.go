@@ -36,8 +36,9 @@ func EchoFeature() *feature.Feature {
 
 	f := new(feature.Feature)
 
-	f.Precondition("install echo", echo.Install(msg))
-	f.Precondition("echo job is finished", func(ctx context.Context, t *testing.T) {
+	f.Setup("install echo", echo.Install(msg))
+
+	f.Requirement("echo job is finished", func(ctx context.Context, t *testing.T) {
 		env := environment.FromContext(ctx)
 		client := kubeclient.Get(ctx)
 
@@ -73,7 +74,13 @@ func EchoFeature() *feature.Feature {
 					return
 				}
 				t.Log("got our message echo'ed: ", out.Message)
-			})
+			}).
+		May("An example of a MAY", func(ctx context.Context, t *testing.T) {
+			t.Log("ran inside of a MAY")
+		}).
+		Should("An example of a SHOULD", func(ctx context.Context, t *testing.T) {
+			t.Log("ran inside of a SHOULD")
+		})
 
 	return f
 }

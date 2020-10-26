@@ -18,7 +18,6 @@ package environment
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"sync"
 	"testing"
@@ -28,8 +27,13 @@ import (
 )
 
 func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
+
+	fmt.Printf("level %s, state %s\n\n", l, s)
+
 	return &MagicGlobalEnvironment{
-		c: ctx,
+		c:                ctx,
+		RequirementLevel: *l,
+		FeatureState:     *s,
 	}
 }
 
@@ -38,8 +42,6 @@ type MagicGlobalEnvironment struct {
 
 	RequirementLevel feature.Levels
 	FeatureState     feature.States
-
-	FlagSets []FlagSetFn
 }
 
 type MagicEnvironment struct {
@@ -69,22 +71,6 @@ func (mr *MagicEnvironment) References() []corev1.ObjectReference {
 
 func (mr *MagicEnvironment) Finish() {
 	mr.DeleteNamespaceIfNeeded()
-}
-
-func (mr *MagicGlobalEnvironment) WithFlags(fn FlagSetFn) {
-	if mr.FlagSets == nil {
-		mr.FlagSets = make([]FlagSetFn, 0)
-	}
-	mr.FlagSets = append(mr.FlagSets, fn)
-}
-
-func (mr *MagicGlobalEnvironment) InitFlags(fs *flag.FlagSet) {
-	mr.WithFlags(mr.RequirementLevel.InitFlags)
-	mr.WithFlags(mr.FeatureState.InitFlags)
-
-	for _, fn := range mr.FlagSets {
-		fn(fs)
-	}
 }
 
 func (mr *MagicGlobalEnvironment) Environment() (context.Context, Environment) {
@@ -140,66 +126,52 @@ func (mr *MagicEnvironment) Namespace() string {
 
 func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.Feature) {
 	t.Helper() // Helper marks the calling function as a test helper function.
+	// Respect the flags, 0 means none.
+	//if mr.l == 0 {
+	//	mr.l = feature.All
+	//}
+	//if mr.s == 0 {
+	//	mr.s = feature.Any
+	//}
 
-	if mr.l == 0 {
-		mr.l = feature.All
-	}
-	if mr.s == 0 {
-		mr.s = feature.Any
-	}
+	for _, timing := range feature.Timings() {
+		// do it the slow way first.
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
 
-	// do it the slow way first.
-	pwg := &sync.WaitGroup{}
-	pwg.Add(1)
+		t.Run(timing.String(), func(t *testing.T) {
+			t.Helper()      // Helper marks the calling function as a test helper function.
+			defer wg.Done() // Outer wait.
 
-	t.Run("preconditions", func(t *testing.T) {
-		t.Helper() // Helper marks the calling function as a test helper function.
-		t.Log(len(f.Preconditions), " preconditions.")
-		defer pwg.Done() // Outer wait.
+			for _, s := range f.Steps {
+				// Skip if step phase is not running.
+				if s.T != timing {
+					continue
+				}
+				t.Run(s.TestName(), func(t *testing.T) {
+					wg.Add(1)
+					defer wg.Done()
 
-		for _, p := range f.Preconditions {
-			pwg.Add(1)
-			p := p
-			t.Run(p.Name, func(t *testing.T) {
-				t.Helper() // Helper marks the calling function as a test helper function.
+					if mr.s&s.S == 0 {
+						t.Skipf("%s features not enabled for testing", s.S)
+					}
+					if mr.l&s.L == 0 {
+						t.Skipf("%s requirement not enabled for testing", s.L)
+					}
 
-				p.P(ctx, t)
+					s := s
 
-				pwg.Done()
-			})
-		}
-	})
+					t.Helper() // Helper marks the calling function as a test helper function.
 
-	pwg.Wait()
+					// Perform step.
+					s.Fn(ctx, t)
 
-	awg := &sync.WaitGroup{}
-	awg.Add(1)
-
-	t.Run("assertions", func(t *testing.T) {
-		t.Helper() // Helper marks the calling function as a test helper function.
-		t.Log(len(f.Assertions), " assertions.")
-		defer awg.Done() // Outer wait.
-
-		for _, a := range f.Assertions {
-			a := a
-			if mr.s&a.S == 0 {
-				t.Skipf("%s features not enabled for testing", a.S)
+				})
 			}
-			if mr.l&a.L == 0 {
-				t.Skipf("%s requirement not enabled for testing", a.L)
-			}
-			awg.Add(1)
-			t.Run(fmt.Sprintf("[%s/%s]%s", a.S, a.L, a.Name), func(t *testing.T) {
-				t.Helper() // Helper marks the calling function as a test helper function.
+		})
 
-				a.A(ctx, t)
-
-				awg.Done()
-			})
-		}
-	})
-
-	awg.Wait()
+		wg.Wait()
+	}
 }
 
 type envKey struct{}

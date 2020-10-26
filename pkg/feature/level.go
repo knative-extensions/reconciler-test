@@ -17,9 +17,6 @@ limitations under the License.
 package feature
 
 import (
-	"flag"
-	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -50,14 +47,17 @@ const (
 )
 
 func (l Levels) String() string {
+	if l == 0 {
+		return "None"
+	}
 	if l == All {
-		return "ANY_LEVELS"
+		return "All"
 	}
 
 	var b strings.Builder
 
-	for _, entry := range levelMapping {
-		if l&entry.level == 0 {
+	for level, name := range LevelMapping {
+		if l&level == 0 {
 			continue
 		}
 
@@ -65,65 +65,16 @@ func (l Levels) String() string {
 			b.WriteString("|")
 		}
 
-		b.WriteString(entry.name)
+		b.WriteString(name)
 	}
 
 	return b.String()
 }
 
-func (l *Levels) InitFlags(fs *flag.FlagSet) {
-	for _, entry := range levelMapping {
-		flagName := "requirement." + strings.ReplaceAll(strings.ToLower(entry.name), " ", "")
-		usage := fmt.Sprintf("toggles %q requirement assertions", entry.name)
-		fs.Var(levelValue{entry.level, l}, flagName, usage)
-	}
-
-	fs.Var(levelValue{All, l}, "requirement.all", "toggles all requirement assertions")
-}
-
-type levelValue struct {
-	mask  Levels
-	value *Levels
-}
-
-func (lv levelValue) Get() interface{} {
-	return *lv.value & lv.mask
-}
-
-func (lv levelValue) Set(s string) error {
-	v, err := strconv.ParseBool(s)
-	if err != nil {
-		return err
-	}
-
-	if v {
-		*lv.value = *lv.value | lv.mask // set
-	} else {
-		*lv.value = *lv.value &^ lv.mask // clear
-	}
-
-	return nil
-}
-
-func (lv levelValue) IsBoolFlag() bool {
-	return true
-}
-
-func (lv levelValue) String() string {
-	if lv.value != nil && lv.mask&*lv.value != 0 {
-		return "true"
-	}
-
-	return "false"
-}
-
-var levelMapping = [...]struct {
-	level Levels
-	name  string
-}{
-	{Must, "MUST"},
-	{MustNot, "MUST NOT"},
-	{Should, "SHOULD"},
-	{ShouldNot, "SHOULD NOT"},
-	{May, "MAY"},
+var LevelMapping = map[Levels]string{
+	Must:      "MUST",
+	MustNot:   "MUST NOT",
+	Should:    "SHOULD",
+	ShouldNot: "SHOULD NOT",
+	May:       "MAY",
 }

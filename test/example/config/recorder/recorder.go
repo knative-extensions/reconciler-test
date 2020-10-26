@@ -36,7 +36,7 @@ func init() {
 	)
 }
 
-func Install(recorderName string) feature.PreConFn {
+func Install(recorderName string) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
 		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
 			"recorderName": recorderName,
@@ -46,7 +46,7 @@ func Install(recorderName string) feature.PreConFn {
 	}
 }
 
-func AssertDelivery(to string, count int, interval, timeout time.Duration) feature.AssertFn {
+func AssertDelivery(to string, count int, interval, timeout time.Duration) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
 		env := environment.FromContext(ctx)
 

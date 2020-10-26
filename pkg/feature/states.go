@@ -17,9 +17,6 @@ limitations under the License.
 package feature
 
 import (
-	"flag"
-	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -40,78 +37,31 @@ const (
 )
 
 func (s States) String() string {
+	if s == 0 {
+		return "None"
+	}
 	if s == Any {
-		return "ANY STATE"
+		return "Any"
 	}
 
 	var b strings.Builder
 
-	for _, entry := range statesMapping {
-		if s&entry.state == 0 {
+	for state, name := range StatesMapping {
+		if s&state == 0 {
 			continue
 		}
 
 		if b.Len() != 0 {
 			b.WriteString("|")
 		}
-
-		b.WriteString(entry.name)
+		b.WriteString(name)
 	}
 
 	return b.String()
 }
 
-func (s *States) InitFlags(fs *flag.FlagSet) {
-	for _, entry := range statesMapping {
-		flagName := "feature." + strings.ReplaceAll(strings.ToLower(entry.name), " ", "")
-		usage := fmt.Sprintf("toggles %q state assertions", entry.name)
-		fs.Var(stateValue{entry.state, s}, flagName, usage)
-	}
-
-	fs.Var(stateValue{Any, s}, "feature.any", "toggles all features")
-}
-
-type stateValue struct {
-	mask  States
-	value *States
-}
-
-func (sv stateValue) Get() interface{} {
-	return *sv.value & sv.mask
-}
-
-func (sv stateValue) Set(s string) error {
-	v, err := strconv.ParseBool(s)
-	if err != nil {
-		return err
-	}
-
-	if v {
-		*sv.value = *sv.value | sv.mask // set
-	} else {
-		*sv.value = *sv.value &^ sv.mask // clear
-	}
-
-	return nil
-}
-
-func (sv stateValue) IsBoolFlag() bool {
-	return true
-}
-
-func (sv stateValue) String() string {
-	if sv.value != nil && sv.mask&*sv.value != 0 {
-		return "true"
-	}
-
-	return "false"
-}
-
-var statesMapping = [...]struct {
-	state States
-	name  string
-}{
-	{Alpha, "Alpha"},
-	{Beta, "Beta"},
-	{Stable, "Stable"},
+var StatesMapping = map[States]string{
+	Alpha:  "Alpha",
+	Beta:   "Beta",
+	Stable: "Stable",
 }

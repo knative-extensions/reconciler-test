@@ -30,8 +30,8 @@ func RecorderFeature() *feature.Feature {
 
 	f := new(feature.Feature)
 
-	f.Precondition("install recorder", recorder.Install(to))
-	f.Precondition("install producer", producer.Install(count, to))
+	f.Setup("install recorder", recorder.Install(to))
+	f.Setup("install producer", producer.Install(count, to))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",

@@ -37,7 +37,7 @@ type Output struct {
 	Message string `json:"msg"`
 }
 
-func Install(message string) feature.PreConFn {
+func Install(message string) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
 		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
 			"message": message,

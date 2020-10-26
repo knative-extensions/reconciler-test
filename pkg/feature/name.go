@@ -44,12 +44,12 @@ type Namer interface {
 	Name() string
 }
 
-// ObjectPrefixForTest returns the name prefix for this test's random names.
+// ObjectPrefixForTest returns the Name prefix for this test's random names.
 func ObjectPrefixForTest(t Namer) string {
 	return MakeK8sNamePrefix(strings.TrimPrefix(t.Name(), testNamePrefix))
 }
 
-// ObjectNameForTest generates a random object name based on the test name.
+// ObjectNameForTest generates a random object Name based on the test Name.
 func ObjectNameForTest(t Namer) string {
 	return kmeta.ChildName(ObjectPrefixForTest(t), string(sep)+RandomString())
 }
@@ -101,7 +101,7 @@ func MakeK8sNamePrefix(s string) string {
 // eg. test/e2e.TestMain will return TestMain.
 func GetBaseFuncName(fullFuncName string) string {
 	name := fullFuncName
-	// Possibly there is no parent package, so only remove it from the name if '/' exists
+	// Possibly there is no parent package, so only remove it from the Name if '/' exists
 	if strings.ContainsRune(name, '/') {
 		name = name[strings.LastIndex(name, "/")+1:]
 	}
