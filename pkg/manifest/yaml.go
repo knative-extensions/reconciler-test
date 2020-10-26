@@ -1,18 +1,18 @@
 /*
- * Copyright 2020 The Knative Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2020 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package manifest
 
@@ -41,8 +41,9 @@ import (
 // 5. pathname = combination of all previous cases, the string can contain
 //    multiple records (file, directory or url) separated by comma
 func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
+
 	pathnames := strings.Split(pathname, ",")
-	var aggregated []unstructured.Unstructured
+	aggregated := []unstructured.Unstructured{}
 	for _, pth := range pathnames {
 		els, err := read(pth, recursive)
 		if err != nil {
@@ -52,11 +53,6 @@ func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error)
 		aggregated = append(aggregated, els...)
 	}
 	return aggregated, nil
-}
-
-// ParseString parses YAML specs into Unstructured objects.
-func ParseString(specs string) ([]unstructured.Unstructured, error) {
-	return decode(strings.NewReader(specs))
 }
 
 // read contains logic to distinguish the type of record in pathname
@@ -96,7 +92,7 @@ func readDir(pathname string, recursive bool) ([]unstructured.Unstructured, erro
 		return nil, err
 	}
 
-	var aggregated []unstructured.Unstructured
+	aggregated := []unstructured.Unstructured{}
 	for _, f := range list {
 		name := path.Join(pathname, f.Name())
 		var els []unstructured.Unstructured
@@ -130,7 +126,7 @@ func readURL(url string) ([]unstructured.Unstructured, error) {
 // decode consumes the given reader and parses its contents as YAML.
 func decode(reader io.Reader) ([]unstructured.Unstructured, error) {
 	decoder := yaml.NewYAMLToJSONDecoder(reader)
-	var objs []unstructured.Unstructured
+	objs := []unstructured.Unstructured{}
 	var err error
 	for {
 		out := unstructured.Unstructured{}

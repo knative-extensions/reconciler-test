@@ -29,7 +29,7 @@ import (
 // ParseTemplates walks through all the template yaml file in the given directory
 // and produces instantiated yaml file in a temporary directory.
 // Return the name of the temporary directory
-func ParseTemplates(path string, config interface{}) (string, error) {
+func ParseTemplates(path string, data map[string]interface{}) (string, error) {
 	dir, err := ioutil.TempDir("", "processed_yaml")
 	if err != nil {
 		panic(err)
@@ -48,7 +48,7 @@ func ParseTemplates(path string, config interface{}) (string, error) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = t.Execute(tmpfile, config)
+			err = t.Execute(tmpfile, data)
 			if err != nil {
 				log.Print("execute: ", err)
 				return err
@@ -65,16 +65,12 @@ func ParseTemplates(path string, config interface{}) (string, error) {
 }
 
 // ExecuteTemplate instantiates the given template with data
-func ExecuteTemplate(tpl string, data map[string]interface{}) string {
-	// TODO: caching
+func ExecuteTemplate(tpl string, data map[string]interface{}) (string, error) {
 	t, err := template.New("").Parse(tpl)
 	if err != nil {
 		panic(err)
 	}
 	buffer := &bytes.Buffer{}
 	err = t.Execute(buffer, data)
-	if err != nil {
-		panic(err)
-	}
-	return buffer.String()
+	return buffer.String(), err
 }

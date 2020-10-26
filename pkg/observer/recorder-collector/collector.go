@@ -52,9 +52,9 @@ type collector struct {
 func (c *collector) List(ctx context.Context, from duckv1.KReference, filters ...FilterFn) ([]observer.Observed, error) {
 	var lister v1.EventInterface
 	if from.Kind == "Namespace" {
-		lister = c.client.CoreV1().Events("")
+		lister = c.client.CoreV1().Events("") // For namespace objects, clusterscoped namespace is ""
 	} else {
-		lister = c.client.CoreV1().Events(from.Namespace) // TODO: I do not understand how to do cluster scoped objects.
+		lister = c.client.CoreV1().Events(from.Namespace)
 	}
 	events, err := lister.List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -85,9 +85,6 @@ func (c *collector) List(ctx context.Context, from duckv1.KReference, filters ..
 			}
 
 			obs = append(obs, ob)
-		// TODO: worry about v.Count
-		default:
-			fmt.Println("skipped: ", v.Reason)
 		}
 	}
 
