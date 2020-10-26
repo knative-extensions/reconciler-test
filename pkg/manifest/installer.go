@@ -25,7 +25,6 @@ import (
 
 	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/reconciler-test/pkg/environment"
-	"knative.dev/reconciler-test/pkg/installer"
 )
 
 func InstallLocalYaml(ctx context.Context, base map[string]interface{}) (Manifest, error) {
@@ -37,7 +36,7 @@ func InstallLocalYaml(ctx context.Context, base map[string]interface{}) (Manifes
 	_, filename, _, _ := runtime.Caller(1)
 	log.Println("FILENAME: ", filename)
 
-	yamls, err := installer.ParseTemplates(path.Dir(filename), cfg)
+	yamls, err := ParseTemplates(path.Dir(filename), cfg)
 	if err != nil {
 		return nil, err
 	}
