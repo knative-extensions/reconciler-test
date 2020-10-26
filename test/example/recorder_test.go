@@ -35,7 +35,7 @@ func RecorderFeature() *feature.Feature {
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			recorder.AssertDelivery(to, count, 1*time.Second, 20*time.Second))
+			recorder.AssertDelivery(to, count, 3*time.Second, 30*time.Second))
 
 	return f
 }

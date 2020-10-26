@@ -59,7 +59,6 @@ func AssertDelivery(to string, count int, interval, timeout time.Duration) featu
 		c := recorder_collector.New(ctx)
 		if err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 			events, err := c.List(ctx, from, func(ob observer.Observed) bool {
-				t.Logf("[filter]: %q - %s : %t\n", ob.Observer, ob.Event.Type(), ob.Observer == to)
 				return ob.Observer == to
 			})
 			if err != nil {
