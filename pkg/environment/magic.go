@@ -73,7 +73,7 @@ func (mr *MagicEnvironment) Finish() {
 	mr.DeleteNamespaceIfNeeded()
 }
 
-func (mr *MagicGlobalEnvironment) Environment() (context.Context, Environment) {
+func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
 	images, err := ProduceImages()
 	if err != nil {
 		panic(err)
@@ -89,11 +89,17 @@ func (mr *MagicGlobalEnvironment) Environment() (context.Context, Environment) {
 		namespace: namespace,
 	}
 
+	ctx := ContextWith(mr.c, env)
+
+	for _, opt := range opts {
+		if ctx, err = opt(ctx, env); err != nil {
+			panic(err)
+		}
+	}
+
 	if err := env.CreateNamespaceIfNeeded(); err != nil {
 		panic(err)
 	}
-
-	ctx := ContextWith(mr.c, env)
 
 	return ctx, env
 }
@@ -126,13 +132,6 @@ func (mr *MagicEnvironment) Namespace() string {
 
 func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.Feature) {
 	t.Helper() // Helper marks the calling function as a test helper function.
-	// Respect the flags, 0 means none.
-	//if mr.l == 0 {
-	//	mr.l = feature.All
-	//}
-	//if mr.s == 0 {
-	//	mr.s = feature.Any
-	//}
 
 	for _, timing := range feature.Timings() {
 		// do it the slow way first.

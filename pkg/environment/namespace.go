@@ -38,7 +38,13 @@ func (me *MagicEnvironment) CreateNamespaceIfNeeded() error {
 	c := kubeclient.Get(me.c)
 	nsSpec, err := c.CoreV1().Namespaces().Get(context.Background(), me.namespace, metav1.GetOptions{})
 
-	if err != nil && apierrors.IsNotFound(err) {
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+
+		// Namespace was not found, try to create it.
+
 		nsSpec = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: me.namespace}}
 		nsSpec, err = c.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 

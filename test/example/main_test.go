@@ -52,7 +52,6 @@ func TestMain(m *testing.M) {
 
 // This test is more for debugging the ko publish process.
 func TestKoPublish(t *testing.T) {
-	fmt.Println("TestKoPublish")
 	ic, err := environment.ProduceImages()
 	if err != nil {
 		panic(fmt.Errorf("failed to produce images, %s", err))
