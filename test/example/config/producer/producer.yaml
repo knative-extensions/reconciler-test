@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: producer
-          image: azd2k.azurecr.io/kn/producer@sha256:7ed12ab13b4828ab1a3797c52aea09c40681d6c79237e86ca9050041fd4ab008
+          image: ko://knative.dev/reconciler-test/test/example/cmd/producer
           env:
             - name: COUNT
               value: '{{ .count }}'

@@ -29,7 +29,7 @@ spec:
       serviceAccount: recorder
       containers:
         - name: recorder
-          image: azd2k.azurecr.io/kn/recorder@sha256:1938a18961f21262278dc03d18be190c630bef95a9ca0c62ca08af2528dbfd86
+          image: ko://knative.dev/reconciler-test/images/recorder
           env:
             - name: SYSTEM_NAMESPACE
               value: {{ .namespace }}
