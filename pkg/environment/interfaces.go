@@ -55,7 +55,7 @@ type Environment interface {
 	// yaml templates.
 	TemplateConfig(base map[string]interface{}) map[string]interface{}
 
-	// Reference registers a object reference to the environment, so that it
+	// Reference registers an object reference to the environment, so that it
 	// can be listed in env.References() or be cleaned up in env.Finish().
 	// This can be one way a feature communicates with future features run in
 	// the same environment.
@@ -65,7 +65,7 @@ type Environment interface {
 	// installed in the environment.
 	References() []corev1.ObjectReference
 
-	// Finish signals to the enviornment no future features will be run. The
+	// Finish signals to the environment no future features will be run. The
 	// namespace will be deleted if it was created by the environment,
 	// References will be cleaned up if registered.
 	Finish()

@@ -56,16 +56,10 @@ type MagicEnvironment struct {
 }
 
 func (mr *MagicEnvironment) Reference(ref ...corev1.ObjectReference) {
-	if mr.refs == nil {
-		mr.refs = make([]corev1.ObjectReference, 0)
-	}
 	mr.refs = append(mr.refs, ref...)
 }
 
 func (mr *MagicEnvironment) References() []corev1.ObjectReference {
-	if mr.refs == nil {
-		return []corev1.ObjectReference{} // return an empty list.
-	}
 	return mr.refs
 }
 

@@ -46,8 +46,11 @@ func RegisterPackage(pack ...string) {
 	}
 }
 
-// WithImages will bypass ProduceImages() and use the provided image set instead.
-// Should be called before ProduceImages(), if used, likely in an init() method.
+// WithImages will bypass ProduceImages() and use the provided image set
+// instead. Should be called before ProduceImages(), if used, likely in an
+// init() method. An images value should be a container registry image. The
+// images map is presented to the templates on the field `images`, and used
+// like {{ .image.<key> }}.
 func WithImages(images map[string]string) {
 	packaged.Do(func() {
 		packageToImageConfig = images
@@ -67,6 +70,7 @@ func ProduceImages() (map[string]string, error) {
 				return
 			}
 			i := strings.Split(pack, "/")
+			// TODO: the current key is too small, we will need to follow-up and change the image to be more complex to avoid shadowing.
 			packageToImageConfig[i[len(i)-1]] = strings.TrimSpace(image)
 		}
 	})
