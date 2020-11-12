@@ -53,14 +53,14 @@ func ParseTemplates(path string, images map[string]string, data map[string]inter
 				log.Print("execute: ", err)
 				return err
 			}
+			_ = tmpfile.Close()
 
 			// Set image.
-			read, err := ioutil.ReadAll(tmpfile)
+			read, err := ioutil.ReadFile(tmpfile.Name())
 			newContents := string(read)
 			for key, image := range images {
 				newContents = strings.Replace(newContents, key, image, -1)
 			}
-			_ = tmpfile.Close()
 
 			err = ioutil.WriteFile(tmpfile.Name(), []byte(newContents), 0)
 			if err != nil {
