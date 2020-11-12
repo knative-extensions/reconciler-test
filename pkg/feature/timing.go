@@ -14,25 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package images
+package feature
 
-import (
-	"os/exec"
-	"strings"
+type Timing uint8
+
+const (
+	Setup Timing = iota
+	Requirement
+	Assert
+	Teardown
 )
 
-// Helper functions to run shell commands.
-
-func cmd(cmdLine string) *exec.Cmd {
-	cmdSplit := strings.Split(cmdLine, " ")
-	cmd := cmdSplit[0]
-	args := cmdSplit[1:]
-	return exec.Command(cmd, args...)
+func (t Timing) String() string {
+	return timingMapping[t]
 }
 
-func runCmd(cmdLine string) (string, error) {
-	cmd := cmd(cmdLine)
+func Timings() []Timing {
+	return []Timing{Setup, Requirement, Assert, Teardown}
+}
 
-	cmdOut, err := cmd.Output()
-	return string(cmdOut), err
+var timingMapping = map[Timing]string{
+	Setup:       "Setup",
+	Requirement: "Requirement",
+	Assert:      "Assert",
+	Teardown:    "Teardown",
 }
