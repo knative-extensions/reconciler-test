@@ -30,7 +30,9 @@ var packaged sync.Once
 
 // RegisterPackage registers an interest in producing an image based on the
 // provide package.
-// Can be called multiple times with the same package
+// Can be called multiple times with the same package.
+// A package will be used to produce the image and used
+// like `image: ko://<package>` inside test yaml.
 func RegisterPackage(pack ...string) {
 	for _, p := range pack {
 		exists := false
@@ -50,7 +52,7 @@ func RegisterPackage(pack ...string) {
 // instead. Should be called before ProduceImages(), if used, likely in an
 // init() method. An images value should be a container registry image. The
 // images map is presented to the templates on the field `images`, and used
-// like {{ .image.<key> }}.
+// like `image: <key>` inside test yaml.
 func WithImages(images map[string]string) {
 	packaged.Do(func() {
 		packageToImageConfig = images
