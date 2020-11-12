@@ -77,9 +77,6 @@ func (f *Feature) Teardown(name string, fn StepFn) {
 }
 
 func (f *Feature) AddStep(step ...Step) {
-	if f.Steps == nil {
-		f.Steps = make([]Step, 0)
-	}
 	f.Steps = append(f.Steps, step...)
 }
 
