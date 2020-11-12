@@ -28,9 +28,7 @@ import (
 )
 
 func init() {
-	environment.RegisterPackage(
-		"knative.dev/reconciler-test/test/example/cmd/producer",
-	)
+	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
 }
 
 func Install(sendCount int, svcName string) feature.StepFn {

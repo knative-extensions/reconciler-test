@@ -69,9 +69,7 @@ func ProduceImages() (map[string]string, error) {
 				propErr = err
 				return
 			}
-			i := strings.Split(pack, "/")
-			// TODO: the current key is too small, we will need to follow-up and change the image to be more complex to avoid shadowing.
-			packageToImageConfig[i[len(i)-1]] = strings.TrimSpace(image)
+			packageToImageConfig["ko://"+pack] = strings.TrimSpace(image)
 		}
 	})
 	return packageToImageConfig, propErr

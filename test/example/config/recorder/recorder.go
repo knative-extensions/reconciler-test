@@ -31,9 +31,7 @@ import (
 )
 
 func init() {
-	environment.RegisterPackage(
-		"knative.dev/reconciler-test/images/recorder",
-	)
+	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
 }
 
 func Install(recorderName string) feature.StepFn {

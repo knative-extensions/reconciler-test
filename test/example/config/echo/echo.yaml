@@ -25,7 +25,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: echo
-          image: {{ .images.echo }}
+          image: azd2k.azurecr.io/kn/echo@sha256:0933ea6bf2799b08653c0e729d63372629b42c69331125d2428edeb25c57637b
           env:
             - name: ECHO
               value: "{{ .message }}"
