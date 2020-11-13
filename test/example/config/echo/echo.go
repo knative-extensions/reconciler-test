@@ -26,9 +26,7 @@ import (
 )
 
 func init() {
-	environment.RegisterPackage(
-		"knative.dev/reconciler-test/test/example/cmd/echo",
-	)
+	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
 }
 
 // Output is the base output we can expect from a echo job.

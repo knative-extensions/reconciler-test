@@ -25,7 +25,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: echo
-          image: {{ .images.echo }}
+          image: ko://knative.dev/reconciler-test/test/example/cmd/echo
           env:
             - name: ECHO
               value: "{{ .message }}"

@@ -50,6 +50,8 @@ type Environment interface {
 
 	// Images returns back the name to container image mapping to be used with
 	// yaml template parsing.
+	// The map will be in the form `key`: `image` and `key` and the intention
+	// usage is to use this key to string substitute for image in test yaml.
 	Images() map[string]string
 	// TemplateConfig returns the base template config to use when processing
 	// yaml templates.

@@ -107,7 +107,6 @@ func (mr *MagicEnvironment) TemplateConfig(base map[string]interface{}) map[stri
 	for k, v := range base {
 		cfg[k] = v
 	}
-	cfg["images"] = mr.images
 	cfg["namespace"] = mr.namespace
 	return cfg
 }
