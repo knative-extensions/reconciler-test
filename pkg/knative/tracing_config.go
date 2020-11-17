@@ -34,17 +34,17 @@ type tracingConfigEnvKey struct{}
 func WithTracingConfig(ctx context.Context, env environment.Environment) (context.Context, error) {
 	cm, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(context.Background(), configtracing.ConfigName, metav1.GetOptions{})
 	if err != nil {
-		return ctx, fmt.Errorf("error while retrieving the %s config map: %+v", configtracing.ConfigName, errors.WithStack(err))
+		return ctx, fmt.Errorf("error while retrieving the %s config map in namespace %s: %+v", configtracing.ConfigName, system.Namespace(), errors.WithStack(err))
 	}
 
 	config, err := configtracing.NewTracingConfigFromConfigMap(cm)
 	if err != nil {
-		return ctx, fmt.Errorf("error while parsing the %s config map: %+v", configtracing.ConfigName, errors.WithStack(err))
+		return ctx, fmt.Errorf("error while parsing the %s config map in namespace %s: %+v", configtracing.ConfigName, system.Namespace(), errors.WithStack(err))
 	}
 
 	configSerialized, err := configtracing.TracingConfigToJson(config)
 	if err != nil {
-		return ctx, fmt.Errorf("error while serializing the %s config map: %+v", configtracing.ConfigName, errors.WithStack(err))
+		return ctx, fmt.Errorf("error while serializing the %s config map in namespace %s: %+v", configtracing.ConfigName, system.Namespace(), errors.WithStack(err))
 	}
 
 	return context.WithValue(ctx, tracingConfigEnvKey{}, configSerialized), nil

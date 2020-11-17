@@ -34,17 +34,17 @@ type loggingConfigEnvKey struct{}
 func WithLoggingConfig(ctx context.Context, env environment.Environment) (context.Context, error) {
 	cm, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(context.Background(), logging.ConfigMapName(), metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error while retrieving the %s config map: %+v", logging.ConfigMapName(), errors.WithStack(err))
+		return nil, fmt.Errorf("error while retrieving the %s config map in namespace %s: %+v", logging.ConfigMapName(), system.Namespace(), errors.WithStack(err))
 	}
 
 	config, err := logging.NewConfigFromMap(cm.Data)
 	if err != nil {
-		return nil, fmt.Errorf("error while parsing the %s config map: %+v", logging.ConfigMapName(), errors.WithStack(err))
+		return nil, fmt.Errorf("error while parsing the %s config map in namespace %s: %+v", logging.ConfigMapName(), system.Namespace(), errors.WithStack(err))
 	}
 
 	configSerialized, err := logging.LoggingConfigToJson(config)
 	if err != nil {
-		return nil, fmt.Errorf("error while serializing the %s config map: %+v", logging.ConfigMapName(), errors.WithStack(err))
+		return nil, fmt.Errorf("error while serializing the %s config map in namespace %s: %+v", logging.ConfigMapName(), system.Namespace(), errors.WithStack(err))
 	}
 
 	return context.WithValue(ctx, loggingConfigEnvKey{}, configSerialized), nil
