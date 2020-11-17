@@ -31,6 +31,8 @@ import (
 	"knative.dev/pkg/injection"
 	_ "knative.dev/pkg/system/testing"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/knative"
 )
 
 var global environment.GlobalEnvironment
@@ -90,7 +92,11 @@ func TestEcho(t *testing.T) {
 	t.Parallel()
 
 	// Create an environment to run the tests in from the global environment.
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 
 	f := EchoFeature()
 
@@ -108,7 +114,11 @@ func TestEcho(t *testing.T) {
 // TestRecorder is an example simple test.
 func TestRecorder(t *testing.T) {
 	t.Parallel()
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 	env.Test(ctx, t, RecorderFeature())
 	env.Finish()
 }
