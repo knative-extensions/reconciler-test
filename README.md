@@ -8,7 +8,7 @@ implementations.
 We have developed a lightweight testing framework to compose and share
 Kubernetes cluster based tests for Knative. These tests are intended to be
 venderable by other downstream components, which is useful for Conformance tests
-and blackbox e2e testing for behaviours.
+and blackbox e2e testing for behaviors.
 
 The testing framework is broken into two main components: Features: the small
 composable steps intended to validate a function or feature, and the Test
@@ -116,7 +116,7 @@ next [Features](#features) section.
 
 Test Entry point files should be named "<name>\_test.go" and should be tagged
 `e2e` or some other meaningful tag that will prevent them from being run on
-unexcluded `go test ./...` invocations.
+un-excluded `go test ./...` invocations.
 
 #### Features
 
@@ -126,7 +126,7 @@ step can be composed and shared in downstream features.
 
 Features have several phases that can be registered, each phase is executed in
 order, but there are no order guarantees in phases that are equal. If struct
-ordering is reauired it is recommended to break that into an independent feature
+ordering is required it is recommended to break that into an independent feature
 that is tested on an environment in order required.
 
 Features have 4 phases (timing) on which steps can be composed: Setup,
@@ -212,7 +212,7 @@ is
 env := environment.FromContext(ctx)
 ```
 
-This returns the [`Environemnt`](./pkg/environment/interfaces.go) the feature is
+This returns the [`Environment`](./pkg/environment/interfaces.go) the feature is
 being tested in.
 
 ##### YAML Setup Helpers
