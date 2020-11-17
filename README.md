@@ -1,3 +1,220 @@
-# TODO Repository Name
+# Knative Reconciler Test
 
-_TODO(leads): please fill in this section_
+This repo contains tools and frameworks to help validate and test reconciler
+implementations.
+
+## Knative End-to-End and Conformance Testing Framework
+
+We have developed a lightweight testing framework to compose and share
+Kubernetes cluster based tests for Knative. These tests are intended to be
+venderable by other downstream components, which is useful for Conformance tests
+and blackbox e2e testing for behaviours.
+
+The testing framework is broken into two main components: Features: the small
+composable steps intended to validate a function or feature, and the Test
+Environment: which is highly dependent on the cluster, the config that was
+passed. The two components are intended to be fairly independent.
+
+A feature is a contained test with phases. A feature could be anything from a
+set of assertions, to waiting for or validating a condition, installing test
+dependencies, or interacting with an API. One or more features are tested in an
+Environment. One or more Environments are produced for test run.
+
+### Getting Started
+
+We will compose our test integration into two parts: 1) test entry points, and 2) features.
+
+#### Test Entry Points
+
+Test entry points are the methods go sees when running `go test ./...` This includes `TestMain` and everything function with a signature of `func Test<Name>(t *testing.T)`.
+Because we do not want to run these integration style tests when running unit tests, we will tag the entry point files with `// +build e2e`
+
+TestMain is when the GlobalEnvironment is created. This global variable will be used for the rest of the test run, it is a singleton.
+
+[main_test.go](./test/example/main_test.go)
+
+```go
+// +build e2e
+
+import (
+	"knative.dev/pkg/injection"
+	"knative.dev/reconciler-test/pkg/environment"
+)
+
+// global is the singleton instance of GlobalEnvironment. It is used to parse
+// the testing config for the test run. The config will specify the cluster
+// config as well as the parsing level and state flags.
+var global environment.GlobalEnvironment
+
+func init() {
+	// environment.InitFlags registered state and level filter flags.
+	environment.InitFlags(flag.CommandLine)
+}
+
+// TestMain is the first entry point for `go test`.
+func TestMain(m *testing.M) {
+	// We get a chance to parse flags to include our new flags for the
+	// framework as well as any additional flags included in the integration.
+	flag.Parse()
+
+	// EnableInjectionOrDie will enable client injection, this is used by the
+	// testing framework for namespace management, and could be leveraged by
+	// features to pull Kubernetes clients or the test environment out of the
+	// context passed in the features.
+	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
+	startInformers()
+
+	// global is used to make instances of Environments, NewGlobalEnvironment
+	// is passing and saving the client injection enabled context for use later.
+	global = environment.NewGlobalEnvironment(ctx)
+
+	// Run the tests.
+	os.Exit(m.Run())
+}
+```
+
+From the instance of GlobalEnvironment, we will test features on an instance of the environment.
+
+```go
+// +build e2e
+
+// TestFoo is an example simple test.
+func TestFoo(t *testing.T) {
+	// Signal to the go test framework that this test can be run in parallel
+	// with other tests.
+	t.Parallel()
+
+	// Create an instance of an environment. The environment will be configured
+	// with any relevant configuration and settings based on the global
+	// environment settings. Additional options can be passed to Environment()
+	// if customization is required.
+	ctx, env := global.Environment()
+
+	// With the instance of an Environment, perform one or more calls to Test().
+	env.Test(ctx, t, FooFeature1())
+    // Note: env.Test() is blocking until the feature completes.
+    env.Test(ctx, t, FooFeature2())
+
+	// Call Finish() on the Environment when finished. This will clean up any
+	// ephemeral resources created from global.Environment() and env.Test().
+	env.Finish()
+}
+``` 
+
+The role of the `Test<Name>` methods is to control which features are tested on
+environment instances. It is your responsibility to understand if it is safe to
+run multiple features in an environment instance. It is reasonable to pass
+additional configurations to the feature constructor, unless it is data that
+should be pulled from the instance of `env`, which will be talked about in the
+next [Features](#features) section.  
+
+Test Entry point files should be named "<name>_test.go" and should be tagged `e2e` or some other meaningful tag that
+will prevent them from being run on unexcluded `go test ./...` invocations.
+ 
+#### Features
+
+Features are a series of steps that perform actions or validations. Each step is
+similar to a unit test. It has a scoped objective, and if written with care, a
+step can be composed and shared in downstream features. 
+
+Features have several phases that can be registered, each phase is executed in
+order, but there are no order guarantees in phases that are equal. If struct ordering is reauired
+it is recommended to break that into an independent feature that is tested on an environment in order required.
+
+Features have 4 phases (timing) on which steps can be composed: Setup, Requirement, Assert, and Teardown.
+The step functions are run in that order.
+
+- Setup is used to install required components or configuration in the environment.
+- Requirement is used to validate the cluster, environment, or anything else. Think of this as a preflight validation for the assertions. 
+- Assert should assume the namespace is ready to perform or validate the test.
+- Teardown should be used to do final feature cleanup, if needed. There is also automatic cleanup of resources and namespace for the environment.
+
+Asserts have two additional properties that allow for filtering from within environment.Test, State and Level.
+
+State represents how mature the requirement is for the feature, we support Alpha, Beta, and Stable.
+
+Level relates to the spec language this test represents, we support Must, MustNot, Should, ShouldNot, and May.
+
+States and Levels are used to filter feature steps based on test parameters. 
+
+Features should be in a file with the naming pattern "<name>_feature.go", with no build tag on this file.
+
+##### Composing Features
+
+A `feature.Feature` is implemented as a builder pattern. Start with a new `feature.Feature`:
+ 
+```go
+f := new(feature.Feature)
+```
+
+Then, add steps for each timing as required for the test:
+
+```go
+f.Requirement("a cluster requirement is tested", HasClusterRequirement())
+
+f.Setup("install a dependency", InstallADependency(opts))
+f.Requirement("a dependency went ready", ADependencyIsReady())
+
+f.Alpha("some experimental feature name").
+	Must("does a thing", AssertThing(opts)).
+    May("could do another thing", AssertAnotherThing)
+
+f.Beta("pretty sure this is a good feature name").
+	Must("does another thing", AssertAnotherThing(opts)).
+    Should("please do thing", AssertPleaseDoThing(1, 2, 3))
+
+f.Teardown("remove a dependency", DeleteADependency(opts))
+```
+
+The step functions all have the same function signature, 
+```go
+func AssertSomething(ctx context.Context, t *testing.T) {
+    // TODO: some assert.
+}
+```
+
+Step functions could return a `feature.StepFn`, allowing options or configuration to be passed to the StepFn. For example, `AssertDelivery`:
+
+```go
+func AssertDelivery(to string, count int, interval, timeout time.Duration) feature.StepFn {
+	return func(ctx context.Context, t *testing.T) {
+        // TODO: some assert.
+    }
+}
+```
+
+The context passed to a StepFn is client injection enabled, and decorated with
+environment context (and extendable based on passing `opts` callbacks in `global.Environment(opts EnvOpts...)`).
+
+In addition to the normal client injection `typedclient.Get(ctx)` methods, there is 
+
+```go
+env := environment.FromContext(ctx)
+```
+
+This returns the [`Environemnt`](./pkg/environment/interfaces.go) the feature is being tested in. 
+
+##### YAML Setup Helpers
+
+The testing framework also enables YAML based installing of components. This framework can help: 
+
+1. produce go-based test images via `ko publish`. 
+1. discover ko-based packages in local YAML file.
+1. apply local YAML files with some light go templating to the test environment.
+
+To produce images, register an interest in one or more packages with the `environment` package in an `init` method.
+
+```go
+import "knative.dev/reconciler-test/pkg/environment"
+
+func init() {
+	environment.RegisterPackage("example.com/some/local/package", "example.com/another/package")
+}
+```  
+
+This can be discovered dynamically 
+
+Images produced will replace `ko://<package>` on installation.
+
+
+### Running Tests
