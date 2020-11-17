@@ -13,29 +13,7 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Pod
+kind: ServiceAccount
 metadata:
   name: {{ .eventshubName }}
   namespace: {{ .namespace }}
-  labels:
-    app: eventshub
-spec:
-  containers:
-    - name: eventshub
-      image: ko://knative.dev/reconciler-test/cmd/eventshub
-      imagePullPolicy: "IfNotPresent"
-      serviceAccountName: {{ .eventshubName }}
-      restartPolicy: "Never"
-      env:
-        - name: "SYSTEM_NAMESPACE"
-          valueFrom:
-            fieldRef:
-              fieldPath: "metadata.namespace"
-        - name: "POD_NAME"
-          valueFrom:
-            fieldRef:
-              fieldPath: "metadata.name"
-        {{ range $key, $value := .envs }}
-        - name: {{printf "%q" $key}}
-          value: {{printf "%q" $value}}
-        {{ end }}

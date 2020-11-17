@@ -37,7 +37,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
 		// Compute the user provided envs
 		envs := make(map[string]string)
-		if err := compose(options...)(envs); err != nil {
+		if err := compose(options...)(ctx, envs); err != nil {
 			t.Fatalf("Error while computing environment variables for eventshub: %s", err)
 		}
 

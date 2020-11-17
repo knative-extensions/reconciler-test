@@ -17,13 +17,17 @@ limitations under the License.
 package eventshub
 
 import (
+	"context"
 	"encoding/json"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"knative.dev/pkg/network"
+
+	"knative.dev/reconciler-test/pkg/environment"
 )
 
 // EventsHubOption is used to define an env for the eventshub image
-type EventsHubOption = func(map[string]string) error
+type EventsHubOption = func(context.Context, map[string]string) error
 
 // StartReceiver starts the receiver in the eventshub
 // This can be used together with EchoEvent, ReplyWithTransformedEvent, ReplyWithAppendedData
@@ -31,8 +35,11 @@ var StartReceiver EventsHubOption = envAdditive("EVENT_GENERATORS", "receiver")
 
 // StartSender starts the sender in the eventshub
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
-func StartSender(sink string) EventsHubOption {
-	return compose(envAdditive("EVENT_GENERATORS", "sender"), envOption("SINK", sink))
+func StartSender(sinkSvc string) EventsHubOption {
+	return compose(envAdditive("EVENT_GENERATORS", "sender"), func(ctx context.Context, envs map[string]string) error {
+		envs["SINK"] = "http://" + network.GetServiceHostname(sinkSvc, environment.FromContext(ctx).Namespace())
+		return nil
+	})
 }
 
 // EchoEvent is an option to let the eventshub reply with the received event
@@ -60,7 +67,7 @@ func ReplyWithAppendedData(appendData string) EventsHubOption {
 func InputEvent(event cloudevents.Event) EventsHubOption {
 	encodedEvent, err := json.Marshal(event)
 	if err != nil {
-		return func(envs map[string]string) error {
+		return func(ctx context.Context, envs map[string]string) error {
 			return err
 		}
 	}
@@ -87,14 +94,14 @@ func InputHeader(k, v string) EventsHubOption {
 	return envAdditive("INPUT_HEADERS", k+":"+v)
 }
 
-func noop(map[string]string) error {
+func noop(context.Context, map[string]string) error {
 	return nil
 }
 
 func compose(options ...EventsHubOption) EventsHubOption {
-	return func(envs map[string]string) error {
+	return func(ctx context.Context, envs map[string]string) error {
 		for _, opt := range options {
-			if err := opt(envs); err != nil {
+			if err := opt(ctx, envs); err != nil {
 				return err
 			}
 		}
@@ -104,7 +111,7 @@ func compose(options ...EventsHubOption) EventsHubOption {
 
 func envOptionalOpt(key, value string) EventsHubOption {
 	if value != "" {
-		return func(envs map[string]string) error {
+		return func(ctx context.Context, envs map[string]string) error {
 			envs[key] = value
 			return nil
 		}
@@ -114,14 +121,14 @@ func envOptionalOpt(key, value string) EventsHubOption {
 }
 
 func envOption(key, value string) EventsHubOption {
-	return func(envs map[string]string) error {
+	return func(ctx context.Context, envs map[string]string) error {
 		envs[key] = value
 		return nil
 	}
 }
 
 func envAdditive(key, value string) EventsHubOption {
-	return func(m map[string]string) error {
+	return func(ctx context.Context, m map[string]string) error {
 		if containedValue, ok := m[key]; ok {
 			m[key] = containedValue + "," + value
 		} else {

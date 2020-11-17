@@ -75,7 +75,8 @@ func newEventListener(client kubernetes.Interface, namespace string, logf func(s
 	eventsInformer := informerFactory.Core().V1().Events().Informer()
 
 	el := EventListener{
-		cancel: cancelCtx,
+		cancel:   cancelCtx,
+		handlers: make(map[string]EventHandler),
 	}
 
 	eventsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{

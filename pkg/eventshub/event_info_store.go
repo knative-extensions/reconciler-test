@@ -124,8 +124,8 @@ func (ei *Store) Find(matchers ...EventInfoMatcher) ([]eventshub.EventInfo, even
 	allMatch := []eventshub.EventInfo{}
 	ei.lock.Lock()
 	sInfo := eventshub.SearchedInfo{
-		storeEventsSeen:    ei.eventsSeen,
-		storeEventsNotMine: ei.eventsNotMine,
+		StoreEventsSeen:    ei.eventsSeen,
+		StoreEventsNotMine: ei.eventsNotMine,
 	}
 	ei.lock.Unlock()
 	lastEvents := []eventshub.EventInfo{}

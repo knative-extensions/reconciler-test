@@ -19,10 +19,8 @@ package knative
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
@@ -44,7 +42,7 @@ func WithLoggingConfig(ctx context.Context, env environment.Environment) (contex
 		return nil, fmt.Errorf("error while parsing the %s config map: %+v", logging.ConfigMapName(), errors.WithStack(err))
 	}
 
-	configSerialized, err := logging.ConfigToJSON(config)
+	configSerialized, err := logging.LoggingConfigToJson(config)
 	if err != nil {
 		return nil, fmt.Errorf("error while serializing the %s config map: %+v", logging.ConfigMapName(), errors.WithStack(err))
 	}

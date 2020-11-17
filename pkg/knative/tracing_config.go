@@ -19,7 +19,6 @@ package knative
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +42,7 @@ func WithTracingConfig(ctx context.Context, env environment.Environment) (contex
 		return ctx, fmt.Errorf("error while parsing the %s config map: %+v", configtracing.ConfigName, errors.WithStack(err))
 	}
 
-	configSerialized, err := configtracing.TracingConfigToJSON(config)
+	configSerialized, err := configtracing.TracingConfigToJson(config)
 	if err != nil {
 		return ctx, fmt.Errorf("error while serializing the %s config map: %+v", configtracing.ConfigName, errors.WithStack(err))
 	}
