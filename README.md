@@ -22,14 +22,19 @@ Environment. One or more Environments are produced for test run.
 
 ### Getting Started
 
-We will compose our test integration into two parts: 1) test entry points, and 2) features.
+We will compose our test integration into two parts: 1) test entry points,
+and 2) features.
 
 #### Test Entry Points
 
-Test entry points are the methods go sees when running `go test ./...` This includes `TestMain` and everything function with a signature of `func Test<Name>(t *testing.T)`.
-Because we do not want to run these integration style tests when running unit tests, we will tag the entry point files with `// +build e2e`
+Test entry points are the methods go sees when running `go test ./...` This
+includes `TestMain` and everything function with a signature of
+`func Test<Name>(t *testing.T)`. Because we do not want to run these integration
+style tests when running unit tests, we will tag the entry point files with
+`// +build e2e`
 
-TestMain is when the GlobalEnvironment is created. This global variable will be used for the rest of the test run, it is a singleton.
+TestMain is when the GlobalEnvironment is created. This global variable will be
+used for the rest of the test run, it is a singleton.
 
 [main_test.go](./test/example/main_test.go)
 
@@ -73,7 +78,8 @@ func TestMain(m *testing.M) {
 }
 ```
 
-From the instance of GlobalEnvironment, we will test features on an instance of the environment.
+From the instance of GlobalEnvironment, we will test features on an instance of
+the environment.
 
 ```go
 // +build e2e
@@ -99,50 +105,60 @@ func TestFoo(t *testing.T) {
 	// ephemeral resources created from global.Environment() and env.Test().
 	env.Finish()
 }
-``` 
+```
 
 The role of the `Test<Name>` methods is to control which features are tested on
 environment instances. It is your responsibility to understand if it is safe to
 run multiple features in an environment instance. It is reasonable to pass
 additional configurations to the feature constructor, unless it is data that
 should be pulled from the instance of `env`, which will be talked about in the
-next [Features](#features) section.  
+next [Features](#features) section.
 
-Test Entry point files should be named "<name>_test.go" and should be tagged `e2e` or some other meaningful tag that
-will prevent them from being run on unexcluded `go test ./...` invocations.
- 
+Test Entry point files should be named "<name>\_test.go" and should be tagged
+`e2e` or some other meaningful tag that will prevent them from being run on
+unexcluded `go test ./...` invocations.
+
 #### Features
 
 Features are a series of steps that perform actions or validations. Each step is
 similar to a unit test. It has a scoped objective, and if written with care, a
-step can be composed and shared in downstream features. 
+step can be composed and shared in downstream features.
 
 Features have several phases that can be registered, each phase is executed in
-order, but there are no order guarantees in phases that are equal. If struct ordering is reauired
-it is recommended to break that into an independent feature that is tested on an environment in order required.
+order, but there are no order guarantees in phases that are equal. If struct
+ordering is reauired it is recommended to break that into an independent feature
+that is tested on an environment in order required.
 
-Features have 4 phases (timing) on which steps can be composed: Setup, Requirement, Assert, and Teardown.
-The step functions are run in that order.
+Features have 4 phases (timing) on which steps can be composed: Setup,
+Requirement, Assert, and Teardown. The step functions are run in that order.
 
-- Setup is used to install required components or configuration in the environment.
-- Requirement is used to validate the cluster, environment, or anything else. Think of this as a preflight validation for the assertions. 
+- Setup is used to install required components or configuration in the
+  environment.
+- Requirement is used to validate the cluster, environment, or anything else.
+  Think of this as a preflight validation for the assertions.
 - Assert should assume the namespace is ready to perform or validate the test.
-- Teardown should be used to do final feature cleanup, if needed. There is also automatic cleanup of resources and namespace for the environment.
+- Teardown should be used to do final feature cleanup, if needed. There is also
+  automatic cleanup of resources and namespace for the environment.
 
-Asserts have two additional properties that allow for filtering from within environment.Test, State and Level.
+Asserts have two additional properties that allow for filtering from within
+environment.Test, State and Level.
 
-State represents how mature the requirement is for the feature, we support Alpha, Beta, and Stable.
+State represents how mature the requirement is for the feature, we support
+Alpha, Beta, and Stable.
 
-Level relates to the spec language this test represents, we support Must, MustNot, Should, ShouldNot, and May.
+Level relates to the spec language this test represents, we support Must,
+MustNot, Should, ShouldNot, and May.
 
-States and Levels are used to filter feature steps based on test parameters. 
+States and Levels are used to filter feature steps based on test parameters.
 
-Features should be in a file with the naming pattern "<name>_feature.go", with no build tag on this file.
+Features should be in a file with the naming pattern "<name>\_feature.go", with
+no build tag on this file.
 
 ##### Composing Features
 
-A `feature.Feature` is implemented as a builder pattern. Start with a new `feature.Feature`:
- 
+A `feature.Feature` is implemented as a builder pattern. Start with a new
+`feature.Feature`:
+
 ```go
 f := new(feature.Feature)
 ```
@@ -166,14 +182,16 @@ f.Beta("pretty sure this is a good feature name").
 f.Teardown("remove a dependency", DeleteADependency(opts))
 ```
 
-The step functions all have the same function signature, 
+The step functions all have the same function signature,
+
 ```go
 func AssertSomething(ctx context.Context, t *testing.T) {
     // TODO: some assert.
 }
 ```
 
-Step functions could return a `feature.StepFn`, allowing options or configuration to be passed to the StepFn. For example, `AssertDelivery`:
+Step functions could return a `feature.StepFn`, allowing options or
+configuration to be passed to the StepFn. For example, `AssertDelivery`:
 
 ```go
 func AssertDelivery(to string, count int, interval, timeout time.Duration) feature.StepFn {
@@ -184,25 +202,30 @@ func AssertDelivery(to string, count int, interval, timeout time.Duration) featu
 ```
 
 The context passed to a StepFn is client injection enabled, and decorated with
-environment context (and extendable based on passing `opts` callbacks in `global.Environment(opts EnvOpts...)`).
+environment context (and extendable based on passing `opts` callbacks in
+`global.Environment(opts EnvOpts...)`).
 
-In addition to the normal client injection `typedclient.Get(ctx)` methods, there is 
+In addition to the normal client injection `typedclient.Get(ctx)` methods, there
+is
 
 ```go
 env := environment.FromContext(ctx)
 ```
 
-This returns the [`Environemnt`](./pkg/environment/interfaces.go) the feature is being tested in. 
+This returns the [`Environemnt`](./pkg/environment/interfaces.go) the feature is
+being tested in.
 
 ##### YAML Setup Helpers
 
-The testing framework also enables YAML based installing of components. This framework can help: 
+The testing framework also enables YAML based installing of components. This
+framework can help:
 
-1. produce go-based test images via `ko publish`. 
+1. produce go-based test images via `ko publish`.
 1. discover ko-based packages in local YAML file.
 1. apply local YAML files with some light go templating to the test environment.
 
-To produce images, register an interest in one or more packages with the `environment` package in an `init` method.
+To produce images, register an interest in one or more packages with the
+`environment` package in an `init` method.
 
 ```go
 import "knative.dev/reconciler-test/pkg/environment"
@@ -210,11 +233,109 @@ import "knative.dev/reconciler-test/pkg/environment"
 func init() {
 	environment.RegisterPackage("example.com/some/local/package", "example.com/another/package")
 }
-```  
+```
 
-This can be discovered dynamically 
+This can be discovered dynamically by the helper function to scan local YAML
+files for `ko://` images, `manifest.ImagesLocalYaml()`
 
-Images produced will replace `ko://<package>` on installation.
+```go
+import (
+    "knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/manifest"
+)
 
+func init() {
+	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
+}
+```
+
+Images registred with the environment package will be produced on the first call
+to `environment.ProduceImages()`, which happens as a byproduct of calling
+`global.Environment()`. These images replace the `ko://` tags in YAML files that
+are applied the the cluster with `manifest.InstallLocalYaml`.
+
+A go file local to the target YAML can have an install step function like:
+
+```go
+func Install(message string) feature.StepFn {
+	return func(ctx context.Context, t *testing.T) {
+		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
+			"additional": "this",
+            "customizations": "here",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+```
+
+Then given a YAML file:
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: echo
+  namespace: { { .namespace } }
+  labels:
+    additional: { { .additional } }
+spec:
+  backoffLimit: 0
+  parallelism: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: echo
+          image: ko://knative.dev/reconciler-test/test/example/cmd/echo
+          env:
+            - name: ECHO
+              value: "{{ .customizations }}"
+```
+
+Will be processed first as a go template, then applied the Environment using the
+dynamic client.
 
 ### Running Tests
+
+Running tests is nothing more than using `go test`.
+
+```shell
+go test -v -count=1 -timeout=15m -tags=e2e ./test/...
+```
+
+#### Filters
+
+At the moment, all features and all requirements are defaulted on. These can be
+disabled using the following flags:
+
+| Flag                    | Type    | Meaning                                           |
+| ----------------------- | ------- | ------------------------------------------------- |
+| --feature.alpha         | Boolean | Enable/Disable running Alpha state features.      |
+| --feature.beta          | Boolean | Enable/Disable running Beta state features.       |
+| --feature.stable        | Boolean | Enable/Disable running Stable state features.     |
+| --feature.any           | Boolean | Enable/Disable running Any state features.        |
+| --requirement.must      | Boolean | Enable/Disable running Must level features.       |
+| --requirement.mustnot   | Boolean | Enable/Disable running Must Not level features.   |
+| --requirement.should    | Boolean | Enable/Disable running Should level features.     |
+| --requirement.shouldnot | Boolean | Enable/Disable running Should Not level features. |
+| --requirement.may       | Boolean | Enable/Disable running May level features.        |
+| --requirement.all       | Boolean | Enable/Disable running All level features.        |
+
+They can be used in combination, to run only Beta state features:
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... --feature.any=false --feature.beta
+```
+
+Or, only alpha and beta state features for only Must and Must Not requirements:
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... --feature.any=false --feature.beta --requirement.all=false --requirement.must --requirement.mustnot
+```
+
+And normal go filters work on the go test entry point names.
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... --feature.any=false --feature.beta -run TestKoPublish
+```
