@@ -66,7 +66,7 @@ func ConfigureTracing(logger *zap.SugaredLogger, serviceName string) error {
 		return tracing.SetupStaticPublishing(logger, serviceName, config.NoopConfig())
 	}
 
-	conf, err := config.JsonToTracingConfig(tracingEnv)
+	conf, err := config.JSONToTracingConfig(tracingEnv)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func ConfigureTracing(logger *zap.SugaredLogger, serviceName string) error {
 // ConfigureTracing can be used in test-images to configure tracing
 func ConfigureLogging(ctx context.Context, name string) context.Context {
 	loggingEnv := os.Getenv(ConfigLoggingEnv)
-	conf, err := logging.JsonToLoggingConfig(loggingEnv)
+	conf, err := logging.JSONToConfig(loggingEnv)
 	if err != nil {
 		logging.FromContext(ctx).Warn("Error while trying to read the config logging env: ", err)
 		return ctx

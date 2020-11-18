@@ -42,7 +42,7 @@ func WithTracingConfig(ctx context.Context, env environment.Environment) (contex
 		return ctx, fmt.Errorf("error while parsing the %s config map in namespace %s: %+v", configtracing.ConfigName, knativeNamespace, errors.WithStack(err))
 	}
 
-	configSerialized, err := configtracing.TracingConfigToJson(config)
+	configSerialized, err := configtracing.TracingConfigToJSON(config)
 	if err != nil {
 		return ctx, fmt.Errorf("error while serializing the %s config map in namespace %s: %+v", configtracing.ConfigName, knativeNamespace, errors.WithStack(err))
 	}
