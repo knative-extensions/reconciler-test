@@ -38,7 +38,7 @@ import (
 var global environment.GlobalEnvironment
 
 func init() {
-	// environment.InitFlags registered state and level filter flags.
+	// environment.InitFlags registers state and level filter flags.
 	environment.InitFlags(flag.CommandLine)
 }
 

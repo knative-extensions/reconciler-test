@@ -28,12 +28,12 @@ and 2) features.
 #### Test Entry Points
 
 Test entry points are the methods go sees when running `go test ./...` This
-includes `TestMain` and everything function with a signature of
+includes `TestMain` and every function with a signature of
 `func Test<Name>(t *testing.T)`. Because we do not want to run these integration
 style tests when running unit tests, we will tag the entry point files with
 `// +build e2e`
 
-TestMain is when the GlobalEnvironment is created. This global variable will be
+TestMain is where the GlobalEnvironment is created. This global variable will be
 used for the rest of the test run, it is a singleton.
 
 [main_test.go](./test/example/main_test.go)
@@ -52,7 +52,7 @@ import (
 var global environment.GlobalEnvironment
 
 func init() {
-	// environment.InitFlags registered state and level filter flags.
+	// environment.InitFlags registers state and level filter flags.
 	environment.InitFlags(flag.CommandLine)
 }
 
