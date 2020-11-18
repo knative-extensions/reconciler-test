@@ -144,7 +144,10 @@ jobs:
 
           # Create a minimal .wokeignore if none already exist.
           if [ ! -f .wokeignore ]; then
-            echo "vendor\nthird_party" > .wokeignore
+            cat > .wokeignore <<EOF
+            vendor/*
+            third_party/*
+          EOF
           fi
 
           echo '::group:: Running woke with reviewdog 🐶 ...'
