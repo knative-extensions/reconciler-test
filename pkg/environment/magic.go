@@ -123,9 +123,9 @@ func (mr *MagicEnvironment) Namespace() string {
 	return mr.namespace
 }
 
-func (mr *MagicEnvironment) Dependency(ctx context.Context, t *testing.T, f *feature.Feature) {
+func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *feature.Feature) {
 	t.Helper() // Helper marks the calling function as a test helper function.
-	t.Run("Dependency", func(t *testing.T) {
+	t.Run("Prerequisite", func(t *testing.T) {
 		mr.Test(ctx, t, f)
 	})
 }
