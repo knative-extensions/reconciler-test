@@ -44,7 +44,7 @@ func init() {
 
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
-	// We get a chance to parse flags to include our new flags for the
+	// We get a chance to parse flags to include the framework flags for the
 	// framework as well as any additional flags included in the integration.
 	flag.Parse()
 

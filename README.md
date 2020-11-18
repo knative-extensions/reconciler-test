@@ -8,11 +8,11 @@ implementations.
 We have developed a lightweight testing framework to compose and share
 Kubernetes cluster based tests for Knative. These tests are intended to be
 venderable by other downstream components, which is useful for Conformance tests
-and blackbox e2e testing for behaviors.
+and e2e testing for behaviors.
 
 The testing framework is broken into two main components: Features: the small
 composable steps intended to validate a function or feature, and the Test
-Environment: which is highly dependent on the cluster, the config that was
+Environment: which is highly dependent on the cluster, and the config that was
 passed. The two components are intended to be fairly independent.
 
 A feature is a contained test with phases. A feature could be anything from a
@@ -58,7 +58,7 @@ func init() {
 
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
-	// We get a chance to parse flags to include our new flags for the
+	// We get a chance to parse flags to include the framework flags for the
 	// framework as well as any additional flags included in the integration.
 	flag.Parse()
 
@@ -98,7 +98,7 @@ func TestFoo(t *testing.T) {
 
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, FooFeature1())
-    // Note: env.Test() is blocking until the feature completes.
+	// Note: env.Test() is blocking until the feature completes.
     env.Test(ctx, t, FooFeature2())
 
 	// Call Finish() on the Environment when finished. This will clean up any
@@ -177,7 +177,7 @@ f.Alpha("some experimental feature name").
 
 f.Beta("pretty sure this is a good feature name").
 	Must("does another thing", AssertAnotherThing(opts)).
-    Should("please do thing", AssertPleaseDoThing(1, 2, 3))
+		Should("please do thing", AssertPleaseDoThing(1, 2, 3))
 
 f.Teardown("remove a dependency", DeleteADependency(opts))
 ```
@@ -186,7 +186,7 @@ The step functions all have the same function signature,
 
 ```go
 func AssertSomething(ctx context.Context, t *testing.T) {
-    // TODO: some assert.
+	// TODO: some assert.
 }
 ```
 
@@ -196,8 +196,8 @@ configuration to be passed to the StepFn. For example, `AssertDelivery`:
 ```go
 func AssertDelivery(to string, count int, interval, timeout time.Duration) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
-        // TODO: some assert.
-    }
+		// TODO: some assert.
+	}
 }
 ```
 
@@ -240,7 +240,7 @@ files for `ko://` images, `manifest.ImagesLocalYaml()`
 
 ```go
 import (
-    "knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
@@ -258,11 +258,12 @@ A go file local to the target YAML can have an install step function like:
 
 ```go
 func Install(message string) feature.StepFn {
+	cfg := map[string]interface{}{
+		"additional": "this",
+		"customizations": message,
+	}
 	return func(ctx context.Context, t *testing.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
-			"additional": "this",
-            "customizations": "here",
-		}); err != nil {
+		if _, err := manifest.InstallLocalYaml(ctx, cfg); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -302,6 +303,12 @@ Running tests is nothing more than using `go test`.
 
 ```shell
 go test -v -count=1 -timeout=15m -tags=e2e ./test/...
+```
+
+And normal go test filters work on test entry point names:
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... -run TestKoPublish
 ```
 
 #### Filters
