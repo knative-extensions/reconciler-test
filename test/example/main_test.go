@@ -20,107 +20,45 @@ package example
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"testing"
-	"text/template"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"knative.dev/pkg/injection"
 	_ "knative.dev/pkg/system/testing"
+
 	"knative.dev/reconciler-test/pkg/environment"
-	"knative.dev/reconciler-test/pkg/k8s"
-	"knative.dev/reconciler-test/pkg/knative"
 )
 
+// global is the singleton instance of GlobalEnvironment. It is used to parse
+// the testing config for the test run. The config will specify the cluster
+// config as well as the parsing level and state flags.
 var global environment.GlobalEnvironment
 
 func init() {
+	// environment.InitFlags registers state and level filter flags.
 	environment.InitFlags(flag.CommandLine)
 }
 
+// TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
+	// We get a chance to parse flags to include the framework flags for the
+	// framework as well as any additional flags included in the integration.
 	flag.Parse()
 
+	// EnableInjectionOrDie will enable client injection, this is used by the
+	// testing framework for namespace management, and could be leveraged by
+	// features to pull Kubernetes clients or the test environment out of the
+	// context passed in the features.
 	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
 	startInformers()
 
+	// global is used to make instances of Environments, NewGlobalEnvironment
+	// is passing and saving the client injection enabled context for use later.
 	global = environment.NewGlobalEnvironment(ctx)
 
+	// Run the tests.
 	os.Exit(m.Run())
-}
-
-// This test is more for debugging the ko publish process.
-func TestKoPublish(t *testing.T) {
-	ic, err := environment.ProduceImages()
-	if err != nil {
-		panic(fmt.Errorf("failed to produce images, %s", err))
-	}
-
-	templateString := `
-// The following could be used to bypass the image generation process.
-
-import "knative.dev/reconciler-test/pkg/environment"
-
-func init() {
-	environment.WithImages(map[string]string{
-		{{ range $key, $value := . }}"{{ $key }}": "{{ $value }}",
-		{{ end }}
-	})
-}
-`
-
-	tp := template.New("t")
-	temp, err := tp.Parse(templateString)
-	if err != nil {
-		panic(err)
-	}
-
-	err = temp.Execute(os.Stdout, ic)
-	if err != nil {
-		panic(err)
-	}
-	_, _ = fmt.Fprint(os.Stdout, "\n\n")
-}
-
-// Rest of e2e tests go below:
-//
-// TestEcho is an example simple test.
-func TestEcho(t *testing.T) {
-	t.Parallel()
-
-	// Create an environment to run the tests in from the global environment.
-	ctx, env := global.Environment(
-		knative.WithKnativeNamespace("knative-system"),
-		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
-		k8s.WithEventListener,
-	)
-
-	f := EchoFeature()
-
-	// Now is the chance to modify the feature to add additional preconditions or assertions.
-
-	env.Test(ctx, t, f)
-
-	// we can run other features in this environment if we understand the side-effects.
-	env.Test(ctx, t, RecorderFeature())
-
-	// Calling finish on the environment cleans it up and removes the namespace.
-	env.Finish()
-}
-
-// TestRecorder is an example simple test.
-func TestRecorder(t *testing.T) {
-	t.Parallel()
-	ctx, env := global.Environment(
-		knative.WithKnativeNamespace("knative-system"),
-		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
-		k8s.WithEventListener,
-	)
-	env.Test(ctx, t, RecorderFeature())
-	env.Finish()
 }

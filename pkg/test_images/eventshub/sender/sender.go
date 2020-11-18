@@ -23,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 	nethttp "net/http"
 	"strconv"
 	"strings"
@@ -44,6 +45,9 @@ type envConfig struct {
 
 	// Sink url for the message destination
 	Sink string `envconfig:"SINK" required:"true"`
+
+	// ProbeSink will probe the sink until it responds.
+	ProbeSink bool `envconfig:"PROBE_SINK" default:"true"`
 
 	// InputEvent json encoded
 	InputEvent string `envconfig:"INPUT_EVENT" required:"false"`
@@ -96,6 +100,23 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 		logging.FromContext(ctx).Info("will sleep for ", delay)
 		time.Sleep(delay)
 		logging.FromContext(ctx).Info("awake, continuing")
+	}
+
+	if env.ProbeSink {
+		// Probe the sink for up to a minute.
+		if err := wait.PollImmediate(100*time.Millisecond, time.Minute, func() (bool, error) {
+			req, err := nethttp.NewRequest(nethttp.MethodHead, env.Sink, nil)
+			if err != nil {
+				return false, err
+			}
+
+			if _, err := nethttp.DefaultClient.Do(req); err != nil {
+				return false, nil
+			}
+			return true, nil
+		}); err != nil {
+			return err
+		}
 	}
 
 	switch env.EventEncoding {

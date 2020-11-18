@@ -79,7 +79,9 @@ jobs:
       run: |
         set -x
 
+        # Apply the reconciler test config.
         kubectl apply -f ./test/config
+
         # Run the tests tagged as e2e on the KinD cluster.
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/...
 

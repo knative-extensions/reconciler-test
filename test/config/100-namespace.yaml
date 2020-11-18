@@ -15,4 +15,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: knative-system
+  name: knative-reconciler-test
