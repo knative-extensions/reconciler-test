@@ -20,10 +20,14 @@ package example
 
 import (
 	"testing"
+
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	_ "knative.dev/pkg/system/testing"
+
+	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/knative"
 )
 
 // TestRecorder is an example simple test.
@@ -36,7 +40,12 @@ func TestRecorder(t *testing.T) {
 	// with any relevant configuration and settings based on the global
 	// environment settings. Additional options can be passed to Environment()
 	// if customization is required.
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace("knative-reconciler-test"),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, RecorderFeature())
@@ -61,8 +70,8 @@ func TestEcho(t *testing.T) {
 
 	env.Test(ctx, t, f)
 
-	// we can run other features in this environment if we understand the side-effects.
-	env.Test(ctx, t, RecorderFeature())
+	// note: we can run other features in this environment if we understand the side-effects.
+	// env.Test(ctx, t, SomeOtherFeature())
 
 	// Calling finish on the environment cleans it up and removes the namespace.
 	env.Finish()

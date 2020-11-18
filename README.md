@@ -7,7 +7,7 @@ implementations.
 
 We have developed a lightweight testing framework to compose and share
 Kubernetes cluster based tests for Knative. These tests are intended to be
-venderable by other downstream components, which is useful for Conformance tests
+vendor-able by other downstream components, which is useful for Conformance tests
 and e2e testing for behaviors.
 
 The testing framework is broken into two main components: Features: the small
@@ -94,7 +94,7 @@ func TestFoo(t *testing.T) {
 	// with any relevant configuration and settings based on the global
 	// environment settings. Additional options can be passed to Environment()
 	// if customization is required.
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(/* optional environment options */)
 
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, FooFeature1())

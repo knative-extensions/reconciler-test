@@ -17,25 +17,31 @@ limitations under the License.
 package example
 
 import (
-	"time"
+	"context"
+	"testing"
 
+	. "github.com/cloudevents/sdk-go/v2/test"
+
+	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/test/example/config/producer"
-	"knative.dev/reconciler-test/test/example/config/recorder"
 )
 
 func RecorderFeature() *feature.Feature {
+	from := feature.MakeRandomK8sName("sender")
 	to := feature.MakeRandomK8sName("recorder")
-	count := 5
 
 	f := new(feature.Feature)
 
-	f.Setup("install recorder", recorder.Install(to))
-	f.Setup("install producer", producer.Install(count, to))
+	event := FullEvent()
+
+	f.Setup("install recorder", eventshub.Install(to, eventshub.StartReceiver))
+	f.Setup("install sender", eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event)))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			recorder.AssertDelivery(to, count, 3*time.Second, 30*time.Second))
+			func(ctx context.Context, t *testing.T) {
+				eventshub.StoreFromContext(ctx, to).AssertExact(1, eventshub.MatchEvent(HasId(event.ID())))
+			})
 
 	return f
 }
