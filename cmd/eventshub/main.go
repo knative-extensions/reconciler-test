@@ -18,11 +18,9 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/kelseyhightower/envconfig"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/client-go/rest"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/logging"
 	_ "knative.dev/pkg/system/testing"
@@ -41,16 +39,9 @@ type envConfig struct {
 }
 
 func main() {
-	cfg, err := rest.InClusterConfig()
-	if err != nil {
-		log.Fatal("Error while reading the cfg", err)
-	}
-
 	//nolint // nil ctx is fine here, look at the code of EnableInjectionOrDie
-	ctx, _ := injection.EnableInjectionOrDie(nil, cfg)
+	ctx, _ := injection.EnableInjectionOrDie(nil, nil)
 	ctx = test_images.ConfigureLogging(ctx, "eventshub")
-
-	logging.FromContext(ctx).Infof("Events Hub environment configuration: %+v", cfg)
 
 	if err := test_images.ConfigureTracing(logging.FromContext(ctx), ""); err != nil {
 		logging.FromContext(ctx).Fatal("Unable to setup trace publishing", err)
@@ -60,9 +51,10 @@ func main() {
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var", err)
 	}
+	logging.FromContext(ctx).Infof("Events Hub environment configuration: %+v", env)
 
 	eventLogs := createEventLogs(ctx, env.EventLogs)
-	err = startEventGenerators(ctx, env.EventGenerators, eventLogs)
+	err := startEventGenerators(ctx, env.EventGenerators, eventLogs)
 
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Error during start: ", err)

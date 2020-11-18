@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/system"
 	configtracing "knative.dev/pkg/tracing/config"
 
 	"knative.dev/reconciler-test/pkg/environment"
@@ -32,19 +31,20 @@ import (
 type tracingConfigEnvKey struct{}
 
 func WithTracingConfig(ctx context.Context, env environment.Environment) (context.Context, error) {
-	cm, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(system.Namespace()).Get(context.Background(), configtracing.ConfigName, metav1.GetOptions{})
+	knativeNamespace := KnativeNamespaceFromContext(ctx)
+	cm, err := kubeclient.Get(ctx).CoreV1().ConfigMaps(knativeNamespace).Get(context.Background(), configtracing.ConfigName, metav1.GetOptions{})
 	if err != nil {
-		return ctx, fmt.Errorf("error while retrieving the %s config map in namespace %s: %+v", configtracing.ConfigName, system.Namespace(), errors.WithStack(err))
+		return ctx, fmt.Errorf("error while retrieving the %s config map in namespace %s: %+v", configtracing.ConfigName, knativeNamespace, errors.WithStack(err))
 	}
 
 	config, err := configtracing.NewTracingConfigFromConfigMap(cm)
 	if err != nil {
-		return ctx, fmt.Errorf("error while parsing the %s config map in namespace %s: %+v", configtracing.ConfigName, system.Namespace(), errors.WithStack(err))
+		return ctx, fmt.Errorf("error while parsing the %s config map in namespace %s: %+v", configtracing.ConfigName, knativeNamespace, errors.WithStack(err))
 	}
 
 	configSerialized, err := configtracing.TracingConfigToJson(config)
 	if err != nil {
-		return ctx, fmt.Errorf("error while serializing the %s config map in namespace %s: %+v", configtracing.ConfigName, system.Namespace(), errors.WithStack(err))
+		return ctx, fmt.Errorf("error while serializing the %s config map in namespace %s: %+v", configtracing.ConfigName, knativeNamespace, errors.WithStack(err))
 	}
 
 	return context.WithValue(ctx, tracingConfigEnvKey{}, configSerialized), nil

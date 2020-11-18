@@ -93,6 +93,7 @@ func TestEcho(t *testing.T) {
 
 	// Create an environment to run the tests in from the global environment.
 	ctx, env := global.Environment(
+		knative.WithKnativeNamespace("knative-system"),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
@@ -115,6 +116,7 @@ func TestEcho(t *testing.T) {
 func TestRecorder(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment(
+		knative.WithKnativeNamespace("knative-system"),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,

@@ -150,7 +150,7 @@ func (ei *Store) Find(matchers ...EventInfoMatcher) ([]eventshub.EventInfo, even
 	return allMatch, sInfo, nonMatchingErrors, nil
 }
 
-// Assert that there are at least min number of match for the provided matchers.
+// AssertAtLeast assert that there are at least min number of match for the provided matchers.
 // This method fails the test if the assert is not fulfilled.
 func (ei *Store) AssertAtLeast(min int, matchers ...EventInfoMatcher) []eventshub.EventInfo {
 	ei.tb.Helper()
@@ -162,7 +162,7 @@ func (ei *Store) AssertAtLeast(min int, matchers ...EventInfoMatcher) []eventshu
 	return events
 }
 
-// Assert that there are at least min number of matches and at most max number of matches for the provided matchers.
+// AssertInRange asserts that there are at least min number of matches and at most max number of matches for the provided matchers.
 // This method fails the test if the assert is not fulfilled.
 func (ei *Store) AssertInRange(min int, max int, matchers ...EventInfoMatcher) []eventshub.EventInfo {
 	ei.tb.Helper()
@@ -174,7 +174,7 @@ func (ei *Store) AssertInRange(min int, max int, matchers ...EventInfoMatcher) [
 	return events
 }
 
-// Assert that there aren't any matches for the provided matchers.
+// AssertNot asserts that there aren't any matches for the provided matchers.
 // This method fails the test if the assert is not fulfilled.
 func (ei *Store) AssertNot(matchers ...EventInfoMatcher) []eventshub.EventInfo {
 	ei.tb.Helper()
@@ -192,7 +192,7 @@ func (ei *Store) AssertNot(matchers ...EventInfoMatcher) []eventshub.EventInfo {
 	return res
 }
 
-// Assert that there are exactly n matches for the provided matchers.
+// AssertExact assert that there are exactly n matches for the provided matchers.
 // This method fails the test if the assert is not fulfilled.
 func (ei *Store) AssertExact(n int, matchers ...EventInfoMatcher) []eventshub.EventInfo {
 	ei.tb.Helper()

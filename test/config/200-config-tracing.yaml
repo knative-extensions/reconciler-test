@@ -1,4 +1,4 @@
-# Copyright 2020 The Knative Authors
+# Copyright 2019 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,11 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: {{ .eventshubName }}
-  namespace: {{ .namespace }}
-spec:
-  selector:
-    app: eventshub
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
+  name: config-tracing
+  namespace: knative-system
+data:
+  backend: "none"
+  debug: "false"
+  sample-rate: "0.1"
