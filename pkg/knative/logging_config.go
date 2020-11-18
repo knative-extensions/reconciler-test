@@ -42,7 +42,7 @@ func WithLoggingConfig(ctx context.Context, env environment.Environment) (contex
 		return nil, fmt.Errorf("error while parsing the %s config map in namespace %s: %+v", logging.ConfigMapName(), knativeNamespace, errors.WithStack(err))
 	}
 
-	configSerialized, err := logging.LoggingConfigToJson(config)
+	configSerialized, err := logging.ConfigToJSON(config)
 	if err != nil {
 		return nil, fmt.Errorf("error while serializing the %s config map in namespace %s: %+v", logging.ConfigMapName(), knativeNamespace, errors.WithStack(err))
 	}
