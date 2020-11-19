@@ -19,6 +19,9 @@ package eventshub
 import (
 	"context"
 	"encoding/json"
+	"math"
+	"strconv"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"knative.dev/pkg/network"
@@ -42,6 +45,8 @@ func StartSender(sinkSvc string) EventsHubOption {
 	})
 }
 
+// --- Receiver options
+
 // EchoEvent is an option to let the eventshub reply with the received event
 var EchoEvent EventsHubOption = envOption("REPLY", "true")
 
@@ -63,6 +68,27 @@ func ReplyWithAppendedData(appendData string) EventsHubOption {
 	)
 }
 
+// --- Sender options
+
+// InitialSenderDelay defines how much the sender has to wait, when started, before start sending events.
+// Note: this delay is executed before the probe sink.
+func InitialSenderDelay(delay time.Duration) EventsHubOption {
+	return envDuration("DELAY", delay)
+}
+
+// EnableProbeSink probes the sink with HTTP head requests up until the sink replies.
+// The specified duration defines the maximum timeout to probe it, before failing.
+// Note: the probe sink is executed after the initial delay
+func EnableProbeSink(timeout time.Duration) EventsHubOption {
+	return compose(
+		envOption("PROBE_SINK", "true"),
+		envDuration("PROBE_SINK_TIMEOUT", timeout),
+	)
+}
+
+// DisableProbeSink will disable the probe sink feature of sender, starting sending directly events after it's started.
+var DisableProbeSink = envOption("PROBE_SINK", "false")
+
 // InputEvent is an option to provide the event to send when deploying the event sender
 func InputEvent(event cloudevents.Event) EventsHubOption {
 	encodedEvent, err := json.Marshal(event)
@@ -74,25 +100,49 @@ func InputEvent(event cloudevents.Event) EventsHubOption {
 	return envOption("INPUT_EVENT", string(encodedEvent))
 }
 
-// AddTracing adds tracing headers when sending events.
-func AddTracing() EventsHubOption {
-	return envOption("ADD_TRACING", "true")
-}
-
-// EnableIncrementalId creates a new incremental id for each sent event.
-func EnableIncrementalId() EventsHubOption {
-	return envOption("INCREMENTAL_ID", "true")
-}
-
-// InputEncoding forces the encoding of the event for each sent event.
-func InputEncoding(encoding cloudevents.Encoding) EventsHubOption {
-	return envOption("EVENT_ENCODING", encoding.String())
+// InputEventWithEncoding is an option to provide the event to send when deploying the event sender forcing the specified encoding.
+func InputEventWithEncoding(event cloudevents.Event, encoding cloudevents.Encoding) EventsHubOption {
+	encodedEvent, err := json.Marshal(event)
+	if err != nil {
+		return func(ctx context.Context, envs map[string]string) error {
+			return err
+		}
+	}
+	return compose(
+		envOption("INPUT_EVENT", string(encodedEvent)),
+		envOption("EVENT_ENCODING", encoding.String()),
+	)
 }
 
 // InputHeader adds the following header to the sent headers.
 func InputHeader(k, v string) EventsHubOption {
 	return envAdditive("INPUT_HEADERS", k+":"+v)
 }
+
+// InputBody overwrites the request header with the following body.
+func InputBody(b string) EventsHubOption {
+	return envOption("INPUT_BODY", b)
+}
+
+// AddTracing adds tracing headers when sending events.
+var AddTracing = envOption("ADD_TRACING", "true")
+
+// AddSequence adds an extension named 'sequence' which contains the incremental number of sent events
+// (similar to EnableIncrementalId, but without overwriting the id attribute).
+var AddSequence = envOption("ADD_SEQUENCE", "true")
+
+// EnableIncrementalId replaces the event id with a new incremental id for each sent event.
+var EnableIncrementalId = envOption("INCREMENTAL_ID", "true")
+
+// SendMultipleEvents defines how much events to send and the period between them.
+func SendMultipleEvents(numberOfEvents int, period time.Duration) EventsHubOption {
+	return compose(
+		envOption("MAX_MESSAGES", strconv.Itoa(numberOfEvents)),
+		envDuration("PERIOD", period),
+	)
+}
+
+// --- Options utils
 
 func noop(context.Context, map[string]string) error {
 	return nil
@@ -136,4 +186,8 @@ func envAdditive(key, value string) EventsHubOption {
 		}
 		return nil
 	}
+}
+
+func envDuration(key string, value time.Duration) EventsHubOption {
+	return envOption(key, strconv.Itoa(int(math.Ceil(value.Seconds()))))
 }
