@@ -46,29 +46,26 @@ type envConfig struct {
 	// Sink url for the message destination
 	Sink string `envconfig:"SINK" required:"true"`
 
+	// The number of seconds to wait before starting sending the first message
+	Delay int `envconfig:"DELAY" default:"5" required:"false"`
+
 	// ProbeSink will probe the sink until it responds.
 	ProbeSink bool `envconfig:"PROBE_SINK" default:"true"`
 
+	// ProbeSinkTimeout defines the maximum amount of time in seconds to wait for the probe sink to succeed.
+	ProbeSinkTimeout int `envconfig:"PROBE_SINK_TIMEOUT" required:"false" default:"60"`
+
 	// InputEvent json encoded
 	InputEvent string `envconfig:"INPUT_EVENT" required:"false"`
+
+	// The encoding of the cloud event: [binary, structured].
+	EventEncoding string `envconfig:"EVENT_ENCODING" default:"binary" required:"false"`
 
 	// InputHeaders to send (this overrides any event provided input)
 	InputHeaders map[string]string `envconfig:"INPUT_HEADERS" required:"false"`
 
 	// InputBody to send (this overrides any event provided input)
 	InputBody string `envconfig:"INPUT_BODY" required:"false"`
-
-	// The encoding of the cloud event: [binary, structured].
-	EventEncoding string `envconfig:"EVENT_ENCODING" default:"binary" required:"false"`
-
-	// The number of seconds between messages.
-	Period int `envconfig:"PERIOD" default:"5" required:"false"`
-
-	// The number of seconds to wait before starting sending the first message
-	Delay int `envconfig:"DELAY" default:"5" required:"false"`
-
-	// The number of messages to attempt to send. 0 for unlimited.
-	MaxMessages int `envconfig:"MAX_MESSAGES" default:"1" required:"false"`
 
 	// Should tracing be added to events sent.
 	AddTracing bool `envconfig:"ADD_TRACING" default:"false" required:"false"`
@@ -78,6 +75,12 @@ type envConfig struct {
 
 	// Override the event id with an incremental id.
 	IncrementalId bool `envconfig:"INCREMENTAL_ID" default:"false" required:"false"`
+
+	// The number of seconds between messages.
+	Period int `envconfig:"PERIOD" default:"5" required:"false"`
+
+	// The number of messages to attempt to send. 0 for unlimited.
+	MaxMessages int `envconfig:"MAX_MESSAGES" default:"1" required:"false"`
 }
 
 func Start(ctx context.Context, logs *eventshub.EventLogs) error {
@@ -103,8 +106,9 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 	}
 
 	if env.ProbeSink {
+		probingTimeout := time.Duration(env.ProbeSinkTimeout) * time.Second
 		// Probe the sink for up to a minute.
-		if err := wait.PollImmediate(100*time.Millisecond, time.Minute, func() (bool, error) {
+		if err := wait.PollImmediate(100*time.Millisecond, probingTimeout, func() (bool, error) {
 			req, err := nethttp.NewRequest(nethttp.MethodHead, env.Sink, nil)
 			if err != nil {
 				return false, err
@@ -115,7 +119,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 			}
 			return true, nil
 		}); err != nil {
-			return err
+			return fmt.Errorf("probing the sink '%s' using timeout %s failed: %w", env.Sink, probingTimeout, err)
 		}
 	}
 
