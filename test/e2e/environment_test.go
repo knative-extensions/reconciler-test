@@ -21,7 +21,9 @@ package e2e
 import (
 	"context"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -41,13 +43,30 @@ func TestTimingConstraints(t *testing.T) {
 	// Build the feature
 	feat := &feature.Feature{}
 
+	counter := int32(0)
+
 	feat.Setup("setup1", appender(stringBuilder, "setup1"))
 	feat.Setup("setup2", appender(stringBuilder, "setup2"))
 	feat.Setup("setup3", appender(stringBuilder, "setup3"))
 	feat.Requirement("requirement1", appender(stringBuilder, "requirement1"))
 	feat.Requirement("requirement2", appender(stringBuilder, "requirement2"))
 	feat.Requirement("requirement3", appender(stringBuilder, "requirement3"))
-	feat.Stable("aaa").Must("bbb", func(ctx context.Context, t *testing.T) {})
+	feat.Stable("A cool feature").
+		Must("aaa", func(ctx context.Context, t *testing.T) {
+			time.Sleep(1 * time.Second)
+			atomic.AddInt32(&counter, 1)
+		}).
+		Must("bbb", func(ctx context.Context, t *testing.T) {
+			time.Sleep(1 * time.Second)
+			atomic.AddInt32(&counter, 1)
+		}).
+		Must("ccc", func(ctx context.Context, t *testing.T) {
+			time.Sleep(1 * time.Second)
+			atomic.AddInt32(&counter, 1)
+		})
+	feat.Teardown("teardown0", func(ctx context.Context, t *testing.T) {
+		require.Equal(t, int32(3), atomic.LoadInt32(&counter))
+	})
 	feat.Teardown("teardown1", appender(stringBuilder, "teardown1"))
 	feat.Teardown("teardown2", appender(stringBuilder, "teardown2"))
 	feat.Teardown("teardown3", appender(stringBuilder, "teardown3"))
