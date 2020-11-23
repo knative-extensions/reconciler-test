@@ -19,6 +19,10 @@ package example
 import (
 	"context"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/reconciler-test/pkg/k8s"
 
 	. "github.com/cloudevents/sdk-go/v2/test"
 
@@ -27,6 +31,8 @@ import (
 )
 
 func RecorderFeature() *feature.Feature {
+	svc := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
+
 	from := feature.MakeRandomK8sName("sender")
 	to := feature.MakeRandomK8sName("recorder")
 
@@ -36,6 +42,8 @@ func RecorderFeature() *feature.Feature {
 
 	f.Setup("install recorder", eventshub.Install(to, eventshub.StartReceiver))
 	f.Setup("install sender", eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event)))
+
+	f.Requirement("recorder is addressable", k8s.IsAddressable(svc, to, time.Second, 30*time.Second))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
