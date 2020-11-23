@@ -9,19 +9,20 @@ import (
 // Steps with Setup, Requirement and Teardown timings are run sequentially in order
 // Steps with Assert timing are run in parallel
 func CollapseSteps(steps []Step) []Step {
-	var setup *Step
-	var requirement *Step
-	var asserts []Step
-	var teardown *Step
+	var (
+		setup, requirement, teardown *Step
+		asserts                      []Step
+	)
 
 	for i, s := range steps {
-		if s.T == Setup {
+		switch s.T {
+		case Setup:
 			setup = composeStep(setup, &steps[i])
-		} else if s.T == Requirement {
+		case Requirement:
 			requirement = composeStep(requirement, &steps[i])
-		} else if s.T == Assert {
+		case Assert:
 			asserts = append(asserts, parallelizeStep(s))
-		} else if s.T == Teardown {
+		case Teardown:
 			teardown = composeStep(teardown, &steps[i])
 		}
 	}
