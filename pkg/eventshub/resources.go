@@ -47,8 +47,8 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 
 		// Deploy
 		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
-			"eventshubName": name,
-			"envs":          envs,
+			"name": name,
+			"envs": envs,
 		}); err != nil {
 			t.Fatal(err)
 		}

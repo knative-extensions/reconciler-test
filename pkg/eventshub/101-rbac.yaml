@@ -15,7 +15,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ .eventshubName }}
+  name: {{ .name }}
   namespace: {{ .namespace }}
 rules:
   - apiGroups: [ "" ]
@@ -35,13 +35,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ .eventshubName }}
+  name: {{ .name }}
   namespace: {{ .namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ .eventshubName }}
+  name: {{ .name }}
 subjects:
   - kind: ServiceAccount
-    name: {{ .eventshubName }}
+    name: {{ .name }}
     namespace: {{ .namespace }}

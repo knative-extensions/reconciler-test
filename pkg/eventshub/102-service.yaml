@@ -15,11 +15,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .eventshubName }}
+  name: {{ .name }}
   namespace: {{ .namespace }}
 spec:
   selector:
-    app: eventshub
+    app: eventshub-{{ .name }}
   ports:
     - protocol: TCP
       port: 80
