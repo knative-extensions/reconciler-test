@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -140,8 +141,16 @@ func removeComments(in string) string {
 // blank lines. This also adds a YAML file separator "---" between each file.
 // Files is a map of "filename" to "file contents".
 func OutputYAML(out io.Writer, files map[string]string) {
+	names := make([]string, 0)
+	for name := range files {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
 	more := false
-	for _, file := range files {
+	for _, name := range names {
+		file := files[name]
+
 		if more {
 			_, _ = out.Write([]byte("---\n"))
 		}
