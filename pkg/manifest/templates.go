@@ -142,7 +142,7 @@ func removeComments(in string) string {
 // Files is a map of "filename" to "file contents".
 func OutputYAML(out io.Writer, files map[string]string) {
 	names := make([]string, 0)
-	for name, _ := range files {
+	for name := range files {
 		names = append(names, name)
 	}
 	sort.Strings(names)
