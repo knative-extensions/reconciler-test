@@ -44,36 +44,6 @@ func Example() {
 	manifest.OutputYAML(os.Stdout, files)
 	// Output:
 	// apiVersion: v1
-	// kind: Pod
-	// metadata:
-	//   name: hubhub
-	//   namespace: example
-	//   labels:
-	//     app: eventshub-hubhub
-	// spec:
-	//   serviceAccountName: "hubhub"
-	//   restartPolicy: "Never"
-	//   containers:
-	//     - name: eventshub
-	//       image: uri://a-real-container
-	//       imagePullPolicy: "IfNotPresent"
-	//       env:
-	//         - name: "SYSTEM_NAMESPACE"
-	//           valueFrom:
-	//             fieldRef:
-	//               fieldPath: "metadata.namespace"
-	//         - name: "POD_NAME"
-	//           valueFrom:
-	//             fieldRef:
-	//               fieldPath: "metadata.name"
-	//         - name: "EVENT_LOGS"
-	//           value: "recorder,logger"
-	//         - name: "baz"
-	//           value: "boof"
-	//         - name: "foo"
-	//           value: "bar"
-	// ---
-	// apiVersion: v1
 	// kind: ServiceAccount
 	// metadata:
 	//   name: hubhub
@@ -123,4 +93,34 @@ func Example() {
 	//     - protocol: TCP
 	//       port: 80
 	//       targetPort: 8080
+	// ---
+	// apiVersion: v1
+	// kind: Pod
+	// metadata:
+	//   name: hubhub
+	//   namespace: example
+	//   labels:
+	//     app: eventshub-hubhub
+	// spec:
+	//   serviceAccountName: "hubhub"
+	//   restartPolicy: "Never"
+	//   containers:
+	//     - name: eventshub
+	//       image: uri://a-real-container
+	//       imagePullPolicy: "IfNotPresent"
+	//       env:
+	//         - name: "SYSTEM_NAMESPACE"
+	//           valueFrom:
+	//             fieldRef:
+	//               fieldPath: "metadata.namespace"
+	//         - name: "POD_NAME"
+	//           valueFrom:
+	//             fieldRef:
+	//               fieldPath: "metadata.name"
+	//         - name: "EVENT_LOGS"
+	//           value: "recorder,logger"
+	//         - name: "baz"
+	//           value: "boof"
+	//         - name: "foo"
+	//           value: "bar"
 }
