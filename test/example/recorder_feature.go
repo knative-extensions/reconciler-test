@@ -18,10 +18,11 @@ package example
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/reconciler-test/pkg/k8s"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/reconciler-test/pkg/k8s"
 
 	. "github.com/cloudevents/sdk-go/v2/test"
 
