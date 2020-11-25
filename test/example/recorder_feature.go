@@ -20,14 +20,12 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/reconciler-test/pkg/k8s"
 
 	. "github.com/cloudevents/sdk-go/v2/test"
 
-	. "knative.dev/reconciler-test/pkg/eventshub"
-
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/k8s"
 )
 
 func RecorderFeature() *feature.Feature {
@@ -40,14 +38,14 @@ func RecorderFeature() *feature.Feature {
 
 	event := FullEvent()
 
-	f.Setup("install recorder", eventshub.Install(to, StartReceiver))
-	f.Setup("install sender", eventshub.Install(from, StartSender(to), InputEvent(event)))
+	f.Setup("install recorder", eventshub.Install(to, eventshub.StartReceiver))
+	f.Setup("install sender", eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event)))
 
 	f.Requirement("recorder is addressable", k8s.IsAddressable(svc, to, time.Second, 30*time.Second))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			OnStore(to).Exact(1).Match(MatchEvent(HasId(event.ID()))),
+			eventshub.OnStore(to).Exact(1).Match(eventshub.MatchEvent(HasId(event.ID()))),
 		)
 
 	return f
