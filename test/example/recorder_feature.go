@@ -45,7 +45,7 @@ func RecorderFeature() *feature.Feature {
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			eventshub.OnStore(to).Exact(1).Match(eventshub.MatchEvent(HasId(event.ID()))),
+			eventshub.OnStore(to).MatchEvent(HasId(event.ID())).Exact(1),
 		)
 
 	return f

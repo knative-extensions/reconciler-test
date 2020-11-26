@@ -4,79 +4,64 @@ import (
 	"context"
 	"testing"
 
+	cetest "github.com/cloudevents/sdk-go/v2/test"
+
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
-type StoreIdentifier string
-
-func OnStore(name string) StoreIdentifier {
-	return StoreIdentifier(name)
+type MatchAssertionBuilder struct {
+	storeName string
+	matchers  []EventInfoMatcher
 }
 
-type AtLeastMatch struct {
-	StoreIdentifier
-	min int
-}
-
-func (name StoreIdentifier) AtLeast(min int) AtLeastMatch {
-	return AtLeastMatch{name, min}
-}
-
-// Match
-// OnStore(store).AtLeast(min).Match(matchers) is equivalent to StoreFromContext(ctx, store).AssertAtLeast(min, matchers)
-func (m AtLeastMatch) Match(matchers ...EventInfoMatcher) feature.StepFn {
-	return func(ctx context.Context, t *testing.T) {
-		StoreFromContext(ctx, string(m.StoreIdentifier)).AssertAtLeast(m.min, matchers...)
+// OnStore creates an assertion builder starting from the name of the store
+func OnStore(name string) MatchAssertionBuilder {
+	return MatchAssertionBuilder{
+		storeName: name,
+		matchers:  nil,
 	}
 }
 
-type InRangeMatch struct {
-	StoreIdentifier
-	min int
-	max int
+// Match adds the provided matchers in this builder
+func (m MatchAssertionBuilder) Match(matchers ...EventInfoMatcher) MatchAssertionBuilder {
+	m.matchers = append(m.matchers, matchers...)
+	return m
 }
 
-func (name StoreIdentifier) InRange(min int, max int) InRangeMatch {
-	return InRangeMatch{name, min, max}
+// MatchEvent is a shortcut for Match(MatchEvent())
+func (m MatchAssertionBuilder) MatchEvent(matchers ...cetest.EventMatcher) MatchAssertionBuilder {
+	m.matchers = append(m.matchers, MatchEvent(matchers...))
+	return m
 }
 
-// Match
-// OnStore(store).InRange(min, max).Match(matchers) is equivalent to StoreFromContext(ctx, store).AssertInRange(min, max, matchers)
-func (m InRangeMatch) Match(matchers ...EventInfoMatcher) feature.StepFn {
+// AtLeast builds the assertion feature.StepFn
+// OnStore(store).Match(matchers).AtLeast(min) is equivalent to StoreFromContext(ctx, store).AssertAtLeast(min, matchers)
+func (m MatchAssertionBuilder) AtLeast(min int) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
-		StoreFromContext(ctx, string(m.StoreIdentifier)).AssertInRange(m.min, m.max, matchers...)
+		StoreFromContext(ctx, m.storeName).AssertAtLeast(min, m.matchers...)
 	}
 }
 
-type ExactMatch struct {
-	StoreIdentifier
-	n int
-}
-
-func (name StoreIdentifier) Exact(n int) ExactMatch {
-	return ExactMatch{name, n}
-}
-
-// Match
-// OnStore(store).Exact(n).Match(matchers) is equivalent to StoreFromContext(ctx, store).AssertExact(n, matchers)
-func (m ExactMatch) Match(matchers ...EventInfoMatcher) feature.StepFn {
+// InRange builds the assertion feature.StepFn
+// OnStore(store).Match(matchers).InRange(min, max) is equivalent to StoreFromContext(ctx, store).AssertInRange(min, max, matchers)
+func (m MatchAssertionBuilder) InRange(min int, max int) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
-		StoreFromContext(ctx, string(m.StoreIdentifier)).AssertExact(m.n, matchers...)
+		StoreFromContext(ctx, m.storeName).AssertInRange(min, max, m.matchers...)
 	}
 }
 
-type NotMatch struct {
-	StoreIdentifier
-}
-
-func (name StoreIdentifier) Not() NotMatch {
-	return NotMatch{name}
-}
-
-// Match
-// OnStore(store).Not().Match(matchers) is equivalent to StoreFromContext(ctx, store).AssertNot(matchers)
-func (m NotMatch) Match(matchers ...EventInfoMatcher) feature.StepFn {
+// Exact builds the assertion feature.StepFn
+// OnStore(store).Match(matchers).Exact(n) is equivalent to StoreFromContext(ctx, store).AssertExact(n, matchers)
+func (m MatchAssertionBuilder) Exact(n int) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
-		StoreFromContext(ctx, string(m.StoreIdentifier)).AssertNot(matchers...)
+		StoreFromContext(ctx, m.storeName).AssertExact(n, m.matchers...)
+	}
+}
+
+// Not builds the assertion feature.StepFn
+// OnStore(store).Match(matchers).Not() is equivalent to StoreFromContext(ctx, store).AssertNot(matchers)
+func (m MatchAssertionBuilder) Not() feature.StepFn {
+	return func(ctx context.Context, t *testing.T) {
+		StoreFromContext(ctx, m.storeName).AssertNot(m.matchers...)
 	}
 }
