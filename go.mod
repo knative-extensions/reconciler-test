@@ -17,7 +17,7 @@ require (
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/klog v1.0.0
 	knative.dev/hack v0.0.0-20201214230143-4ed1ecb8db24
-	knative.dev/pkg v0.0.0-20210107211936-93874f0ea7c0
+	knative.dev/pkg v0.0.0-20210107022335-51c72e24c179
 )
 
 replace (
