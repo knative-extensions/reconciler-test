@@ -7,8 +7,8 @@ implementations.
 
 We have developed a lightweight testing framework to compose and share
 Kubernetes cluster based tests for Knative. These tests are intended to be
-vendor-able by other downstream components, which is useful for Conformance tests
-and e2e testing for behaviors.
+vendor-able by other downstream components, which is useful for Conformance
+tests and e2e testing for behaviors.
 
 The testing framework is broken into two main components: Features: the small
 composable steps intended to validate a function or feature, and the Test
