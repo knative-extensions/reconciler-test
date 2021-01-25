@@ -19,7 +19,7 @@ set -o nounset
 set -o pipefail
 
 export GO111MODULE=on
-export K8S_VERSION="${1:-v0.17.6}"
+export K8S_VERSION="${1:-v0.19.7}"
 
 K8S_DEPS=(
   "k8s.io/api"
@@ -38,8 +38,7 @@ function update_module {
   echo "Updating ${dep} to ${version}"
 
   go mod edit \
-    -require="${dep}@${version}" \
-    -replace="${dep}=${dep}@${version}"
+    -require="${dep}@${version}"
 }
 
 for dep in "${K8S_DEPS[@]}"
