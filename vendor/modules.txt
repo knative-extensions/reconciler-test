@@ -163,7 +163,7 @@ github.com/lightstep/tracecontext.go/tracestate
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
-# github.com/matttproud/golang_protobuf_extensions v1.0.1
+# github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 github.com/modern-go/concurrent
@@ -699,7 +699,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.18.12
+# k8s.io/code-generator v0.19.7
 k8s.io/code-generator
 k8s.io/code-generator/cmd/client-gen
 k8s.io/code-generator/cmd/client-gen/args
@@ -733,7 +733,7 @@ k8s.io/code-generator/cmd/set-gen
 k8s.io/code-generator/pkg/namer
 k8s.io/code-generator/pkg/util
 k8s.io/code-generator/third_party/forked/golang/reflect
-# k8s.io/gengo v0.0.0-20200413195148-3a45101e95ac
+# k8s.io/gengo v0.0.0-20200428234225-8167cfdcfc14
 k8s.io/gengo/args
 k8s.io/gengo/examples/deepcopy-gen/generators
 k8s.io/gengo/examples/defaulter-gen/generators
@@ -760,10 +760,10 @@ k8s.io/kube-openapi/pkg/util/sets
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20210114150620-4422dcadb3c8
+# knative.dev/hack v0.0.0-20210120165453-8d623a0af457
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20210114223020-f0ea5e6b9c4e
+# knative.dev/pkg v0.0.0-20210125222030-6040b3af4803
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
