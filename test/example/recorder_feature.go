@@ -17,17 +17,15 @@ limitations under the License.
 package example
 
 import (
-	"context"
-	"testing"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/reconciler-test/pkg/k8s"
 
 	. "github.com/cloudevents/sdk-go/v2/test"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/k8s"
 )
 
 func RecorderFeature() *feature.Feature {
@@ -47,9 +45,8 @@ func RecorderFeature() *feature.Feature {
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			func(ctx context.Context, t *testing.T) {
-				eventshub.StoreFromContext(ctx, to).AssertExact(1, eventshub.MatchEvent(HasId(event.ID())))
-			})
+			eventshub.OnStore(to).MatchEvent(HasId(event.ID())).Exact(1),
+		)
 
 	return f
 }
