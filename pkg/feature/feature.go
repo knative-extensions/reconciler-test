@@ -30,6 +30,12 @@ type Feature struct {
 	Steps []Step
 }
 
+func NewFeatureNamed(name string) *Feature {
+	f := new(Feature)
+	f.Name = name
+	return f
+}
+
 func NewFeature() *Feature {
 	f := new(Feature)
 
