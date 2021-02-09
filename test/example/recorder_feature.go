@@ -28,13 +28,19 @@ import (
 	"knative.dev/reconciler-test/pkg/k8s"
 )
 
+type recorderFeatureConfig struct {
+	Sink   string
+	Source string
+}
+
 func RecorderFeature() *feature.Feature {
+	f := feature.NewFeature()
+	conf := f.Config(&recorderFeatureConfig{}).(*recorderFeatureConfig)
+
 	svc := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
 
-	from := feature.MakeRandomK8sName("sender")
-	to := feature.MakeRandomK8sName("recorder")
-
-	f := new(feature.Feature)
+	from := feature.MakeRandomK8sName(conf.Source)
+	to := feature.MakeRandomK8sName(conf.Sink)
 
 	event := FullEvent()
 

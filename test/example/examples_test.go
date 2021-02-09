@@ -41,7 +41,7 @@ func TestRecorder(t *testing.T) {
 	// environment settings. Additional options can be passed to Environment()
 	// if customization is required.
 	ctx, env := global.Environment(
-		knative.WithKnativeNamespace("knative-reconciler-test"),
+		knative.WithKnativeNamespace("knative-eventing"),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,

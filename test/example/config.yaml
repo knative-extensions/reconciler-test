@@ -1,0 +1,3 @@
+RecorderFeature:
+  Sink: my-sink
+  Source: my-sender

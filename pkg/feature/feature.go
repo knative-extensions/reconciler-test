@@ -19,6 +19,8 @@ package feature
 import (
 	"context"
 	"fmt"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -26,6 +28,19 @@ import (
 type Feature struct {
 	Name  string
 	Steps []Step
+}
+
+func NewFeature() *Feature {
+	f := new(Feature)
+
+	pc, _, _, _ := runtime.Caller(1)
+	caller := runtime.FuncForPC(pc)
+	if caller != nil {
+		splitted := strings.Split(caller.Name(), ".")
+		f.Name = splitted[len(splitted)-1]
+	}
+
+	return f
 }
 
 // StepFn is the function signature for steps.
