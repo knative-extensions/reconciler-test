@@ -21,11 +21,13 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	. "github.com/cloudevents/sdk-go/v2/test"
-
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
+
+	// Dot import the eventshub asserts and sdk-go test packages to include all the assert utilities
+	. "github.com/cloudevents/sdk-go/v2/test"
+	. "knative.dev/reconciler-test/pkg/eventshub/assert"
 )
 
 func RecorderFeature() *feature.Feature {
@@ -45,7 +47,7 @@ func RecorderFeature() *feature.Feature {
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			eventshub.OnStore(to).MatchEvent(HasId(event.ID())).Exact(1),
+			OnStore(to).MatchEvent(HasId(event.ID())).Exact(1),
 		)
 
 	return f
