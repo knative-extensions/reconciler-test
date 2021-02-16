@@ -4,27 +4,23 @@ aliases:
     - grantr
     - markusthoemmes
     - mattmoor
-    - tcnghia
+    - rhuss
   wg-leads:
     # eventing
     - grantr
-    - vaikas
-    - n3wscott
+    - lionelvillard    
     - matzew
-    - nachocano
-    - lionelvillard
+    - n3wscott
     - slinkydeveloper
+    - vaikas
     # serving
     - dprotaso        # API
     - markusthoemmes  # Scaling
     - mattmoor        # API
-    - mdemirhan       # Network
+    - nak3            # Network
     - tcnghia         # Network
     - vagababov       # Scaling
+    - ZhiminXiang     # Network
   productivity-approvers:
     - chaodaiG
     - chizhg
-  productivity-reviewers:
-    - chaodaiG
-    - chizhg
-    - yt3liu
