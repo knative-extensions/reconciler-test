@@ -146,9 +146,9 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 		skipped, failed, duration := mr.safeExecuteStep(ctx, t, s)
 
 		if skipped {
-			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n", skip, t.Name(), featureTestName, stepName, duration.Seconds())
+			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n\n", skip, t.Name(), featureTestName, stepName, duration.Seconds())
 		} else if failed {
-			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n", fail, t.Name(), featureTestName, stepName, duration.Seconds())
+			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n\n", fail, t.Name(), featureTestName, stepName, duration.Seconds())
 			t.FailNow() // Here we can have different policies, depending on feature level etc
 		} else {
 			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n\n", pass, t.Name(), featureTestName, stepName, duration.Seconds())
