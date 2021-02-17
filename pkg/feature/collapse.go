@@ -5,6 +5,34 @@ import (
 	"testing"
 )
 
+// ReorderSteps reorders steps as follows: Setup, Requirement, Assert and Teardown
+func ReorderSteps(steps []Step) []Step {
+	var (
+		setup, requirement, asserts, teardown []Step
+	)
+
+	for _, s := range steps {
+		switch s.T {
+		case Setup:
+			setup = append(setup, s)
+		case Requirement:
+			requirement = append(setup, s)
+		case Assert:
+			asserts = append(asserts, s)
+		case Teardown:
+			teardown = append(setup, s)
+		}
+	}
+
+	var result []Step
+	result = append(result, setup...)
+	result = append(result, requirement...)
+	result = append(result, asserts...)
+	result = append(result, teardown...)
+
+	return result
+}
+
 // CollapseSteps is used by the framework to impose the execution constraints of the different steps
 // Steps with Setup, Requirement and Teardown timings are run sequentially in order
 // Steps with Assert timing are run in parallel
