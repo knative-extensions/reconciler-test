@@ -43,6 +43,8 @@ func EchoFeature() *feature.Feature {
 		env := environment.FromContext(ctx)
 		client := kubeclient.Get(ctx)
 
+		t.Fatal("I wanna fail")
+
 		if err := k8s.WaitUntilJobDone(client, env.Namespace(), "echo", time.Second, 30*time.Second); err != nil {
 			t.Errorf("failed to wait for job to finish, %s", err)
 		}

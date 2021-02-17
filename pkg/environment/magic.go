@@ -19,7 +19,9 @@ package environment
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"go.uber.org/atomic"
 	corev1 "k8s.io/api/core/v1"
@@ -136,27 +138,32 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 
 	steps := feature.ReorderSteps(f.Steps)
 
+	featureTestName := strings.ReplaceAll(f.Name, " ", "_")
 	for _, s := range steps {
-		fmt.Printf("=== %s   %s/%s/%s\n", run, t.Name(), f.Name, s.TestName())
+		stepName := strings.ReplaceAll(s.TestName(), " ", "_")
+		fmt.Printf("=== %s   %s/[%s]%s\n", run, t.Name(), featureTestName, stepName)
 
-		skipped, failed := mr.safeExecuteStep(ctx, t, s)
+		skipped, failed, duration := mr.safeExecuteStep(ctx, t, s)
 
 		if skipped {
-			fmt.Printf("--- %s   %s/%s/%s\n", skip, t.Name(), f.Name, s.TestName())
+			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n", skip, t.Name(), featureTestName, stepName, duration.Seconds())
 		} else if failed {
-			fmt.Printf("--- %s   %s/%s/%s\n", fail, t.Name(), f.Name, s.TestName())
+			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n", fail, t.Name(), featureTestName, stepName, duration.Seconds())
 			t.FailNow() // Here we can have different policies, depending on feature level etc
+		} else {
+			fmt.Printf("    --- %s: %s/[%s]%s (%.2fs) \n\n", pass, t.Name(), featureTestName, stepName, duration.Seconds())
 		}
 	}
 }
 
 const (
 	run  = "RUN"
+	pass = "PASS"
 	fail = "FAIL"
 	skip = "SKIP"
 )
 
-func (mr *MagicEnvironment) safeExecuteStep(ctx context.Context, testingT *testing.T, step feature.Step) (skipped bool, failed bool) {
+func (mr *MagicEnvironment) safeExecuteStep(ctx context.Context, testingT *testing.T, step feature.Step) (skipped bool, failed bool, duration time.Duration) {
 	testingT.Helper()
 
 	if mr.s&step.S == 0 || mr.l&step.L == 0 {
@@ -185,6 +192,8 @@ func (mr *MagicEnvironment) safeExecuteStep(ctx context.Context, testingT *testi
 		ctx, cancelFn = context.WithCancel(ctx)
 	}
 	var panicValue interface{}
+
+	start := time.Now()
 	go func() {
 		testingT.Helper()
 		defer func() {
@@ -199,6 +208,7 @@ func (mr *MagicEnvironment) safeExecuteStep(ctx context.Context, testingT *testi
 	}()
 
 	<-ctx.Done()
+	duration = time.Now().Sub(start)
 	if ctx.Err() == context.DeadlineExceeded {
 		testingT.Logf("Timeout exceeded")
 		t.failed.Store(true)

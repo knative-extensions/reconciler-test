@@ -11,11 +11,11 @@ func ReorderSteps(steps []Step) []Step {
 		case Setup:
 			setup = append(setup, s)
 		case Requirement:
-			requirement = append(setup, s)
+			requirement = append(requirement, s)
 		case Assert:
 			asserts = append(asserts, s)
 		case Teardown:
-			teardown = append(setup, s)
+			teardown = append(teardown, s)
 		}
 	}
 
