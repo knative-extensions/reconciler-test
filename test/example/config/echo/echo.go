@@ -18,7 +18,6 @@ package echo
 
 import (
 	"context"
-	"testing"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -36,7 +35,7 @@ type Output struct {
 }
 
 func Install(message string) feature.StepFn {
-	return func(ctx context.Context, t *testing.T) {
+	return func(ctx context.Context, t feature.T) {
 		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
 			"message": message,
 		}); err != nil {

@@ -19,10 +19,11 @@ package environment
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 
+	"go.uber.org/atomic"
 	corev1 "k8s.io/api/core/v1"
+
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
@@ -136,48 +137,81 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 	steps := feature.ReorderSteps(f.Steps)
 
 	for _, s := range steps {
-		t.Run()
+		fmt.Printf("=== %s   %s/%s/%s\n", run, t.Name(), f.Name, s.TestName())
+
+		skipped, failed := mr.safeExecuteStep(ctx, t, s)
+
+		if skipped {
+			fmt.Printf("--- %s   %s/%s/%s\n", skip, t.Name(), f.Name, s.TestName())
+		} else if failed {
+			fmt.Printf("--- %s   %s/%s/%s\n", fail, t.Name(), f.Name, s.TestName())
+			t.FailNow() // Here we can have different policies, depending on feature level etc
+		}
+	}
+}
+
+const (
+	run  = "RUN"
+	fail = "FAIL"
+	skip = "SKIP"
+)
+
+func (mr *MagicEnvironment) safeExecuteStep(ctx context.Context, testingT *testing.T, step feature.Step) (skipped bool, failed bool) {
+	testingT.Helper()
+
+	if mr.s&step.S == 0 || mr.l&step.L == 0 {
+		if mr.s&step.S == 0 {
+			testingT.Logf("%s features not enabled for testing", step.S)
+		}
+		if mr.l&step.L == 0 {
+			testingT.Logf("%s requirement not enabled for testing", step.L)
+		}
+		skipped = true
+		failed = false
+		return
 	}
 
-	for _, timing := range feature.Timings() {
+	t := t{
+		t:       testingT,
+		failed:  atomic.NewBool(false),
+		skipped: atomic.NewBool(false),
+	}
 
-		// do it the slow way first.
-		wg := &sync.WaitGroup{}
-		wg.Add(1)
-
-		t.Run(timing.String(), func(t *testing.T) {
-			t.Helper()      // Helper marks the calling function as a test helper function.
-			defer wg.Done() // Outer wait.
-
-			for _, s := range steps {
-				// Skip if step phase is not running.
-				if s.T != timing {
-					continue
-				}
-				t.Run(s.TestName(), func(t *testing.T) {
-					wg.Add(1)
-					defer wg.Done()
-
-					if mr.s&s.S == 0 {
-						t.Skipf("%s features not enabled for testing", s.S)
-					}
-					if mr.l&s.L == 0 {
-						t.Skipf("%s requirement not enabled for testing", s.L)
-					}
-
-					s := s
-
-					t.Helper() // Helper marks the calling function as a test helper function.
-
-					// Perform step.
-					s.Fn(ctx, t)
-
-				})
+	var cancelFn context.CancelFunc
+	deadLine, ok := testingT.Deadline()
+	if ok {
+		ctx, cancelFn = context.WithDeadline(ctx, deadLine)
+	} else {
+		ctx, cancelFn = context.WithCancel(ctx)
+	}
+	var panicValue interface{}
+	go func() {
+		testingT.Helper()
+		defer func() {
+			// A panic might happen while executing the test.
+			// In this case, mark the test as failed
+			if panicValue = recover(); panicValue != nil {
+				t.failed.Store(true)
 			}
-		})
+			cancelFn()
+		}()
+		step.Fn(ctx, &t)
+	}()
 
-		wg.Wait()
+	<-ctx.Done()
+	if ctx.Err() == context.DeadlineExceeded {
+		testingT.Logf("Timeout exceeded")
+		t.failed.Store(true)
 	}
+
+	skipped = t.skipped.Load()
+	failed = t.failed.Load()
+
+	if panicValue != nil {
+		testingT.Logf("Panic while executing the test: %v", panicValue)
+	}
+
+	return
 }
 
 type envKey struct{}

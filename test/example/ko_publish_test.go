@@ -28,6 +28,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	_ "knative.dev/pkg/system/testing"
+
 	"knative.dev/reconciler-test/pkg/environment"
 )
 

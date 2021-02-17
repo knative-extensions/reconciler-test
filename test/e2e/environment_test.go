@@ -52,19 +52,19 @@ func TestTimingConstraints(t *testing.T) {
 	feat.Requirement("requirement2", appender(stringBuilder, "requirement2"))
 	feat.Requirement("requirement3", appender(stringBuilder, "requirement3"))
 	feat.Stable("A cool feature").
-		Must("aaa", func(ctx context.Context, t *testing.T) {
+		Must("aaa", func(ctx context.Context, t feature.T) {
 			time.Sleep(1 * time.Second)
 			atomic.AddInt32(&counter, 1)
 		}).
-		Must("bbb", func(ctx context.Context, t *testing.T) {
+		Must("bbb", func(ctx context.Context, t feature.T) {
 			time.Sleep(1 * time.Second)
 			atomic.AddInt32(&counter, 1)
 		}).
-		Must("ccc", func(ctx context.Context, t *testing.T) {
+		Must("ccc", func(ctx context.Context, t feature.T) {
 			time.Sleep(1 * time.Second)
 			atomic.AddInt32(&counter, 1)
 		})
-	feat.Teardown("teardown0", func(ctx context.Context, t *testing.T) {
+	feat.Teardown("teardown0", func(ctx context.Context, t feature.T) {
 		require.Equal(t, int32(3), atomic.LoadInt32(&counter))
 	})
 	feat.Teardown("teardown1", appender(stringBuilder, "teardown1"))
@@ -77,7 +77,7 @@ func TestTimingConstraints(t *testing.T) {
 }
 
 func appender(stringBuilder *strings.Builder, val string) feature.StepFn {
-	return func(ctx context.Context, t *testing.T) {
+	return func(ctx context.Context, t feature.T) {
 		stringBuilder.WriteString(val)
 	}
 }

@@ -37,6 +37,7 @@ func RecorderFeature() *feature.Feature {
 	to := feature.MakeRandomK8sName("recorder")
 
 	f := new(feature.Feature)
+	f.Name = "Recorder"
 
 	event := FullEvent()
 
