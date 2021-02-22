@@ -1,0 +1,7 @@
+# Default owners are Serving/Eventing WG leads, Productivity, and TOC
+* @knative-sandbox/technical-oversight-committee
+* @knative-sandbox/knative-release-leads
+* @knative-sandbox/serving-writers
+* @knative-sandbox/eventing-writers
+# Last match takes precedence for reviews
+* @knative-sandbox/productivity-wg-leads
