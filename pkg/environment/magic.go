@@ -178,6 +178,23 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 	}
 }
 
+// TestSet implements Environment.TestSet
+func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *feature.FeatureSet) {
+	t.Helper() // Helper marks the calling function as a test helper function.
+
+	// do it the slow way first.
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	for _, f := range fs.Features {
+		t.Run(fs.Name, func(t *testing.T) {
+			mr.Test(ctx, t, &f)
+		})
+	}
+
+	wg.Wait()
+}
+
 type envKey struct{}
 
 func ContextWith(ctx context.Context, e Environment) context.Context {

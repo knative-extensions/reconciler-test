@@ -76,3 +76,27 @@ func TestEcho(t *testing.T) {
 	// Calling finish on the environment cleans it up and removes the namespace.
 	env.Finish()
 }
+
+
+
+// TestEchoSet is an example simple test set.
+func TestEchoSet(t *testing.T) {
+	// Signal to the go test framework that this test can be run in parallel
+	// with other tests.
+	t.Parallel()
+
+	// Create an environment to run the tests in from the global environment.
+	ctx, env := global.Environment()
+
+	fs := EchoFeatureSet()
+
+	// Now is the chance to modify the feature to add additional preconditions or assertions.
+
+	env.TestSet(ctx, t, fs)
+
+	// note: we can run other features in this environment if we understand the side-effects.
+	// env.Test(ctx, t, SomeOtherFeature())
+
+	// Calling finish on the environment cleans it up and removes the namespace.
+	env.Finish()
+}
