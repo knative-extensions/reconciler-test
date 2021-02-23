@@ -30,7 +30,7 @@ type Feature struct {
 
 // FeatureSet is a list of features and feature set name.
 type FeatureSet struct {
-	Name  string
+	Name     string
 	Features []Feature
 }
 

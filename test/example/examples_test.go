@@ -77,8 +77,6 @@ func TestEcho(t *testing.T) {
 	env.Finish()
 }
 
-
-
 // TestEchoSet is an example simple test set.
 func TestEchoSet(t *testing.T) {
 	// Signal to the go test framework that this test can be run in parallel

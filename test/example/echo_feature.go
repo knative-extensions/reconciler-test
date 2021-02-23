@@ -88,7 +88,7 @@ func EchoFeature() *feature.Feature {
 // EchoFeatureSet makes a feature set out of a few EchoFeatures for testing.
 func EchoFeatureSet() *feature.FeatureSet {
 	fs := &feature.FeatureSet{
-		Name:     "Echo Feature Wrapper (3x)",
+		Name: "Echo Feature Wrapper (3x)",
 		Features: []feature.Feature{
 			*EchoFeature(),
 			*EchoFeature(),
