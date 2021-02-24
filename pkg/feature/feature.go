@@ -20,12 +20,15 @@ import (
 	"context"
 	"fmt"
 	"testing"
+
+	"knative.dev/reconciler-test/pkg/state"
 )
 
 // Feature is a list of steps and feature name.
 type Feature struct {
 	Name  string
 	Steps []Step
+	State state.Store
 }
 
 // StepFn is the function signature for steps.
@@ -49,6 +52,22 @@ func (s *Step) TestName() string {
 		return fmt.Sprintf("[%s/%s]%s", s.S, s.L, s.Name)
 	default:
 		return s.Name
+	}
+}
+
+// Save a value for use in a later feature step, or error on issue.
+func (f *Feature) Save(ctx context.Context, t *testing.T, key string, value interface{}) {
+	t.Helper()
+	if err := f.State.Set(ctx, key, value); err != nil {
+		t.Error(err)
+	}
+}
+
+// Load a value stored in a previous feature step, or fail if not found.
+func (f *Feature) Load(ctx context.Context, t *testing.T, key string, value interface{}) {
+	t.Helper()
+	if err := f.State.Get(ctx, key, &value); err != nil {
+		t.Error(err)
 	}
 }
 
@@ -98,6 +117,9 @@ func (f *Feature) Teardown(name string, fn StepFn) {
 
 // AddStep appends one or more steps to the Feature.
 func (f *Feature) AddStep(step ...Step) {
+	if f.State == nil {
+		f.State = &state.KVStore{}
+	}
 	f.Steps = append(f.Steps, step...)
 }
 
