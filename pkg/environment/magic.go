@@ -184,11 +184,12 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 
 	// do it the slow way first.
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
 
 	for _, f := range fs.Features {
+		wg.Add(1)
 		t.Run(fs.Name, func(t *testing.T) {
 			mr.Test(ctx, t, &f)
+			wg.Done()
 		})
 	}
 
