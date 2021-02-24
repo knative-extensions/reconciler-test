@@ -18,8 +18,9 @@ package state
 
 import (
 	"context"
-	"github.com/google/go-cmp/cmp"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestKVStore_Get(t *testing.T) {
