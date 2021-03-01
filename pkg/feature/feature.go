@@ -55,22 +55,6 @@ func (s *Step) TestName() string {
 	}
 }
 
-// Save a value for use in a later feature step, or error on issue.
-func (f *Feature) Save(ctx context.Context, t *testing.T, key string, value interface{}) {
-	t.Helper()
-	if err := f.State.Set(ctx, key, value); err != nil {
-		t.Error(err)
-	}
-}
-
-// Load a value stored in a previous feature step, or fail if not found.
-func (f *Feature) Load(ctx context.Context, t *testing.T, key string, value interface{}) {
-	t.Helper()
-	if err := f.State.Get(ctx, key, &value); err != nil {
-		t.Error(err)
-	}
-}
-
 // Setup adds a step function to the feature set at the Setup timing phase.
 func (f *Feature) Setup(name string, fn StepFn) {
 	f.AddStep(Step{
@@ -117,9 +101,6 @@ func (f *Feature) Teardown(name string, fn StepFn) {
 
 // AddStep appends one or more steps to the Feature.
 func (f *Feature) AddStep(step ...Step) {
-	if f.State == nil {
-		f.State = &state.KVStore{}
-	}
 	f.Steps = append(f.Steps, step...)
 }
 

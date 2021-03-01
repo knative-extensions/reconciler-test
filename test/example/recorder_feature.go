@@ -27,6 +27,7 @@ import (
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/state"
 
 	// Dot import the eventshub asserts and sdk-go test packages to include all the assert utilities
 	. "github.com/cloudevents/sdk-go/v2/test"
@@ -40,30 +41,28 @@ func RecorderFeature() *feature.Feature {
 
 	f.Setup("create an event", func(ctx context.Context, t *testing.T) {
 		t.Helper()
-		f.Save(ctx, t, "event", FullEvent())
+		state.SetOrFail(ctx, t, "event", FullEvent())
 	})
 
 	f.Setup("install recorder", func(ctx context.Context, t *testing.T) {
 		t.Helper()
 		to := feature.MakeRandomK8sName("recorder")
 		eventshub.Install(to, eventshub.StartReceiver)
-		f.Save(ctx, t, "to", to)
+		state.SetOrFail(ctx, t, "to", to)
 	})
 
 	f.Setup("install sender", func(ctx context.Context, t *testing.T) {
 		t.Helper()
-		var to string
+		to := state.GetStringOrFail(ctx, t, "to")
 		var event cloudevents.Event
-		f.Load(ctx, t, "to", &to)
-		f.Load(ctx, t, "event", &event)
+		state.GetOrFail(ctx, t, "event", &event)
 		from := feature.MakeRandomK8sName("sender")
 		eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event))
 	})
 
 	f.Requirement("recorder is addressable", func(ctx context.Context, t *testing.T) {
 		t.Helper()
-		var to string
-		f.Load(ctx, t, "to", &to)
+		to := state.GetStringOrFail(ctx, t, "to")
 		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)
 	})
 
@@ -71,10 +70,9 @@ func RecorderFeature() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t *testing.T) {
 				t.Helper()
-				var to string
+				to := state.GetStringOrFail(ctx, t, "to")
 				var event cloudevents.Event
-				f.Load(ctx, t, "to", &to)
-				f.Load(ctx, t, "event", &event)
+				state.GetOrFail(ctx, t, "event", &event)
 				OnStore(to).MatchEvent(HasId(event.ID())).Exact(1)
 			})
 
