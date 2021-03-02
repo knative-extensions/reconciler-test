@@ -19,7 +19,6 @@ package feature
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"knative.dev/reconciler-test/pkg/state"
 )
@@ -38,7 +37,7 @@ type FeatureSet struct {
 }
 
 // StepFn is the function signature for steps.
-type StepFn func(ctx context.Context, t *testing.T)
+type StepFn func(ctx context.Context, t T)
 
 // Step is a structure to hold the step function, step name and state, level and
 // timing configuration.
