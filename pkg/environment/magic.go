@@ -134,6 +134,11 @@ func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *f
 	})
 }
 
+// Test implements Environment.Test.
+// In the MagicEnvironment implementation, the Store that is inside of the
+// Feature will be assigned to the context. If no Store is set on Feature,
+// Test will create a new store.KVStore and set it on the feature and then
+// apply it to the Context.
 func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.Feature) {
 	t.Helper() // Helper marks the calling function as a test helper function.
 

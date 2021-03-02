@@ -23,10 +23,15 @@ import (
 
 type envKey struct{}
 
+// ContextWith decorates the given context with the provided Store, and returns
+// the resulting context.
 func ContextWith(ctx context.Context, s Store) context.Context {
 	return context.WithValue(ctx, envKey{}, s)
 }
 
+// FromContext returns the Store from Context, if not found FromContext will
+// panic.
+// TODO: revisit if we really want to panic here... likely not.
 func FromContext(ctx context.Context) Store {
 	if e, ok := ctx.Value(envKey{}).(Store); ok {
 		return e
