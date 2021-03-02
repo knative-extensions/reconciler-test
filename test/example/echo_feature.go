@@ -20,11 +20,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
+
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
@@ -32,29 +32,29 @@ import (
 )
 
 func EchoFeature() *feature.Feature {
-	f := new(feature.Feature)
-
 	msg := fmt.Sprintf("hello %s", uuid.New())
-	name := "echo" + uuid.New().String()
 
-	f.Setup("install echo", echo.Install(name, msg))
+	f := new(feature.Feature)
+	f.Name = "Echo"
 
-	f.Requirement("echo job is finished", func(ctx context.Context, t *testing.T) {
+	f.Setup("install echo", echo.Install(msg))
+
+	f.Requirement("echo job is finished", func(ctx context.Context, t feature.T) {
 		env := environment.FromContext(ctx)
 		client := kubeclient.Get(ctx)
 
-		if err := k8s.WaitUntilJobDone(client, env.Namespace(), name, time.Second, 30*time.Second); err != nil {
+		if err := k8s.WaitUntilJobDone(client, env.Namespace(), "echo", time.Second, 30*time.Second); err != nil {
 			t.Errorf("failed to wait for job to finish, %s", err)
 		}
 	})
 
 	f.Alpha("pull logs off a pod").
 		Must("the echo pod must echo our message",
-			func(ctx context.Context, t *testing.T) {
+			func(ctx context.Context, t feature.T) {
 				env := environment.FromContext(ctx)
 				client := kubeclient.Get(ctx)
 
-				log, err := k8s.WaitForJobTerminationMessage(client, env.Namespace(), name, time.Second, 30*time.Second)
+				log, err := k8s.WaitForJobTerminationMessage(client, env.Namespace(), "echo", time.Second, 30*time.Second)
 				if err != nil {
 					t.Error("failed to get termination message from pod, ", err)
 				}
@@ -76,25 +76,12 @@ func EchoFeature() *feature.Feature {
 				}
 				t.Log("got our message echo'ed: ", out.Message)
 			}).
-		May("An example of a MAY", func(ctx context.Context, t *testing.T) {
+		May("An example of a MAY", func(ctx context.Context, t feature.T) {
 			t.Log("ran inside of a MAY")
 		}).
-		Should("An example of a SHOULD", func(ctx context.Context, t *testing.T) {
+		Should("An example of a SHOULD", func(ctx context.Context, t feature.T) {
 			t.Log("ran inside of a SHOULD")
 		})
 
 	return f
-}
-
-// EchoFeatureSet makes a feature set out of a few EchoFeatures for testing.
-func EchoFeatureSet() *feature.FeatureSet {
-	fs := &feature.FeatureSet{
-		Name: "Echo Feature Wrapper (3x)",
-		Features: []feature.Feature{
-			*EchoFeature(),
-			*EchoFeature(),
-			*EchoFeature(),
-		},
-	}
-	return fs
 }

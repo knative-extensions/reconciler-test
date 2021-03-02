@@ -27,7 +27,6 @@ func Example() {
 		"ko://knative.dev/reconciler-test/test/example/cmd/echo": "uri://a-real-container",
 	}
 	cfg := map[string]interface{}{
-		"name":      "echo-123",
 		"namespace": "example",
 		"message":   "Hello, World!",
 	}
@@ -42,7 +41,7 @@ func Example() {
 	// apiVersion: batch/v1
 	// kind: Job
 	// metadata:
-	//   name: echo-123
+	//   name: echo
 	//   namespace: example
 	// spec:
 	//   backoffLimit: 0

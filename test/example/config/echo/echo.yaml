@@ -15,7 +15,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .name }}
+  name: echo
   namespace: {{ .namespace }}
 spec:
   backoffLimit: 0
