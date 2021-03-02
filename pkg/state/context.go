@@ -18,7 +18,6 @@ package state
 
 import (
 	"context"
-	"testing"
 )
 
 type envKey struct{}
@@ -39,9 +38,13 @@ func FromContext(ctx context.Context) Store {
 	panic("no Store found in context")
 }
 
+// Fail is defined to avoid circular dependency with the feature package.
+type fail interface {
+	Error(args ...interface{})
+}
+
 // Get the string value from the kvstore from key.
-func GetStringOrFail(ctx context.Context, t *testing.T, key string) string {
-	t.Helper()
+func GetStringOrFail(ctx context.Context, t fail, key string) string {
 	value := ""
 	state := FromContext(ctx)
 	if err := state.Get(ctx, key, &value); err != nil {
@@ -51,7 +54,7 @@ func GetStringOrFail(ctx context.Context, t *testing.T, key string) string {
 }
 
 // Get gets the key from the Store into the provided value
-func GetOrFail(ctx context.Context, t *testing.T, key string, value interface{}) {
+func GetOrFail(ctx context.Context, t fail, key string, value interface{}) {
 	state := FromContext(ctx)
 	if err := state.Get(ctx, key, value); err != nil {
 		t.Error(err)
@@ -59,7 +62,7 @@ func GetOrFail(ctx context.Context, t *testing.T, key string, value interface{})
 }
 
 // Set sets the key into the Store from the provided value
-func SetOrFail(ctx context.Context, t *testing.T, key string, value interface{}) {
+func SetOrFail(ctx context.Context, t fail, key string, value interface{}) {
 	state := FromContext(ctx)
 	if err := state.Set(ctx, key, value); err != nil {
 		t.Error(err)

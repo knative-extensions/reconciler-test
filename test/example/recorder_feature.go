@@ -18,7 +18,6 @@ package example
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -39,20 +38,17 @@ func RecorderFeature() *feature.Feature {
 
 	f := new(feature.Feature)
 
-	f.Setup("create an event", func(ctx context.Context, t *testing.T) {
-		t.Helper()
+	f.Setup("create an event", func(ctx context.Context, t feature.T) {
 		state.SetOrFail(ctx, t, "event", FullEvent())
 	})
 
-	f.Setup("install recorder", func(ctx context.Context, t *testing.T) {
-		t.Helper()
+	f.Setup("install recorder", func(ctx context.Context, t feature.T) {
 		to := feature.MakeRandomK8sName("recorder")
 		eventshub.Install(to, eventshub.StartReceiver)
 		state.SetOrFail(ctx, t, "to", to)
 	})
 
-	f.Setup("install sender", func(ctx context.Context, t *testing.T) {
-		t.Helper()
+	f.Setup("install sender", func(ctx context.Context, t feature.T) {
 		to := state.GetStringOrFail(ctx, t, "to")
 		var event cloudevents.Event
 		state.GetOrFail(ctx, t, "event", &event)
@@ -60,16 +56,14 @@ func RecorderFeature() *feature.Feature {
 		eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event))
 	})
 
-	f.Requirement("recorder is addressable", func(ctx context.Context, t *testing.T) {
-		t.Helper()
+	f.Requirement("recorder is addressable", func(ctx context.Context, t feature.T) {
 		to := state.GetStringOrFail(ctx, t, "to")
 		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)
 	})
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			func(ctx context.Context, t *testing.T) {
-				t.Helper()
+			func(ctx context.Context, t feature.T) {
 				to := state.GetStringOrFail(ctx, t, "to")
 				var event cloudevents.Event
 				state.GetOrFail(ctx, t, "event", &event)
