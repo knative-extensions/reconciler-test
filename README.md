@@ -215,6 +215,41 @@ env := environment.FromContext(ctx)
 This returns the [`Environment`](./pkg/environment/interfaces.go) the feature is
 being tested in.
 
+#### Feature Sets
+
+Sometimes it makes sense to be able to provide a set of Features all at once. We
+call these "Feature Sets". They are intended to allow upstreams to bundle sets
+of features together to provide a simple low code way to vender and run a
+collection of Features together. `Test` and `TestSet` can be used together on an
+environment.
+
+```go
+ctx, env := global.Environment(/* optional environment options */)
+
+// With the instance of an Environment, perform one or more calls to Test().
+env.Test(ctx, t, FooFeature1())
+// Note: env.TestSet() is blocking until all features complete.
+env.TestSet(ctx, t, FooFeatureSet1())
+
+env.Finish()
+```
+
+##### Composing Feature Sets
+
+A `feature.FeatureSet` is implemented as a simple wrapper for a list of
+feature.Features, with a name for context.
+
+```go
+fs := &feature.FeatureSet{
+    Name:     "Some higher order idea",
+    Features: []feature.Feature{
+        *OneAspectFeature(),
+        *AnotherAspectFeature(),
+        *OptionalAspectFeature(),
+    },
+}
+```
+
 ##### YAML Setup Helpers
 
 The testing framework also enables YAML based installing of components. This

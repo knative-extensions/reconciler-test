@@ -36,6 +36,7 @@ func TestTimingConstraints(t *testing.T) {
 	t.Parallel()
 
 	ctx, env := global.Environment()
+	defer env.Finish()
 
 	// We assert at the end on this string
 	stringBuilder := &strings.Builder{}

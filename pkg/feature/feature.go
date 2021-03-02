@@ -31,6 +31,12 @@ type Feature struct {
 	State state.Store
 }
 
+// FeatureSet is a list of features and feature set name.
+type FeatureSet struct {
+	Name     string
+	Features []Feature
+}
+
 // StepFn is the function signature for steps.
 type StepFn func(ctx context.Context, t *testing.T)
 
