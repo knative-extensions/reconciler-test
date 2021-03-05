@@ -8,7 +8,7 @@ import (
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
-// t records if the test succeded or failing
+// t records if the test succeeded or failing
 type t struct {
 	*testing.T
 
