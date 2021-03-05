@@ -37,7 +37,7 @@ func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
 
 	return &MagicGlobalEnvironment{
 		c:                ctx,
-		id:               uuid.New().String(),
+		instanceID:       uuid.New().String(),
 		RequirementLevel: *l,
 		FeatureState:     *s,
 	}
@@ -45,8 +45,9 @@ func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
 
 type MagicGlobalEnvironment struct {
 	c context.Context
-	// id is used to link runs together from a single global environment.
-	id string
+	// instanceID represents this instance of the GlobalEnvironment. It is used
+	// to link runs together from a single global environment.
+	instanceID string
 
 	RequirementLevel feature.Levels
 	FeatureState     feature.States
@@ -63,8 +64,6 @@ type MagicEnvironment struct {
 	refs             []corev1.ObjectReference
 	// milestones sends milestone events, if configured.
 	milestones milestone.Sender
-	// mf is the milestone event factory.
-	mf *milestone.Factory
 }
 
 const (
@@ -81,10 +80,10 @@ func (mr *MagicEnvironment) References() []corev1.ObjectReference {
 
 func (mr *MagicEnvironment) Finish() {
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
-		mr.milestones.Send(mr.c, mr.mf.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err))
+		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
 		panic(err)
 	}
-	mr.milestones.Send(mr.c, mr.mf.Finished())
+	mr.milestones.Finished()
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
@@ -101,7 +100,6 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		s:         mr.FeatureState,
 		images:    images,
 		namespace: namespace,
-		mf:        milestone.NewFactory(mr.id, namespace),
 	}
 
 	ctx := ContextWith(mr.c, env)
@@ -115,7 +113,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	// It is possible to have milestones set in the options, check for nil in
 	// env first before attempting to pull one from the os environment.
 	if env.milestones == nil {
-		milestones, err := milestone.NewMilestoneEventSenderFromEnv()
+		milestones, err := milestone.NewMilestoneEventSenderFromEnv(mr.instanceID, namespace)
 		if err != nil {
 			// This is just an FYI error, don't block the test run.
 			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
@@ -129,12 +127,12 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		panic(err)
 	}
 
-	env.milestones.Send(env.c, env.mf.Environment(map[string]string{
+	env.milestones.Environment(map[string]string{
 		// TODO: we could add more detail here, don't send secrets.
 		"requirementLevel": env.RequirementLevel().String(),
 		"featureState":     env.FeatureState().String(),
 		"namespace":        env.Namespace(),
-	}))
+	})
 
 	return ctx, env
 }
@@ -206,7 +204,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 					wg.Add(1)
 					defer func() {
 						// Send result milestone event.
-						mr.milestones.Send(ctx, mr.mf.TestFinished(f.Name, s.TestName(), t.Name(), t.Skipped(), t.Failed()))
+						mr.milestones.TestFinished(f.Name, s.TestName(), t.Name(), t.Skipped(), t.Failed())
 
 						wg.Done()
 					}()
@@ -223,7 +221,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 					t.Helper() // Helper marks the calling function as a test helper function.
 
 					// Send starting milestone event.
-					mr.milestones.Send(ctx, mr.mf.TestStarted(f.Name, s.TestName(), t.Name()))
+					mr.milestones.TestStarted(f.Name, s.TestName(), t.Name())
 
 					// Perform step.
 					s.Fn(ctx, t)
@@ -240,7 +238,7 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 	t.Helper() // Helper marks the calling function as a test helper function
 	wg := &sync.WaitGroup{}
 
-	mr.milestones.Send(ctx, mr.mf.TestSetStarted(fs.Name, t.Name()))
+	mr.milestones.TestSetStarted(fs.Name, t.Name())
 
 	for _, f := range fs.Features {
 		wg.Add(1)
@@ -254,7 +252,7 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 	wg.Wait()
 
 	// Send result milestone event.
-	mr.milestones.Send(ctx, mr.mf.TestSetFinished(fs.Name, t.Name(), t.Skipped(), t.Failed()))
+	mr.milestones.TestSetFinished(fs.Name, t.Name(), t.Skipped(), t.Failed())
 
 }
 

@@ -35,16 +35,16 @@ const (
 	ExceptionType        = "dev.knative.rekt.exception.v1"
 )
 
-type Factory struct {
-	Subject string
-	Source  string
-}
-
 func NewFactory(id, namespace string) *Factory {
 	return &Factory{
 		Source:  "knative.dev/reconciler-test/" + id, // TODO: revisit.
 		Subject: fmt.Sprintf("/api/v1/namespaces/%s", namespace),
 	}
+}
+
+type Factory struct {
+	Subject string
+	Source  string
 }
 
 func (ef *Factory) Environment(env map[string]string) cloudevents.Event {
