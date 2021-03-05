@@ -139,69 +139,56 @@ func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *f
 // Feature will be assigned to the context. If no Store is set on Feature,
 // Test will create a new store.KVStore and set it on the feature and then
 // apply it to the Context.
-func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.Feature) {
-	t.Helper() // Helper marks the calling function as a test helper function.
+func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *feature.Feature) {
+	originalT.Helper() // Helper marks the calling function as a test helper function.
 
 	if f.State == nil {
 		f.State = &state.KVStore{}
 	}
 	ctx = state.ContextWith(ctx, f.State)
 
-	steps := feature.CollapseSteps(f.Steps)
+	steps := reorderSteps(f.Steps)
 
-	for _, timing := range feature.Timings() {
+	for _, s := range steps {
+		s := s
+		var tWrapper *t
+
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
+		originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
+			st.Helper()
+			st.Cleanup(wg.Done)  // Make sure wg.Done() is always invoked, no matter what
+			tWrapper = wrapT(st) // We need to wrap t with the internal st
 
-		t.Run(timing.String(), func(t *testing.T) {
-			t.Helper()      // Helper marks the calling function as a test helper function.
-			defer wg.Done() // Outer wait.
-
-			for _, s := range steps {
-				// Skip if step phase is not running.
-				if s.T != timing {
-					continue
-				}
-				t.Run(s.TestName(), func(t *testing.T) {
-					ctx, cancelFn := context.WithCancel(ctx)
-					t.Cleanup(cancelFn)
-
-					wg.Add(1)
-					defer wg.Done()
-
-					if mr.s&s.S == 0 {
-						t.Skipf("%s features not enabled for testing", s.S)
-					}
-					if mr.l&s.L == 0 {
-						t.Skipf("%s requirement not enabled for testing", s.L)
-					}
-
-					s := s
-
-					t.Helper() // Helper marks the calling function as a test helper function.
-
-					// Perform step.
-					s.Fn(ctx, t)
-
-				})
+			if mr.s&s.S == 0 {
+				tWrapper.Skipf("%s features not enabled for testing", s.S)
 			}
+			if mr.l&s.L == 0 {
+				tWrapper.Skipf("%s requirement not enabled for testing", s.L)
+			}
+
+			// Perform step.
+			s.Fn(ctx, st)
 		})
 
+		// Wait for the test to execute before spawning the next one
 		wg.Wait()
+
+		// TODO Use the wrapped t to find out if we need to stop here or continue the execution, what we need to report, etc...
 	}
 }
 
 // TestSet implements Environment.TestSet
 func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *feature.FeatureSet) {
 	t.Helper() // Helper marks the calling function as a test helper function
-	wg := &sync.WaitGroup{}
 
+	wg := &sync.WaitGroup{}
 	for _, f := range fs.Features {
 		wg.Add(1)
 		t.Run(fs.Name, func(t *testing.T) {
+			t.Cleanup(wg.Done)
 			// FeatureSets should be run in parellel.
 			mr.Test(ctx, t, &f)
-			wg.Done()
 		})
 	}
 
