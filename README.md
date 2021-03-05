@@ -160,7 +160,7 @@ A `feature.Feature` is implemented as a builder pattern. Start with a new
 `feature.Feature`:
 
 ```go
-f := new(feature.Feature)
+f := &feature.Feature{Name: "Meaningful Name"}
 ```
 
 Then, add steps for each timing as required for the test:

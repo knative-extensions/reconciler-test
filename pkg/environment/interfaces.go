@@ -28,7 +28,7 @@ import (
 // environment is setup.
 type EnvOpts func(ctx context.Context, env Environment) (context.Context, error)
 
-// GlobalEnvironment is the factory for an instance of Environment.
+// GlobalEnvironment is the mf for an instance of Environment.
 // GlobalEnvironment holds the understanding of the particular cluster that
 // will be used for the feature testing.
 type GlobalEnvironment interface {

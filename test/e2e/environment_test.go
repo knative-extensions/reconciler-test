@@ -41,7 +41,7 @@ func TestTimingConstraints(t *testing.T) {
 	stringBuilder := &strings.Builder{}
 
 	// Build the feature
-	feat := &feature.Feature{}
+	feat := &feature.Feature{Name: "TestTimingConstraints"}
 
 	counter := int32(0)
 
@@ -74,6 +74,8 @@ func TestTimingConstraints(t *testing.T) {
 	env.Test(ctx, t, feat)
 
 	require.Equal(t, "setup1setup2setup3requirement1requirement2requirement3teardown1teardown2teardown3", stringBuilder.String())
+
+	env.Finish()
 }
 
 func appender(stringBuilder *strings.Builder, val string) feature.StepFn {

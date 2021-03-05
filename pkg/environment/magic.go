@@ -22,6 +22,10 @@ import (
 	"sync"
 	"testing"
 
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
+	"knative.dev/reconciler-test/pkg/milestone"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"knative.dev/reconciler-test/pkg/feature"
@@ -29,7 +33,6 @@ import (
 )
 
 func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
-
 	fmt.Printf("level %s, state %s\n\n", l, s)
 
 	return &MagicGlobalEnvironment{
@@ -55,7 +58,15 @@ type MagicEnvironment struct {
 	namespace        string
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
+	// milestones sends milestone events, if configured.
+	milestones milestone.Sender
+	// mf is the milestone event factory.
+	mf *milestone.Factory
 }
+
+const (
+	NamespaceDeleteErrorReason = "NamespaceDeleteError"
+)
 
 func (mr *MagicEnvironment) Reference(ref ...corev1.ObjectReference) {
 	mr.refs = append(mr.refs, ref...)
@@ -67,8 +78,10 @@ func (mr *MagicEnvironment) References() []corev1.ObjectReference {
 
 func (mr *MagicEnvironment) Finish() {
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
+		mr.milestones.Send(mr.c, mr.mf.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err))
 		panic(err)
 	}
+	mr.milestones.Send(mr.c, mr.mf.Finished())
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
@@ -85,6 +98,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		s:         mr.FeatureState,
 		images:    images,
 		namespace: namespace,
+		mf:        milestone.NewFactory(namespace),
 	}
 
 	ctx := ContextWith(mr.c, env)
@@ -95,9 +109,29 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		}
 	}
 
+	// It is possible to have milestones set in the options, check for nil in
+	// env first before attempting to pull one from the os environment.
+	if env.milestones == nil {
+		milestones, err := milestone.NewMilestoneEventSenderFromEnv()
+		if err != nil {
+			// This is just an FYI error, don't block the test run.
+			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
+		}
+		if milestones != nil {
+			env.milestones = milestones
+		}
+	}
+
 	if err := env.CreateNamespaceIfNeeded(); err != nil {
 		panic(err)
 	}
+
+	env.milestones.Send(env.c, env.mf.Environment(map[string]string{
+		// TODO: we could add more detail here, don't send secrets.
+		"requirementLevel": env.RequirementLevel().String(),
+		"featureState":     env.FeatureState().String(),
+		"namespace":        env.Namespace(),
+	}))
 
 	return ctx, env
 }
@@ -167,7 +201,12 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 					t.Cleanup(cancelFn)
 
 					wg.Add(1)
-					defer wg.Done()
+					defer func() {
+						// Send result milestone event.
+						mr.milestones.Send(ctx, mr.mf.TestFinished(f.Name, s.TestName(), t.Name(), t.Skipped(), t.Failed()))
+
+						wg.Done()
+					}()
 
 					if mr.s&s.S == 0 {
 						t.Skipf("%s features not enabled for testing", s.S)
@@ -180,9 +219,11 @@ func (mr *MagicEnvironment) Test(ctx context.Context, t *testing.T, f *feature.F
 
 					t.Helper() // Helper marks the calling function as a test helper function.
 
+					// Send starting milestone event.
+					mr.milestones.Send(ctx, mr.mf.TestStarted(f.Name, s.TestName(), t.Name()))
+
 					// Perform step.
 					s.Fn(ctx, t)
-
 				})
 			}
 		})
@@ -196,6 +237,8 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 	t.Helper() // Helper marks the calling function as a test helper function
 	wg := &sync.WaitGroup{}
 
+	mr.milestones.Send(ctx, mr.mf.TestSetStarted(fs.Name, t.Name()))
+
 	for _, f := range fs.Features {
 		wg.Add(1)
 		t.Run(fs.Name, func(t *testing.T) {
@@ -206,6 +249,10 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 	}
 
 	wg.Wait()
+
+	// Send result milestone event.
+	mr.milestones.Send(ctx, mr.mf.TestSetFinished(fs.Name, t.Name(), t.Skipped(), t.Failed()))
+
 }
 
 type envKey struct{}
