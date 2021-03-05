@@ -19,15 +19,14 @@ package environment
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/reconciler-test/pkg/milestone"
-
-	corev1 "k8s.io/api/core/v1"
 
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/state"
