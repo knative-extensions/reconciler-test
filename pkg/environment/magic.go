@@ -19,6 +19,7 @@ package environment
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"sync"
 	"testing"
 
@@ -37,6 +38,7 @@ func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
 
 	return &MagicGlobalEnvironment{
 		c:                ctx,
+		id:               uuid.New().String(),
 		RequirementLevel: *l,
 		FeatureState:     *s,
 	}
@@ -44,6 +46,8 @@ func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
 
 type MagicGlobalEnvironment struct {
 	c context.Context
+	// id is used to link runs together from a single global environment.
+	id string
 
 	RequirementLevel feature.Levels
 	FeatureState     feature.States
@@ -98,7 +102,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		s:         mr.FeatureState,
 		images:    images,
 		namespace: namespace,
-		mf:        milestone.NewFactory(namespace),
+		mf:        milestone.NewFactory(mr.id, namespace),
 	}
 
 	ctx := ContextWith(mr.c, env)

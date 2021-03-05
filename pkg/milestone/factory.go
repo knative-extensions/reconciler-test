@@ -40,9 +40,9 @@ type Factory struct {
 	Source  string
 }
 
-func NewFactory(namespace string) *Factory {
+func NewFactory(id, namespace string) *Factory {
 	return &Factory{
-		Source:  "knative.dev/reconciler-test", // TODO: revisit.
+		Source:  "knative.dev/reconciler-test/" + id, // TODO: revisit.
 		Subject: fmt.Sprintf("/api/v1/namespaces/%s", namespace),
 	}
 }
@@ -134,7 +134,7 @@ func (ef *Factory) TestFinished(feature, stepName, testName string, skipped, fai
 }
 
 func (ef *Factory) TestSetStarted(featureSet, testName string) cloudevents.Event {
-	event := ef.baseEvent(TestStartedType)
+	event := ef.baseEvent(TestSetStartedType)
 
 	event.SetExtension("featureset", featureSet)
 	event.SetExtension("testname", testName)
