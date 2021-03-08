@@ -175,6 +175,10 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 		wg.Wait()
 
 		// TODO Use the wrapped t to find out if we need to stop here or continue the execution, what we need to report, etc...
+		//if tWrapper.failed.Load() && s.T == feature.Requirement {
+		//	originalT.Skipf("Skipping feature '%s' because requirement failed", f.Name)
+		//	return
+		//}
 	}
 }
 
