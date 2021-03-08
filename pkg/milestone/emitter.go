@@ -45,8 +45,10 @@ type Emitter interface {
 	Environment(env map[string]string)
 	NamespaceCreated(namespace string)
 	NamespaceDeleted(namespace string)
-	TestStarted(feature, stepName, testName string)
-	TestFinished(feature, stepName, testName string, skipped, failed bool)
+	TestStarted(featureName, testName string)
+	TestFinished(featureName, testName string, skipped, failed bool)
+	StepStarted(featureName, stepName, timing, level, testName string)
+	StepFinished(featureName, stepName, timing, level, testName string, skipped, failed bool)
 	TestSetStarted(featureSet, testName string)
 	TestSetFinished(featureSet, testName string, skipped, failed bool)
 	Finished()
@@ -118,18 +120,32 @@ func (n *NilSafeClient) NamespaceDeleted(namespace string) {
 	n.Event(context.Background(), n.Factory.NamespaceDeleted(namespace))
 }
 
-func (n *NilSafeClient) TestStarted(feature, stepName, testName string) {
+func (n *NilSafeClient) TestStarted(feature, testName string) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Event(context.Background(), n.Factory.TestStarted(feature, stepName, testName))
+	n.Event(context.Background(), n.Factory.TestStarted(feature, testName))
 }
 
-func (n *NilSafeClient) TestFinished(feature, stepName, testName string, skipped, failed bool) {
+func (n *NilSafeClient) TestFinished(feature, testName string, skipped, failed bool) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Event(context.Background(), n.Factory.TestFinished(feature, stepName, testName, skipped, failed))
+	n.Event(context.Background(), n.Factory.TestFinished(feature, testName, skipped, failed))
+}
+
+func (n *NilSafeClient) StepStarted(feature, stepName, timing, level, testName string) {
+	if n == nil || n.Client == nil {
+		return
+	}
+	n.Event(context.Background(), n.Factory.StepStarted(feature, stepName, timing, level, testName))
+}
+
+func (n *NilSafeClient) StepFinished(feature, stepName, timing, level, testName string, skipped, failed bool) {
+	if n == nil || n.Client == nil {
+		return
+	}
+	n.Event(context.Background(), n.Factory.StepFinished(feature, stepName, timing, level, testName, skipped, failed))
 }
 
 func (n *NilSafeClient) TestSetStarted(featureSet, testName string) {

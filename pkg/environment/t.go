@@ -43,6 +43,16 @@ func (t *requirementT) Fail() {
 	t.failed.Store(true)
 }
 
+func (t *requirementT) FailNow() {
+	t.T.Helper()
+	t.failed.Store(true)
+	t.T.SkipNow()
+}
+
+func (t *requirementT) Failed() bool {
+	return t.failed.Load()
+}
+
 func (t *requirementT) Fatal(args ...interface{}) {
 	t.T.Helper()
 	t.failed.Store(true)
@@ -54,12 +64,6 @@ func (t *requirementT) Fatalf(format string, args ...interface{}) {
 	t.T.Helper()
 	t.failed.Store(true)
 	t.T.Logf(format, args...)
-	t.T.SkipNow()
-}
-
-func (t *requirementT) FailNow() {
-	t.T.Helper()
-	t.failed.Store(true)
 	t.T.SkipNow()
 }
 
@@ -91,4 +95,8 @@ func (t *requirementT) SkipNow() {
 	t.T.Helper()
 	t.skipped.Store(true)
 	t.T.SkipNow()
+}
+
+func (t *requirementT) Skipped() bool {
+	return t.skipped.Load()
 }
