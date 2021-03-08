@@ -89,6 +89,7 @@ func TestRequirementSkip(t *testing.T) {
 	// Build the feature
 	feat := &feature.Feature{}
 
+	afterRequirementInvoked := false
 	counter := int32(0)
 
 	feat.Setup("setup1", appender(stringBuilder, "setup1"))
@@ -97,6 +98,7 @@ func TestRequirementSkip(t *testing.T) {
 	feat.Requirement("requirement1", appender(stringBuilder, "requirement1"))
 	feat.Requirement("requirement2", func(ctx context.Context, t feature.T) {
 		t.Fatalf("We can't fulfill this requirement")
+		afterRequirementInvoked = true
 	})
 	feat.Requirement("requirement3", appender(stringBuilder, "requirement3"))
 	feat.Stable("A cool feature").
@@ -120,6 +122,7 @@ func TestRequirementSkip(t *testing.T) {
 
 	require.Equal(t, "setup1setup2setup3requirement1teardown1teardown2teardown3", stringBuilder.String())
 	require.Equal(t, int32(0), atomic.LoadInt32(&counter))
+	require.False(t, afterRequirementInvoked)
 }
 
 // This should fail because a setup phase failed

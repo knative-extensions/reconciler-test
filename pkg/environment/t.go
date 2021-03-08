@@ -47,17 +47,20 @@ func (t *requirementT) Fatal(args ...interface{}) {
 	t.T.Helper()
 	t.failed.Store(true)
 	t.T.Log(args...)
+	t.T.SkipNow()
 }
 
 func (t *requirementT) Fatalf(format string, args ...interface{}) {
 	t.T.Helper()
 	t.failed.Store(true)
 	t.T.Logf(format, args...)
+	t.T.SkipNow()
 }
 
 func (t *requirementT) FailNow() {
 	t.T.Helper()
 	t.failed.Store(true)
+	t.T.SkipNow()
 }
 
 func (t *requirementT) Log(args ...interface{}) {
@@ -74,15 +77,18 @@ func (t *requirementT) Skip(args ...interface{}) {
 	t.T.Helper()
 	t.skipped.Store(true)
 	t.T.Log(args...)
+	t.T.SkipNow()
 }
 
 func (t *requirementT) Skipf(format string, args ...interface{}) {
 	t.T.Helper()
 	t.skipped.Store(true)
 	t.T.Logf(format, args...)
+	t.T.SkipNow()
 }
 
 func (t *requirementT) SkipNow() {
 	t.T.Helper()
 	t.skipped.Store(true)
+	t.T.SkipNow()
 }
