@@ -40,9 +40,6 @@ type envConfig struct {
 
 // Emitter sends milestone events.
 type Emitter interface {
-	// Event will emit a CloudEvent.
-	Event(ctx context.Context, event cloudevents.Event)
-
 	// Helpers to create known events.
 
 	Environment(env map[string]string)
