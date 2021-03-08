@@ -32,7 +32,7 @@ import (
 )
 
 func EchoFeature() *feature.Feature {
-	f := new(feature.Feature)
+	f := &feature.Feature{Name: "EchoFeature"}
 
 	msg := fmt.Sprintf("hello %s", uuid.New())
 	name := "echo" + uuid.New().String()

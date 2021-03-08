@@ -22,18 +22,22 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/logging"
 
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/milestone"
 	"knative.dev/reconciler-test/pkg/state"
 )
 
 func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
-
 	fmt.Printf("level %s, state %s\n\n", l, s)
 
 	return &MagicGlobalEnvironment{
 		c:                ctx,
+		instanceID:       uuid.New().String(),
 		RequirementLevel: *l,
 		FeatureState:     *s,
 	}
@@ -41,6 +45,9 @@ func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
 
 type MagicGlobalEnvironment struct {
 	c context.Context
+	// instanceID represents this instance of the GlobalEnvironment. It is used
+	// to link runs together from a single global environment.
+	instanceID string
 
 	RequirementLevel feature.Levels
 	FeatureState     feature.States
@@ -55,7 +62,13 @@ type MagicEnvironment struct {
 	namespace        string
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
+	// milestones sends milestone events, if configured.
+	milestones milestone.Emitter
 }
+
+const (
+	NamespaceDeleteErrorReason = "NamespaceDeleteError"
+)
 
 func (mr *MagicEnvironment) Reference(ref ...corev1.ObjectReference) {
 	mr.refs = append(mr.refs, ref...)
@@ -67,8 +80,10 @@ func (mr *MagicEnvironment) References() []corev1.ObjectReference {
 
 func (mr *MagicEnvironment) Finish() {
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
+		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
 		panic(err)
 	}
+	mr.milestones.Finished()
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
@@ -95,9 +110,29 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		}
 	}
 
+	// It is possible to have milestones set in the options, check for nil in
+	// env first before attempting to pull one from the os environment.
+	if env.milestones == nil {
+		milestones, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, namespace)
+		if err != nil {
+			// This is just an FYI error, don't block the test run.
+			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
+		}
+		if milestones != nil {
+			env.milestones = milestones
+		}
+	}
+
 	if err := env.CreateNamespaceIfNeeded(); err != nil {
 		panic(err)
 	}
+
+	env.milestones.Environment(map[string]string{
+		// TODO: we could add more detail here, don't send secrets.
+		"requirementLevel": env.RequirementLevel().String(),
+		"featureState":     env.FeatureState().String(),
+		"namespace":        env.Namespace(),
+	})
 
 	return ctx, env
 }
@@ -238,7 +273,10 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 
 		originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
 			st.Helper()
-			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
+			st.Cleanup(func() {
+				mr.milestones.TestFinished(f.Name, s.TestName(), st.Name(), st.Skipped(), st.Failed())
+				wg.Done() // Make sure wg.Done() is always invoked, no matter what
+			})
 
 			// TODO here we should run all the asserts and not filter them
 			//  and then we record which one failed and which not, computing the actual compliance
@@ -249,6 +287,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 				st.Skipf("%s requirement not enabled for testing", s.L)
 			}
 
+			mr.milestones.TestStarted(f.Name, s.TestName(), st.Name())
 			// Perform step.
 			s.Fn(ctx, st)
 		})
@@ -267,7 +306,11 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 
 		originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
 			st.Helper()
-			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
+			st.Cleanup(func() {
+				mr.milestones.TestFinished(f.Name, s.TestName(), st.Name(), st.Skipped(), st.Failed())
+				wg.Done() // Make sure wg.Done() is always invoked, no matter what
+			})
+			mr.milestones.TestStarted(f.Name, s.TestName(), st.Name())
 
 			if mr.s&s.S == 0 {
 				st.Skipf("%s features not enabled for testing", s.S)
@@ -276,6 +319,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 				st.Skipf("%s requirement not enabled for testing", s.L)
 			}
 
+			mr.milestones.TestStarted(f.Name, s.TestName(), st.Name())
 			// Perform step.
 			s.Fn(ctx, st)
 		})
@@ -293,6 +337,8 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *feature.FeatureSet) {
 	t.Helper() // Helper marks the calling function as a test helper function
 
+	mr.milestones.TestSetStarted(fs.Name, t.Name())
+
 	wg := &sync.WaitGroup{}
 	for _, f := range fs.Features {
 		wg.Add(1)
@@ -304,6 +350,9 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 	}
 
 	wg.Wait()
+
+	// Send result milestone event.
+	mr.milestones.TestSetFinished(fs.Name, t.Name(), t.Skipped(), t.Failed())
 }
 
 type envKey struct{}

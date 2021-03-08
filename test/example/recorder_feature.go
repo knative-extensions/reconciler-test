@@ -36,7 +36,7 @@ import (
 func RecorderFeature() *feature.Feature {
 	svc := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
 
-	f := new(feature.Feature)
+	f := &feature.Feature{Name: "Record"}
 
 	f.Setup("create an event", func(ctx context.Context, t feature.T) {
 		state.SetOrFail(ctx, t, "event", FullEvent())
