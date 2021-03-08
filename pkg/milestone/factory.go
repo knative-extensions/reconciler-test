@@ -29,6 +29,8 @@ const (
 	NamespaceDeletedType = "dev.knative.rekt.namespace.deleted.v1"
 	TestStartedType      = "dev.knative.rekt.test.started.v1"
 	TestFinishedType     = "dev.knative.rekt.test.finished.v1"
+	StepStartedType      = "dev.knative.rekt.step.started.v1"
+	StepFinishedType     = "dev.knative.rekt.step.finished.v1"
 	TestSetStartedType   = "dev.knative.rekt.testset.started.v1"
 	TestSetFinishedType  = "dev.knative.rekt.testset.finished.v1"
 	FinishedType         = "dev.knative.rekt.finished.v1"
@@ -85,7 +87,7 @@ func (ef *Factory) NamespaceDeleted(namespace string) cloudevents.Event {
 	return event
 }
 
-func (ef *Factory) TestStarted(feature, stepName, testName string) cloudevents.Event {
+func (ef *Factory) TestStarted(feature, testName string) cloudevents.Event {
 	event := ef.baseEvent(TestStartedType)
 
 	lparts := strings.Split(testName, "/")
@@ -94,7 +96,6 @@ func (ef *Factory) TestStarted(feature, stepName, testName string) cloudevents.E
 	}
 
 	event.SetExtension("feature", feature)
-	event.SetExtension("stepname", stepName)
 	event.SetExtension("testname", testName)
 
 	// TODO: we can log a whole lot of stuff here but we need a more formal structure to track
@@ -102,14 +103,13 @@ func (ef *Factory) TestStarted(feature, stepName, testName string) cloudevents.E
 
 	_ = event.SetData(cloudevents.ApplicationJSON, map[string]interface{}{
 		"feature":  feature,
-		"stepName": stepName,
 		"testName": testName,
 	})
 
 	return event
 }
 
-func (ef *Factory) TestFinished(feature, stepName, testName string, skipped, failed bool) cloudevents.Event {
+func (ef *Factory) TestFinished(feature, testName string, skipped, failed bool) cloudevents.Event {
 	event := ef.baseEvent(TestFinishedType)
 
 	lparts := strings.Split(testName, "/")
@@ -118,16 +118,70 @@ func (ef *Factory) TestFinished(feature, stepName, testName string, skipped, fai
 	}
 
 	event.SetExtension("feature", feature)
-	event.SetExtension("stepname", stepName)
 	event.SetExtension("testname", testName)
 
 	_ = event.SetData(cloudevents.ApplicationJSON, map[string]interface{}{
 		"feature":  feature,
-		"stepName": stepName,
 		"testName": testName,
 		"skipped":  skipped,
 		"failed":   failed,
 		"passed":   !failed && !skipped,
+	})
+
+	return event
+}
+
+func (ef *Factory) StepStarted(feature, stepName, timing, level, testName string) cloudevents.Event {
+	event := ef.baseEvent(StepStartedType)
+
+	lparts := strings.Split(testName, "/")
+	if len(lparts) > 0 {
+		event.SetExtension("testparent", lparts[0])
+	}
+
+	event.SetExtension("feature", feature)
+	event.SetExtension("stepname", stepName)
+	event.SetExtension("steptiming", timing)
+	event.SetExtension("steplevel", level)
+	event.SetExtension("testname", testName)
+
+	// TODO: we can log a whole lot of stuff here but we need a more formal structure to track
+	// where we are in the test to be able to assemble it.
+
+	_ = event.SetData(cloudevents.ApplicationJSON, map[string]interface{}{
+		"feature":    feature,
+		"stepName":   stepName,
+		"stepTiming": timing,
+		"stepLevel":  level,
+		"testName":   testName,
+	})
+
+	return event
+}
+
+func (ef *Factory) StepFinished(feature, stepName, timing, level, testName string, skipped, failed bool) cloudevents.Event {
+	event := ef.baseEvent(StepFinishedType)
+
+	lparts := strings.Split(testName, "/")
+	if len(lparts) > 0 {
+		event.SetExtension("testparent", lparts[0])
+	}
+
+	event.SetExtension("feature", feature)
+	event.SetExtension("stepname", stepName)
+	event.SetExtension("steptiming", timing)
+	event.SetExtension("steplevel", level)
+	event.SetExtension("testname", testName)
+
+	_ = event.SetData(cloudevents.ApplicationJSON, map[string]interface{}{
+		"feature":    feature,
+		"stepName":   stepName,
+		"stepTiming": timing,
+		"stepLevel":  level,
+		"testName":   testName,
+		"skipped":    skipped,
+		"failed":     failed,
+		"passed":     !failed && !skipped,
 	})
 
 	return event

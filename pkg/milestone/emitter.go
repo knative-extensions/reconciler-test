@@ -26,6 +26,8 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
+
+	"knative.dev/reconciler-test/pkg/feature"
 )
 
 const (
@@ -45,10 +47,12 @@ type Emitter interface {
 	Environment(env map[string]string)
 	NamespaceCreated(namespace string)
 	NamespaceDeleted(namespace string)
-	TestStarted(feature, stepName, testName string)
-	TestFinished(feature, stepName, testName string, skipped, failed bool)
-	TestSetStarted(featureSet, testName string)
-	TestSetFinished(featureSet, testName string, skipped, failed bool)
+	TestStarted(feature string, t feature.T)
+	TestFinished(feature string, t feature.T)
+	StepStarted(feature string, step *feature.Step, t feature.T)
+	StepFinished(feature string, step *feature.Step, t feature.T)
+	TestSetStarted(featureSet string, t feature.T)
+	TestSetFinished(featureSet string, t feature.T)
 	Finished()
 	Exception(reason, messageFormat string, messageA ...interface{})
 }
@@ -118,32 +122,46 @@ func (n *NilSafeClient) NamespaceDeleted(namespace string) {
 	n.Event(context.Background(), n.Factory.NamespaceDeleted(namespace))
 }
 
-func (n *NilSafeClient) TestStarted(feature, stepName, testName string) {
+func (n *NilSafeClient) TestStarted(feature string, t feature.T) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Event(context.Background(), n.Factory.TestStarted(feature, stepName, testName))
+	n.Event(context.Background(), n.Factory.TestStarted(feature, t.Name()))
 }
 
-func (n *NilSafeClient) TestFinished(feature, stepName, testName string, skipped, failed bool) {
+func (n *NilSafeClient) TestFinished(feature string, t feature.T) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Event(context.Background(), n.Factory.TestFinished(feature, stepName, testName, skipped, failed))
+	n.Event(context.Background(), n.Factory.TestFinished(feature, t.Name(), t.Skipped(), t.Failed()))
 }
 
-func (n *NilSafeClient) TestSetStarted(featureSet, testName string) {
+func (n *NilSafeClient) StepStarted(feature string, step *feature.Step, t feature.T) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Event(context.Background(), n.Factory.TestSetStarted(featureSet, testName))
+	n.Event(context.Background(), n.Factory.StepStarted(feature, step.Name, step.T.String(), step.L.String(), t.Name()))
 }
 
-func (n *NilSafeClient) TestSetFinished(featureSet, testName string, skipped, failed bool) {
+func (n *NilSafeClient) StepFinished(feature string, step *feature.Step, t feature.T) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Event(context.Background(), n.Factory.TestSetFinished(featureSet, testName, skipped, failed))
+	n.Event(context.Background(), n.Factory.StepFinished(feature, step.Name, step.T.String(), step.L.String(), t.Name(), t.Skipped(), t.Failed()))
+}
+
+func (n *NilSafeClient) TestSetStarted(featureSet string, t feature.T) {
+	if n == nil || n.Client == nil {
+		return
+	}
+	n.Event(context.Background(), n.Factory.TestSetStarted(featureSet, t.Name()))
+}
+
+func (n *NilSafeClient) TestSetFinished(featureSet string, t feature.T) {
+	if n == nil || n.Client == nil {
+		return
+	}
+	n.Event(context.Background(), n.Factory.TestSetFinished(featureSet, t.Name(), t.Skipped(), t.Failed()))
 }
 
 func (n *NilSafeClient) Finished() {
