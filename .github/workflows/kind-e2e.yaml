@@ -24,7 +24,7 @@ jobs:
       GO111MODULE: off
       KO_DOCKER_REPO: kind.local
       KO_VERSION: ${{ matrix.ko-version }}
-      KIND_VERSION: v${{ matrix.kind-version }}
+      KIND_VERSION: ${{ matrix.kind-version }}
 
     steps:
     - name: Set up Go ${{ matrix.go-version }}
