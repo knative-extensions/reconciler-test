@@ -38,11 +38,10 @@ type envConfig struct {
 	MilestoneEventsTarget string `envconfig:"MILESTONE_EVENTS_TARGET"`
 }
 
-// Sender sends milestone events.
-type Sender interface {
-	// Send will send CloudEvents and return the result.
-	// Send must be implemented in a nil safe way.
-	Send(ctx context.Context, event cloudevents.Event)
+// Emitter sends milestone events.
+type Emitter interface {
+	// Event will emit a CloudEvent.
+	Event(ctx context.Context, event cloudevents.Event)
 
 	// Helpers to create known events.
 
@@ -57,23 +56,23 @@ type Sender interface {
 	Exception(reason, messageFormat string, messageA ...interface{})
 }
 
-// NewMilestoneEventSenderFromEnv will attempt to pull the env var
+// NewMilestoneEmitterFromEnv will attempt to pull the env var
 // `MILESTONE_EVENTS_TARGET` as the target uri for sending milestone events.
-func NewMilestoneEventSenderFromEnv(instance, namespace string) (Sender, error) {
+func NewMilestoneEmitterFromEnv(instance, namespace string) (Emitter, error) {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		return nil, err
 	}
 	if len(env.MilestoneEventsTarget) > 0 {
 		fmt.Printf("milestone events target: %s\n\n", env.MilestoneEventsTarget)
-		return NewMilestoneEventSender(instance, namespace, env.MilestoneEventsTarget)
+		return NewMilestoneEmitter(instance, namespace, env.MilestoneEventsTarget)
 	}
 	return &NilSafeClient{}, nil
 }
 
-// NewMilestoneEventSender will convert target uri to a milestone event sender and return it.
+// NewMilestoneEmitter will convert target uri to a milestone event sender and return it.
 //
-func NewMilestoneEventSender(instance, namespace, uri string) (Sender, error) {
+func NewMilestoneEmitter(instance, namespace, uri string) (Emitter, error) {
 	target, err := apis.ParseURL(uri)
 	if err != nil {
 		return nil, err
@@ -95,7 +94,7 @@ func NewMilestoneEventSender(instance, namespace, uri string) (Sender, error) {
 }
 
 // NilSafeClient is a simple wrapper around a cloudevent client that implements
-// Sender to provide nil check safety.
+// Emitter to provide nil check safety.
 type NilSafeClient struct {
 	Client  cloudevents.Client
 	Factory *Factory
@@ -105,67 +104,67 @@ func (n *NilSafeClient) Environment(env map[string]string) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.Environment(env))
+	n.Event(context.Background(), n.Factory.Environment(env))
 }
 
 func (n *NilSafeClient) NamespaceCreated(namespace string) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.NamespaceCreated(namespace))
+	n.Event(context.Background(), n.Factory.NamespaceCreated(namespace))
 }
 
 func (n *NilSafeClient) NamespaceDeleted(namespace string) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.NamespaceDeleted(namespace))
+	n.Event(context.Background(), n.Factory.NamespaceDeleted(namespace))
 }
 
 func (n *NilSafeClient) TestStarted(feature, stepName, testName string) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.TestStarted(feature, stepName, testName))
+	n.Event(context.Background(), n.Factory.TestStarted(feature, stepName, testName))
 }
 
 func (n *NilSafeClient) TestFinished(feature, stepName, testName string, skipped, failed bool) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.TestFinished(feature, stepName, testName, skipped, failed))
+	n.Event(context.Background(), n.Factory.TestFinished(feature, stepName, testName, skipped, failed))
 }
 
 func (n *NilSafeClient) TestSetStarted(featureSet, testName string) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.TestSetStarted(featureSet, testName))
+	n.Event(context.Background(), n.Factory.TestSetStarted(featureSet, testName))
 }
 
 func (n *NilSafeClient) TestSetFinished(featureSet, testName string, skipped, failed bool) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.TestSetFinished(featureSet, testName, skipped, failed))
+	n.Event(context.Background(), n.Factory.TestSetFinished(featureSet, testName, skipped, failed))
 }
 
 func (n *NilSafeClient) Finished() {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.Finished())
+	n.Event(context.Background(), n.Factory.Finished())
 }
 
 func (n *NilSafeClient) Exception(reason, messageFormat string, messageA ...interface{}) {
 	if n == nil || n.Client == nil {
 		return
 	}
-	n.Send(context.Background(), n.Factory.Exception(reason, messageFormat, messageA...))
+	n.Event(context.Background(), n.Factory.Exception(reason, messageFormat, messageA...))
 }
 
-// Send implements Sender.Send.
-func (n *NilSafeClient) Send(ctx context.Context, event cloudevents.Event) {
+// Event implements Emitter.Event.
+func (n *NilSafeClient) Event(ctx context.Context, event cloudevents.Event) {
 	if n == nil || n.Client == nil {
 		return
 	}

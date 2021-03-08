@@ -63,7 +63,7 @@ type MagicEnvironment struct {
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
 	// milestones sends milestone events, if configured.
-	milestones milestone.Sender
+	milestones milestone.Emitter
 }
 
 const (
@@ -113,7 +113,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	// It is possible to have milestones set in the options, check for nil in
 	// env first before attempting to pull one from the os environment.
 	if env.milestones == nil {
-		milestones, err := milestone.NewMilestoneEventSenderFromEnv(mr.instanceID, namespace)
+		milestones, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, namespace)
 		if err != nil {
 			// This is just an FYI error, don't block the test run.
 			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
