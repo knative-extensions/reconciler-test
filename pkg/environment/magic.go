@@ -177,9 +177,9 @@ func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *f
 func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *feature.Feature) {
 	originalT.Helper() // Helper marks the calling function as a test helper function.
 
-	mr.milestones.TestStarted(f.Name, originalT.Name())
+	mr.milestones.TestStarted(f.Name, originalT)
 	originalT.Cleanup(func() {
-		mr.milestones.TestFinished(f.Name, originalT.Name(), originalT.Skipped(), originalT.Failed())
+		mr.milestones.TestFinished(f.Name, originalT)
 	})
 
 	if f.State == nil {
@@ -205,9 +205,9 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 			st.Helper()
 			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
 
-			mr.milestones.StepStarted(f.Name, s.Name, s.T.String(), s.L.String(), st.Name())
+			mr.milestones.StepStarted(f.Name, &s, internalT)
 			originalT.Cleanup(func() {
-				mr.milestones.StepFinished(f.Name, s.Name, s.T.String(), s.L.String(), st.Name(), internalT.Skipped(), internalT.Failed())
+				mr.milestones.StepFinished(f.Name, &s, internalT)
 			})
 
 			if mr.s&s.S == 0 {
@@ -247,9 +247,9 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 			st.Helper()
 			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
 
-			mr.milestones.StepStarted(f.Name, s.Name, s.T.String(), s.L.String(), st.Name())
+			mr.milestones.StepStarted(f.Name, &s, internalT)
 			originalT.Cleanup(func() {
-				mr.milestones.StepFinished(f.Name, s.Name, s.T.String(), s.L.String(), st.Name(), internalT.Skipped(), internalT.Failed())
+				mr.milestones.StepFinished(f.Name, &s, internalT)
 			})
 
 			if mr.s&s.S == 0 {
@@ -289,9 +289,9 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 			st.Helper()
 			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
 
-			mr.milestones.StepStarted(f.Name, s.Name, s.T.String(), s.L.String(), st.Name())
+			mr.milestones.StepStarted(f.Name, &s, internalT)
 			originalT.Cleanup(func() {
-				mr.milestones.StepFinished(f.Name, s.Name, s.T.String(), s.L.String(), st.Name(), internalT.Skipped(), internalT.Failed())
+				mr.milestones.StepFinished(f.Name, &s, internalT)
 			})
 
 			// TODO here we should run all the asserts and not filter them
@@ -325,9 +325,9 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 			st.Helper()
 			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
 
-			mr.milestones.StepStarted(f.Name, s.Name, s.T.String(), s.L.String(), st.Name())
+			mr.milestones.StepStarted(f.Name, &s, internalT)
 			originalT.Cleanup(func() {
-				mr.milestones.StepFinished(f.Name, s.Name, s.T.String(), s.L.String(), st.Name(), internalT.Skipped(), internalT.Failed())
+				mr.milestones.StepFinished(f.Name, &s, internalT)
 			})
 
 			if mr.s&s.S == 0 {
@@ -354,9 +354,9 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *feature.FeatureSet) {
 	t.Helper() // Helper marks the calling function as a test helper function
 
-	mr.milestones.TestSetStarted(fs.Name, t.Name())
+	mr.milestones.TestSetStarted(fs.Name, t)
 	t.Cleanup(func() {
-		mr.milestones.TestSetFinished(fs.Name, t.Name(), t.Skipped(), t.Failed())
+		mr.milestones.TestSetFinished(fs.Name, t)
 	})
 
 	wg := &sync.WaitGroup{}

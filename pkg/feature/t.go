@@ -18,6 +18,8 @@ package feature
 
 // T is an interface similar to testing.T passed to StepFn to perform logging and assertions
 type T interface {
+	Name() string
+
 	Error(args ...interface{})
 	Errorf(format string, args ...interface{})
 
