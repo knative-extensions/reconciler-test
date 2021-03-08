@@ -2,30 +2,41 @@ name: KinD e2e tests
 
 on:
   push:
-    branches: [ 'master', 'release-*' ]
+    branches: [ 'main', 'release-*' ]
   pull_request:
-    branches: [ 'master', 'release-*' ]
+    branches: [ 'main', 'release-*' ]
 
 jobs:
 
-  ko-resolve:
+  e2e-tests:
+    strategy:
+      matrix:
+        go-version: [ 1.15.x ]
+        platform: [ ubuntu-latest ]
+        ko-version: [ 0.8.1 ]
+        kind-version: [ 0.8.1 ]
+
     name: e2e tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
+
     env:
       GOPATH: ${{ github.workspace }}
       GO111MODULE: off
       KO_DOCKER_REPO: kind.local
+      KO_VERSION: ${{ matrix.ko-version }}
+      KIND_VERSION: ${{ matrix.kind-version }}
 
     steps:
-    - name: Set up Go 1.14.x
+    - name: Set up Go ${{ matrix.go-version }}
       uses: actions/setup-go@v2
       with:
-        go-version: 1.14.x
+        go-version: ${{ matrix.go-version }}
+      id: go
 
     - name: Install Dependencies
       run: |
-        echo '::group:: install ko'
-        curl -L https://github.com/google/ko/releases/download/v0.7.0/ko_0.7.0_Linux_x86_64.tar.gz | tar xzf - ko
+        echo '::group:: install ko ${KO_VERSION}'
+        curl -L https://github.com/google/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_Linux_x86_64.tar.gz | tar xzf - ko
         chmod +x ./ko
         sudo mv ko /usr/local/bin
         echo '::endgroup::'
@@ -35,14 +46,12 @@ jobs:
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
-    - name: Install KinD
+    - name: Install KinD ${{ matrix.kind-version }}
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      env:
-        KIND_VERSION: v0.8.1
       run: |
         set -x
 
-        curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-$(uname)-amd64
+        curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-$(uname)-amd64
         chmod +x ./kind
         sudo mv kind /usr/local/bin
 
