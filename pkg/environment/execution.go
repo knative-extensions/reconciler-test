@@ -2,14 +2,13 @@ package environment
 
 import "knative.dev/reconciler-test/pkg/feature"
 
-// reorderSteps reorders the steps based on their timings: Setup, Requirement, Assert, Teardown
-func reorderSteps(steps []feature.Step) []feature.Step {
-	res := make([]feature.Step, 0, len(steps))
+func categorizeSteps(steps []feature.Step) map[feature.Timing][]feature.Step {
+	res := make(map[feature.Timing][]feature.Step, 4)
 
-	res = append(res, filterStepTimings(steps, feature.Setup)...)
-	res = append(res, filterStepTimings(steps, feature.Requirement)...)
-	res = append(res, filterStepTimings(steps, feature.Assert)...)
-	res = append(res, filterStepTimings(steps, feature.Teardown)...)
+	res[feature.Setup] = filterStepTimings(steps, feature.Setup)
+	res[feature.Requirement] = filterStepTimings(steps, feature.Requirement)
+	res[feature.Assert] = filterStepTimings(steps, feature.Assert)
+	res[feature.Teardown] = filterStepTimings(steps, feature.Teardown)
 
 	return res
 }

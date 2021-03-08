@@ -147,24 +147,29 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	}
 	ctx = state.ContextWith(ctx, f.State)
 
-	steps := reorderSteps(f.Steps)
+	steps := categorizeSteps(f.Steps)
 
-	for _, s := range steps {
+	skipAssertions := false
+	skipRequirements := false
+	skipReason := ""
+
+	for _, s := range steps[feature.Setup] {
 		s := s
-		var tWrapper *t
 
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
+
+		var internalT *testing.T
 		originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
+			internalT = st
 			st.Helper()
-			st.Cleanup(wg.Done)  // Make sure wg.Done() is always invoked, no matter what
-			tWrapper = wrapT(st) // We need to wrap t with the internal st
+			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
 
 			if mr.s&s.S == 0 {
-				tWrapper.Skipf("%s features not enabled for testing", s.S)
+				st.Skipf("%s features not enabled for testing", s.S)
 			}
 			if mr.l&s.L == 0 {
-				tWrapper.Skipf("%s requirement not enabled for testing", s.L)
+				st.Skipf("%s requirement not enabled for testing", s.L)
 			}
 
 			// Perform step.
@@ -174,11 +179,113 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 		// Wait for the test to execute before spawning the next one
 		wg.Wait()
 
-		// TODO Use the wrapped t to find out if we need to stop here or continue the execution, what we need to report, etc...
-		//if tWrapper.failed.Load() && s.T == feature.Requirement {
-		//	originalT.Skipf("Skipping feature '%s' because requirement failed", f.Name)
-		//	return
-		//}
+		// Failed setup fails everything, so just run the teardown
+		if internalT.Failed() {
+			skipAssertions = true
+			skipRequirements = true // No need to test other requirements
+		}
+
+	}
+
+	for _, s := range steps[feature.Requirement] {
+		s := s
+
+		if skipRequirements {
+			break
+		}
+
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+
+		var internalT *requirementT
+
+		originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
+			st.Helper()
+			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
+			internalT = createRequirementT(st)
+
+			if mr.s&s.S == 0 {
+				st.Skipf("%s features not enabled for testing", s.S)
+			}
+			if mr.l&s.L == 0 {
+				st.Skipf("%s requirement not enabled for testing", s.L)
+			}
+
+			// Perform step.
+			s.Fn(ctx, internalT)
+		})
+
+		// Wait for the test to execute before spawning the next one
+		wg.Wait()
+
+		if internalT.failed.Load() {
+			skipAssertions = true
+			skipRequirements = true // No need to test other requirements
+			skipReason = fmt.Sprintf("requirement %q failed", s.Name)
+		}
+
+	}
+
+	for _, s := range steps[feature.Assert] {
+		s := s
+
+		if skipAssertions {
+			break
+		}
+
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+
+		originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
+			st.Helper()
+			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
+
+			// TODO here we should run all the asserts and not filter them
+			//  and then we record which one failed and which not, computing the actual compliance
+			if mr.s&s.S == 0 {
+				st.Skipf("%s features not enabled for testing", s.S)
+			}
+			if mr.l&s.L == 0 {
+				st.Skipf("%s requirement not enabled for testing", s.L)
+			}
+
+			// Perform step.
+			s.Fn(ctx, st)
+		})
+
+		// Wait for the test to execute before spawning the next one
+		wg.Wait()
+
+		// TODO record compliance level and fail parent test accordingly
+	}
+
+	for _, s := range steps[feature.Teardown] {
+		s := s
+
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+
+		originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
+			st.Helper()
+			st.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
+
+			if mr.s&s.S == 0 {
+				st.Skipf("%s features not enabled for testing", s.S)
+			}
+			if mr.l&s.L == 0 {
+				st.Skipf("%s requirement not enabled for testing", s.L)
+			}
+
+			// Perform step.
+			s.Fn(ctx, st)
+		})
+
+		// Wait for the test to execute before spawning the next one
+		wg.Wait()
+	}
+
+	if skipReason != "" {
+		originalT.Skipf("Skipping feature '%s' assertions because %s", f.Name, skipReason)
 	}
 }
 
