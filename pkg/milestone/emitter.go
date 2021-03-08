@@ -19,7 +19,6 @@ package milestone
 import (
 	"context"
 	"fmt"
-	"knative.dev/reconciler-test/pkg/feature"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -27,6 +26,8 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
+
+	"knative.dev/reconciler-test/pkg/feature"
 )
 
 const (
