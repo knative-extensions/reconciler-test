@@ -29,17 +29,22 @@ func filterStepTimings(steps []feature.Step, timing feature.Timing) []feature.St
 	return res
 }
 
+// executeWithSkippingT executes the step in a sub test wrapping t in order to never fail the subtest
 func (mr *MagicEnvironment) executeWithSkippingT(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step) feature.T {
+	originalT.Helper()
 	return mr.executeStep(ctx, originalT, f, s, createSkippingT)
 }
 
-func (mr *MagicEnvironment) executeWithSubT(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step) feature.T {
+// executeWithoutWrappingT executes the step in a sub test without wrapping t
+func (mr *MagicEnvironment) executeWithoutWrappingT(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step) feature.T {
+	originalT.Helper()
 	return mr.executeStep(ctx, originalT, f, s, func(t *testing.T) feature.T {
 		return t
 	})
 }
 
 func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step, tDecorator func(t *testing.T) feature.T) feature.T {
+	originalT.Helper()
 	ctx, cancelFn := context.WithCancel(ctx)
 	defer cancelFn()
 

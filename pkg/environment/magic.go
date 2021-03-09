@@ -198,7 +198,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 		s := s
 
 		// Setup are executed always, no matter their level and state
-		internalT := mr.executeWithSubT(ctx, originalT, f, &s)
+		internalT := mr.executeWithoutWrappingT(ctx, originalT, f, &s)
 
 		// Failed setup fails everything, so just run the teardown
 		if internalT.Failed() {
@@ -232,7 +232,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 		}
 
 		if mr.shouldFail(&s) {
-			mr.executeWithSubT(ctx, originalT, f, &s)
+			mr.executeWithoutWrappingT(ctx, originalT, f, &s)
 		} else {
 			mr.executeWithSkippingT(ctx, originalT, f, &s)
 		}
@@ -247,7 +247,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 		wg.Add(1)
 
 		// Teardown are executed always, no matter their level and state
-		mr.executeWithSubT(ctx, originalT, f, &s)
+		mr.executeWithoutWrappingT(ctx, originalT, f, &s)
 	}
 
 	if skipReason != "" {
