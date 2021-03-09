@@ -52,7 +52,7 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 			return fmt.Errorf("failed to create Namespace: %s; %v", mr.namespace, err)
 		}
 		mr.namespaceCreated = true
-		mr.milestones.NamespaceCreated(mr.namespace)
+		mr.milestoneEmitter.NamespaceCreated(mr.namespace)
 
 		// https://github.com/kubernetes/kubernetes/issues/66689
 		// We can only start creating pods after the default ServiceAccount is created by the kube-controller-manager.
@@ -85,7 +85,7 @@ func (mr *MagicEnvironment) DeleteNamespaceIfNeeded() error {
 			return err
 		}
 		mr.namespaceCreated = false
-		mr.milestones.NamespaceDeleted(mr.namespace)
+		mr.milestoneEmitter.NamespaceDeleted(mr.namespace)
 	}
 
 	return nil
