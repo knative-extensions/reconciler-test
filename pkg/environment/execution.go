@@ -56,9 +56,9 @@ func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.
 		ctx, cancelFn := context.WithCancel(ctx)
 		st.Cleanup(cancelFn)
 
-		mr.milestoneEmitter.StepStarted(f.Name, s, internalT)
+		mr.milestones.StepStarted(f.Name, s, internalT)
 		originalT.Cleanup(func() {
-			mr.milestoneEmitter.StepFinished(f.Name, s, internalT)
+			mr.milestones.StepFinished(f.Name, s, internalT)
 		})
 
 		// Perform step.

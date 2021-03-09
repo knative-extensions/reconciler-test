@@ -63,8 +63,8 @@ type MagicEnvironment struct {
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
 
-	// milestoneEmitter sends milestone events, if configured.
-	milestoneEmitter milestone.Emitter
+	// milestones sends milestone events, if configured.
+	milestones milestone.Emitter
 }
 
 const (
@@ -81,10 +81,10 @@ func (mr *MagicEnvironment) References() []corev1.ObjectReference {
 
 func (mr *MagicEnvironment) Finish() {
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
-		mr.milestoneEmitter.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
+		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
 		panic(err)
 	}
-	mr.milestoneEmitter.Finished()
+	mr.milestones.Finished()
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
@@ -111,16 +111,16 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		}
 	}
 
-	// It is possible to have milestoneEmitter set in the options, check for nil in
+	// It is possible to have milestones set in the options, check for nil in
 	// env first before attempting to pull one from the os environment.
-	if env.milestoneEmitter == nil {
+	if env.milestones == nil {
 		milestones, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, namespace)
 		if err != nil {
 			// This is just an FYI error, don't block the test run.
 			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
 		}
 		if milestones != nil {
-			env.milestoneEmitter = milestones
+			env.milestones = milestones
 		}
 	}
 
@@ -128,7 +128,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		panic(err)
 	}
 
-	env.milestoneEmitter.Environment(map[string]string{
+	env.milestones.Environment(map[string]string{
 		// TODO: we could add more detail here, don't send secrets.
 		"requirementLevel": env.RequirementLevel().String(),
 		"featureState":     env.FeatureState().String(),
@@ -178,9 +178,9 @@ func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *f
 func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *feature.Feature) {
 	originalT.Helper() // Helper marks the calling function as a test helper function.
 
-	mr.milestoneEmitter.TestStarted(f.Name, originalT)
+	mr.milestones.TestStarted(f.Name, originalT)
 	originalT.Cleanup(func() {
-		mr.milestoneEmitter.TestFinished(f.Name, originalT)
+		mr.milestones.TestFinished(f.Name, originalT)
 	})
 
 	if f.State == nil {
@@ -263,9 +263,9 @@ func (mr *MagicEnvironment) shouldFail(s *feature.Step) bool {
 func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *feature.FeatureSet) {
 	t.Helper() // Helper marks the calling function as a test helper function
 
-	mr.milestoneEmitter.TestSetStarted(fs.Name, t)
+	mr.milestones.TestSetStarted(fs.Name, t)
 	t.Cleanup(func() {
-		mr.milestoneEmitter.TestSetFinished(fs.Name, t)
+		mr.milestones.TestSetFinished(fs.Name, t)
 	})
 
 	wg := &sync.WaitGroup{}
