@@ -101,7 +101,7 @@ func TestFoo(t *testing.T) {
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, FooFeature1())
 	// Note: env.Test() is blocking until the feature completes.
-    env.Test(ctx, t, FooFeature2())
+	env.Test(ctx, t, FooFeature2())
 }
 ```
 
