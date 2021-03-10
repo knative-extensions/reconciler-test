@@ -92,20 +92,20 @@ func TestFoo(t *testing.T) {
 
 	// Create an instance of an environment. The environment will be configured
 	// with any relevant configuration and settings based on the global
-	// environment settings. Additional options can be passed to Environment()
-	// if customization is required.
-	ctx, env := global.Environment(/* optional environment options */)
+	// environment settings. Using environment.Managed(t) will call env.Finish()
+	// on test completion. If this option is not used, the test should call
+	// env.Finish() to perform cleanup at the end of the test. Additional options
+	// can be passed to Environment() if customization is required.
+	ctx, env := global.Environment(environment.Managed(t) /*, optional environment options */)
 
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, FooFeature1())
 	// Note: env.Test() is blocking until the feature completes.
     env.Test(ctx, t, FooFeature2())
-
-	// Call Finish() on the Environment when finished. This will clean up any
-	// ephemeral resources created from global.Environment() and env.Test().
-	env.Finish()
 }
 ```
+
+
 
 The role of the `Test<Name>` methods is to control which features are tested on
 environment instances. It is your responsibility to understand if it is safe to
@@ -224,14 +224,12 @@ collection of Features together. `Test` and `TestSet` can be used together on an
 environment.
 
 ```go
-ctx, env := global.Environment(/* optional environment options */)
+ctx, env := global.Environment(environment.Managed(t) /*, optional environment options */)
 
 // With the instance of an Environment, perform one or more calls to Test().
 env.Test(ctx, t, FooFeature1())
 // Note: env.TestSet() is blocking until all features complete.
 env.TestSet(ctx, t, FooFeatureSet1())
-
-env.Finish()
 ```
 
 ##### Composing Feature Sets

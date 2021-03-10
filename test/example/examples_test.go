@@ -19,6 +19,7 @@ limitations under the License.
 package example
 
 import (
+	"knative.dev/reconciler-test/pkg/environment"
 	"testing"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -41,6 +42,7 @@ func TestRecorder(t *testing.T) {
 	// environment settings. Additional options can be passed to Environment()
 	// if customization is required.
 	ctx, env := global.Environment(
+		environment.Managed(t), // Will call env.Finish() when the test exits.
 		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
@@ -49,10 +51,6 @@ func TestRecorder(t *testing.T) {
 
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, RecorderFeature())
-
-	// Call Finish() on the Environment when finished. This will clean up any
-	// ephemeral resources created from global.Environment() and env.Test().
-	env.Finish()
 }
 
 // TestEcho is an example simple test.
@@ -62,7 +60,7 @@ func TestEcho(t *testing.T) {
 	t.Parallel()
 
 	// Create an environment to run the tests in from the global environment.
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(environment.Managed(t))
 
 	f := EchoFeature()
 
@@ -72,9 +70,6 @@ func TestEcho(t *testing.T) {
 
 	// note: we can run other features in this environment if we understand the side-effects.
 	// env.Test(ctx, t, SomeOtherFeature())
-
-	// Calling finish on the environment cleans it up and removes the namespace.
-	env.Finish()
 }
 
 // TestEchoSet is an example simple test set.
@@ -84,7 +79,7 @@ func TestEchoSet(t *testing.T) {
 	t.Parallel()
 
 	// Create an environment to run the tests in from the global environment.
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(environment.Managed(t))
 
 	fs := EchoFeatureSet()
 
@@ -94,7 +89,4 @@ func TestEchoSet(t *testing.T) {
 
 	// note: we can run other features in this environment if we understand the side-effects.
 	// env.Test(ctx, t, SomeOtherFeature())
-
-	// Calling finish on the environment cleans it up and removes the namespace.
-	env.Finish()
 }

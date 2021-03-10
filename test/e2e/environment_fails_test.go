@@ -20,6 +20,7 @@ package e2e
 
 import (
 	"context"
+	"knative.dev/reconciler-test/pkg/environment"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -38,7 +39,7 @@ func TestFailingSetupSkipsToTeardownSkip(t *testing.T) {
 	// with other tests.
 	t.Parallel()
 
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(environment.Managed(t))
 
 	// We assert at the end on this string
 	stringBuilder := &strings.Builder{}
