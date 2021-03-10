@@ -20,7 +20,6 @@ package e2e
 
 import (
 	"context"
-	"knative.dev/reconciler-test/pkg/environment"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 )
 

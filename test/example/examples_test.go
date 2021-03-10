@@ -19,7 +19,6 @@ limitations under the License.
 package example
 
 import (
-	"knative.dev/reconciler-test/pkg/environment"
 	"testing"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -27,6 +26,7 @@ import (
 
 	_ "knative.dev/pkg/system/testing"
 
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
 )
