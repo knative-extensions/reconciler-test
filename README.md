@@ -99,13 +99,11 @@ func TestFoo(t *testing.T) {
 	ctx, env := global.Environment(environment.Managed(t) /*, optional environment options */)
 
 	// With the instance of an Environment, perform one or more calls to Test().
-	env.Test(ctx, t, FooFeature1())
 	// Note: env.Test() is blocking until the feature completes.
+	env.Test(ctx, t, FooFeature1())
 	env.Test(ctx, t, FooFeature2())
 }
 ```
-
-
 
 The role of the `Test<Name>` methods is to control which features are tested on
 environment instances. It is your responsibility to understand if it is safe to
