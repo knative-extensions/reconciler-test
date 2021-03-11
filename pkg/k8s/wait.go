@@ -139,3 +139,27 @@ func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 		t.Fatalf("Failed while waiting for pod %s running: %+v", podName, errors.WithStack(err))
 	}
 }
+
+// WaitForAddress waits until a resource has an address.
+func WaitForAddress(ctx context.Context, gvr schema.GroupVersionResource, name string, interval, timeout time.Duration) (*apis.URL, error) {
+	var addr *apis.URL
+	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+		var err error
+		addr, err = Address(ctx, gvr, name)
+		if err == nil && addr == nil {
+			// keep polling
+			return false, nil
+		}
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				// keep polling
+				return false, nil
+			}
+			// seems fatal.
+			return false, err
+		}
+		// success!
+		return true, nil
+	})
+	return addr, err
+}
