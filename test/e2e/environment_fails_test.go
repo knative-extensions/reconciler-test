@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
@@ -38,7 +39,7 @@ func TestFailingSetupSkipsToTeardownSkip(t *testing.T) {
 	// with other tests.
 	t.Parallel()
 
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(environment.Managed(t))
 
 	// We assert at the end on this string
 	stringBuilder := &strings.Builder{}

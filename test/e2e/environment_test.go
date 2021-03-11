@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
@@ -35,7 +36,7 @@ func TestTimingConstraints(t *testing.T) {
 	// with other tests.
 	t.Parallel()
 
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(environment.Managed(t))
 
 	// We assert at the end on this string
 	stringBuilder := &strings.Builder{}
@@ -74,8 +75,6 @@ func TestTimingConstraints(t *testing.T) {
 	env.Test(ctx, t, feat)
 
 	require.Equal(t, "setup1setup2setup3requirement1requirement2requirement3teardown1teardown2teardown3", stringBuilder.String())
-
-	env.Finish()
 }
 
 func TestRequirementSkip(t *testing.T) {
@@ -83,7 +82,7 @@ func TestRequirementSkip(t *testing.T) {
 	// with other tests.
 	t.Parallel()
 
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(environment.Managed(t))
 
 	// We assert at the end on this string
 	stringBuilder := &strings.Builder{}
@@ -123,8 +122,6 @@ func TestRequirementSkip(t *testing.T) {
 
 	require.Equal(t, "setup1setup2setup3requirement1teardown1teardown2teardown3", stringBuilder.String())
 	require.Equal(t, int32(0), atomic.LoadInt32(&counter))
-
-	env.Finish()
 }
 
 func appender(stringBuilder *strings.Builder, val string) feature.StepFn {
