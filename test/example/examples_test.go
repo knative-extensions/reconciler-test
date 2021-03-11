@@ -20,6 +20,7 @@ package example
 
 import (
 	"testing"
+	"time"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -60,7 +61,9 @@ func TestEcho(t *testing.T) {
 	t.Parallel()
 
 	// Create an environment to run the tests in from the global environment.
-	ctx, env := global.Environment(environment.Managed(t))
+	ctx, env := global.Environment(
+		environment.WithPollTimings(time.Second*5, time.Minute*2), // Override the default poll timings.
+		environment.Managed(t)) // Call env.Finish() on test completion.
 
 	f := EchoFeature()
 
