@@ -19,7 +19,6 @@ package k8s
 import (
 	"context"
 	"fmt"
-
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/apis"
@@ -42,13 +41,42 @@ import (
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
-func WaitForReadyOrDone(ctx context.Context, ref corev1.ObjectReference, interval, timeout time.Duration) error {
+// pollTimings will find the the correct timings based on priority:
+// - passed timing slice [interval, timeout].
+// - values from from context.
+// - defaults.
+func pollTimings(ctx context.Context, timing []time.Duration) (time.Duration, time.Duration) {
+	// Use the passed timing first, but it could be nil or a strange length.
+	if len(timing) >= 2 {
+		return timing[0], timing[1]
+	}
+
+	var interval *time.Duration
+
+	// Use the passed timing if only interval is provided.
+	if len(timing) == 1 {
+		interval = &timing[0]
+	}
+
+	di, timeout := environment.PollTimingsFromContext(ctx)
+	if interval == nil {
+		interval = &di
+	}
+
+	return *interval, timeout
+}
+
+// WaitForReadyOrDone will wait for a resource to become ready or succeed.
+// Timing is optional but if provided is [interval, timeout].
+func WaitForReadyOrDone(ctx context.Context, ref corev1.ObjectReference, timing ...time.Duration) error {
+	interval, timeout := pollTimings(ctx, timing)
+
 	k := ref.GroupVersionKind()
 	gvr, _ := meta.UnsafeGuessKindToResource(k)
 
 	switch gvr.Resource {
 	case "jobs":
-		err := WaitUntilJobDone(kubeclient.Get(ctx), ref.Namespace, ref.Name, interval, timeout)
+		err := WaitUntilJobDone(ctx, kubeclient.Get(ctx), ref.Namespace, ref.Name, interval, timeout)
 		if err != nil {
 			return err
 		}
@@ -65,7 +93,10 @@ func WaitForReadyOrDone(ctx context.Context, ref corev1.ObjectReference, interva
 }
 
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
-func WaitForResourceReady(ctx context.Context, namespace, name string, gvr schema.GroupVersionResource, interval, timeout time.Duration) error {
+// Timing is optional but if provided is [interval, timeout].
+func WaitForResourceReady(ctx context.Context, namespace, name string, gvr schema.GroupVersionResource, timing ...time.Duration) error {
+	interval, timeout := pollTimings(ctx, timing)
+
 	lastMsg := ""
 	like := &duckv1.KResource{}
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
@@ -141,7 +172,10 @@ func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 }
 
 // WaitForAddress waits until a resource has an address.
-func WaitForAddress(ctx context.Context, gvr schema.GroupVersionResource, name string, interval, timeout time.Duration) (*apis.URL, error) {
+// Timing is optional but if provided is [interval, timeout].
+func WaitForAddress(ctx context.Context, gvr schema.GroupVersionResource, name string, timing ...time.Duration) (*apis.URL, error) {
+	interval, timeout := pollTimings(ctx, timing)
+
 	var addr *apis.URL
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		var err error
