@@ -1,0 +1,8 @@
+apiVersion: example.knative.dev/v1
+kind: Foo
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace }}
+spec:
+  foo: bar
+  image: ko://knative.dev/example/image

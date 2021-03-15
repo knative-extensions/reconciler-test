@@ -18,6 +18,7 @@ package manifest
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -102,13 +103,24 @@ func ParseTemplates(path string, images map[string]string, cfg map[string]interf
 }
 
 // ExecuteLocalYAML will look in the callers filesystem and process the
-// templates found in files named "*.yaml" and return the f.
+// templates found in files named "*.yaml".
+// Depreciated: use ExecuteYAML(images, cfg)
 func ExecuteLocalYAML(images map[string]string, cfg map[string]interface{}) (map[string]string, error) {
-	pwd, _ := os.Getwd()
-	log.Println("PWD: ", pwd)
 	_, filename, _, _ := runtime.Caller(1)
 
 	return ExecuteTemplates(path.Dir(filename), "yaml", images, cfg)
+}
+
+// ExecuteYAML will look in the callers filesystem and process the
+// templates found in files named "./<f/r/o/m>/*.yaml". Relative to the caller.
+func ExecuteYAML(images map[string]string, cfg map[string]interface{}, from ...string) (map[string]string, error) {
+	_, filename, _, _ := runtime.Caller(1)
+
+	paths := []string{path.Dir(filename)}
+	paths = append(paths, from...)
+	fmt.Println("looking at path", path.Join(paths...))
+
+	return ExecuteTemplates(path.Join(paths...), "yaml", images, cfg)
 }
 
 func removeBlanks(in string) string {

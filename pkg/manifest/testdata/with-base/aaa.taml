@@ -1,0 +1,4 @@
+apiVersion: example.knative.dev/v1
+kind: AAA
+spec:
+  foo: bar

@@ -1,0 +1,7 @@
+apiVersion: example.knative.dev/v1
+kind: BBB
+metadata:
+  name: bbb-{{ .name }}
+  namespace: {{ .namespace }}
+spec:
+  bbb: "{{ .bbbMsg }}"
