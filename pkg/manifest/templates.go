@@ -18,6 +18,7 @@ package manifest
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -29,6 +30,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+
+	"gopkg.in/yaml.v3"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -172,7 +175,7 @@ func MergeYAML(files map[string]string, overlays map[string]string) ([]unstructu
 
 	for _, i := range invariants {
 		igvk := i.GetObjectKind().GroupVersionKind().String()
-		for b, _ := range base {
+		for b := range base {
 			bgvk := base[b].GetObjectKind().GroupVersionKind().String()
 			if bgvk == igvk {
 				mergeMap(base[b].Object, i.Object)
@@ -199,7 +202,23 @@ func mergeMap(a, b map[string]interface{}) {
 	}
 }
 
-// OutputYAML writes out each file contents  to out after removing comments and
+// OutputUnstructuredAsYAML prints each resource as yaml to the io.Writer with
+// a document separator "---" and indent spacing 2.
+func OutputUnstructuredAsYAML(out io.Writer, objects []unstructured.Unstructured) {
+	encoder := yaml.NewEncoder(out)
+	encoder.SetIndent(2)
+	for i, ul := range objects {
+		if i > 0 {
+			_, _ = fmt.Fprintln(out, "---")
+		}
+		err := encoder.Encode(ul.Object)
+		if err != nil {
+			_, _ = fmt.Fprintln(out, err.Error())
+		}
+	}
+}
+
+// OutputYAML writes out each file contents to out after removing comments and
 // blank lines. This also adds a YAML file separator "---" between each file.
 // Files is a map of "filename" to "file contents".
 func OutputYAML(out io.Writer, files map[string]string) {
@@ -217,8 +236,8 @@ func OutputYAML(out io.Writer, files map[string]string) {
 			_, _ = out.Write([]byte("---\n"))
 		}
 		more = true
-		yaml := removeBlanks(removeComments(file))
-		_, _ = out.Write([]byte(yaml))
+		y := removeBlanks(removeComments(file))
+		_, _ = out.Write([]byte(y))
 		_, _ = out.Write([]byte("\n"))
 	}
 }
