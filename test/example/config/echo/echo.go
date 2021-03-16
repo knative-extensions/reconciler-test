@@ -40,7 +40,7 @@ func Install(name, message string) feature.StepFn {
 			"name":    name,
 			"message": message,
 		}); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	}
 }

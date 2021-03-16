@@ -112,7 +112,7 @@ func WaitForResourceReady(ctx context.Context, namespace, name string, gvr schem
 		}
 		obj := like.DeepCopy()
 		if err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, obj); err != nil {
-			log.Fatalf("Error DefaultUnstructuree.Dynamiconverter. %v", err)
+			return false, err
 		}
 		obj.ResourceVersion = gvr.Version
 		obj.APIVersion = gvr.GroupVersion().String()
@@ -159,14 +159,14 @@ func WaitForResourceReady(ctx context.Context, namespace, name string, gvr schem
 // WaitForServiceEndpointsOrFail wraps the utility from pkg and uses the context to extract kubeclient and namespace
 func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, svcName string, numberOfExpectedEndpoints int) {
 	if err := pkgtest.WaitForServiceEndpoints(ctx, kubeclient.Get(ctx), svcName, environment.FromContext(ctx).Namespace(), numberOfExpectedEndpoints); err != nil {
-		t.Fatalf("Failed while waiting for %d endpoints in service %s: %+v", numberOfExpectedEndpoints, svcName, errors.WithStack(err))
+		t.Errorf("Failed while waiting for %d endpoints in service %s: %+v", numberOfExpectedEndpoints, svcName, errors.WithStack(err))
 	}
 }
 
 // WaitForPodRunningOrFail wraps the utility from pkg and uses the context to extract kubeclient and namespace
 func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 	if err := pkgtest.WaitForPodRunning(ctx, kubeclient.Get(ctx), podName, environment.FromContext(ctx).Namespace()); err != nil {
-		t.Fatalf("Failed while waiting for pod %s running: %+v", podName, errors.WithStack(err))
+		t.Errorf("Failed while waiting for pod %s running: %+v", podName, errors.WithStack(err))
 	}
 }
 

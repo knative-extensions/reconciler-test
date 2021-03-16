@@ -47,7 +47,8 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		// Compute the user provided envs
 		envs := make(map[string]string)
 		if err := compose(options...)(ctx, envs); err != nil {
-			t.Fatalf("Error while computing environment variables for eventshub: %s", err)
+			t.Errorf("Error while computing environment variables for eventshub: %s", err)
+			return
 		}
 
 		// eventshub needs tracing and logging config
@@ -59,7 +60,8 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			"name": name,
 			"envs": envs,
 		}); err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 
 		k8s.WaitForPodRunningOrFail(ctx, t, name)
