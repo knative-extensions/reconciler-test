@@ -31,7 +31,7 @@ func Example_singleExecuteTemplates() {
 		"namespace": "example",
 	}
 
-	files, err := manifest.ExecuteTemplates(path.Dir("./testdata/single"), "yaml", images, cfg)
+	files, err := manifest.ExecuteTemplates(path.Dir("./testdata/single/"), "yaml", images, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -136,10 +136,61 @@ func Example_singleWithOverrides() {
 	// apiVersion: example.knative.dev/v1
 	// kind: Foo
 	// metadata:
+	//   annotations:
+	//     some-custom-annotation: this is const in the overlay
 	//   name: foo-123
 	//   namespace: example
 	// spec:
 	//   aaa: was here
 	//   foo: bar
 	//   image: uri://a-real-container
+}
+
+func Example_multiWithOverrides() {
+	images := map[string]string{
+		"ko://knative.dev/example/image": "uri://a-real-container",
+	}
+	cfg := map[string]interface{}{
+		"name":      "foo-123",
+		"namespace": "example",
+		"aaaMsg":    "was here",
+		"bbbMsg":    "here too",
+	}
+
+	overrides, err := manifest.ExecuteYAML(images, cfg, "testdata", "overrides")
+	if err != nil {
+		panic(err)
+	}
+
+	files, err := manifest.ExecuteYAML(nil, cfg, "testdata", "multi")
+	if err != nil {
+		panic(err)
+	}
+
+	results, err := manifest.MergeYAML(files, overrides)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputUnstructuredAsYAML(os.Stdout, results)
+	// Output:
+	// apiVersion: example.knative.dev/v1
+	// kind: AAA
+	// metadata:
+	//   annotations:
+	//     some-custom-annotation: for all AAAs
+	//   name: aaa-foo-123
+	//   namespace: example
+	// spec:
+	//   aaa: was here
+	// ---
+	// apiVersion: example.knative.dev/v1
+	// kind: BBB
+	// metadata:
+	//   annotations:
+	//     some-custom-annotation: for all BBBs
+	//   name: bbb-foo-123
+	//   namespace: example
+	// spec:
+	//   bbb: here too
 }

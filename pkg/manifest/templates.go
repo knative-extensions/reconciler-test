@@ -108,7 +108,7 @@ func ParseTemplates(path string, images map[string]string, cfg map[string]interf
 
 // ExecuteLocalYAML will look in the callers filesystem and process the
 // templates found in files named "*.yaml".
-// Depreciated: use ExecuteYAML(images, cfg)
+// Deprecated: use ExecuteYAML(images, cfg)
 func ExecuteLocalYAML(images map[string]string, cfg map[string]interface{}) (map[string]string, error) {
 	_, filename, _, _ := runtime.Caller(1)
 
@@ -152,6 +152,10 @@ func removeComments(in string) string {
 	return regex.ReplaceAllString(in, "")
 }
 
+// MergeYAML takes in already processed yaml files (example: from ExecuteYAML)
+// and overlays the types found in overlays on top of matching types in files.
+// Returns the resulting list of unstructured objects found in files, with
+// overlays applied to them.
 func MergeYAML(files map[string]string, overlays map[string]string) ([]unstructured.Unstructured, error) {
 	base := []unstructured.Unstructured(nil)
 	for _, text := range files {
@@ -207,10 +211,10 @@ func mergeMap(a, b map[string]interface{}) {
 func OutputUnstructuredAsYAML(out io.Writer, objects []unstructured.Unstructured) {
 	encoder := yaml.NewEncoder(out)
 	encoder.SetIndent(2)
-	for i, ul := range objects {
-		if i > 0 {
-			_, _ = fmt.Fprintln(out, "---")
-		}
+	sort.Slice(objects, func(i, j int) bool {
+		return objects[i].GetKind() < objects[j].GetKind()
+	})
+	for _, ul := range objects {
 		err := encoder.Encode(ul.Object)
 		if err != nil {
 			_, _ = fmt.Fprintln(out, err.Error())

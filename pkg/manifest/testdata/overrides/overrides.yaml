@@ -1,0 +1,19 @@
+apiVersion: example.knative.dev/v1
+kind: Foo
+metadata:
+  annotations:
+    some-custom-annotation: this is const in the overlay
+spec:
+  aaa: {{ .aaaMsg }}
+---
+apiVersion: example.knative.dev/v1
+kind: AAA
+metadata:
+  annotations:
+    some-custom-annotation: for all AAAs
+---
+apiVersion: example.knative.dev/v1
+kind: BBB
+metadata:
+  annotations:
+    some-custom-annotation: for all BBBs
