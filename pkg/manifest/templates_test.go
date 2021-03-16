@@ -17,8 +17,6 @@ limitations under the License.
 package manifest_test
 
 import (
-	"fmt"
-	"gopkg.in/yaml.v3"
 	"knative.dev/reconciler-test/pkg/manifest"
 	"os"
 	"path"
@@ -128,23 +126,12 @@ func Example_singleWithOverrides() {
 		panic(err)
 	}
 
-	uls, err := manifest.MergeYAML(files, overrides)
+	results, err := manifest.MergeYAML(files, overrides)
 	if err != nil {
 		panic(err)
 	}
 
-	encoder := yaml.NewEncoder(os.Stdout)
-	encoder.SetIndent(2)
-	for i, ul := range uls {
-		if i > 0 {
-			fmt.Println("---")
-		}
-		err := encoder.Encode(ul.Object)
-		if err != nil {
-			panic(err)
-		}
-	}
-
+	manifest.OutputUnstructuredAsYAML(os.Stdout, results)
 	// Output:
 	// apiVersion: example.knative.dev/v1
 	// kind: Foo
