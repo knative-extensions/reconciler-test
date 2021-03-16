@@ -18,10 +18,10 @@ package manifest_test
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v3"
+	"knative.dev/reconciler-test/pkg/manifest"
 	"os"
 	"path"
-
-	"knative.dev/reconciler-test/pkg/manifest"
 )
 
 func Example_singleExecuteTemplates() {
@@ -108,39 +108,51 @@ func Example_multiExecuteTestdataYAML() {
 	//   bbb: "here too"
 }
 
-func Example_withBase() {
+func Example_singleWithOverrides() {
+	images := map[string]string{
+		"ko://knative.dev/example/image": "uri://a-real-container",
+	}
 	cfg := map[string]interface{}{
 		"name":      "foo-123",
 		"namespace": "example",
 		"aaaMsg":    "was here",
 	}
 
-	taml, err := manifest.ExecuteTestdataTAML("./with-base", nil, cfg)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Template YAML:")
-	manifest.OutputYAML(os.Stdout, taml)
-
-	files, err := manifest.ExecuteYAML(nil, cfg, "testdata", "with-base")
+	overrides, err := manifest.ExecuteYAML(images, cfg, "testdata", "overrides")
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("YAML:")
-	manifest.OutputYAML(os.Stdout, files)
+	files, err := manifest.ExecuteYAML(images, cfg, "testdata", "single")
+	if err != nil {
+		panic(err)
+	}
+
+	uls, err := manifest.MergeYAML(files, overrides)
+	if err != nil {
+		panic(err)
+	}
+
+	encoder := yaml.NewEncoder(os.Stdout)
+	encoder.SetIndent(2)
+	for i, ul := range uls {
+		if i > 0 {
+			fmt.Println("---")
+		}
+		err := encoder.Encode(ul.Object)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	// Output:
-	// Template YAML:
 	// apiVersion: example.knative.dev/v1
-	// kind: AAA
-	// spec:
-	//   foo: bar
-	// YAML:
-	// apiVersion: example.knative.dev/v1
-	// kind: AAA
+	// kind: Foo
 	// metadata:
-	//   name: aaa-foo-123
+	//   name: foo-123
 	//   namespace: example
 	// spec:
-	//   aaa: "was here"
+	//   aaa: was here
+	//   foo: bar
+	//   image: uri://a-real-container
 }

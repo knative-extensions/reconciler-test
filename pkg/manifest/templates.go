@@ -18,9 +18,9 @@ package manifest
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"os"
 	"path"
@@ -118,7 +118,6 @@ func ExecuteYAML(images map[string]string, cfg map[string]interface{}, from ...s
 
 	paths := []string{path.Dir(filename)}
 	paths = append(paths, from...)
-	fmt.Println("looking at path", path.Join(paths...))
 
 	return ExecuteTemplates(path.Join(paths...), "yaml", images, cfg)
 }
@@ -147,6 +146,56 @@ func removeComments(in string) string {
 		return in
 	}
 	return regex.ReplaceAllString(in, "")
+}
+
+func MergeYAML(files map[string]string, overlays map[string]string) ([]unstructured.Unstructured, error) {
+	base := []unstructured.Unstructured(nil)
+	for _, text := range files {
+		file := strings.NewReader(text)
+		u, err := decode(file)
+		if err != nil {
+			return nil, err
+		}
+		base = append(base, u...)
+	}
+
+	invariants := []unstructured.Unstructured(nil)
+	for _, text := range overlays {
+		file := strings.NewReader(text)
+		u, err := decode(file)
+		if err != nil {
+			return nil, err
+		}
+		invariants = append(invariants, u...)
+	}
+
+	for _, i := range invariants {
+		igvk := i.GetObjectKind().GroupVersionKind().String()
+		for b, _ := range base {
+			bgvk := base[b].GetObjectKind().GroupVersionKind().String()
+			if bgvk == igvk {
+				mergeMap(base[b].Object, i.Object)
+			}
+		}
+	}
+
+	return base, nil
+}
+
+// Merge b ontop of a
+func mergeMap(a, b map[string]interface{}) {
+	for k, v := range b {
+		switch t := v.(type) {
+		case map[string]interface{}:
+			if aMap, ok := a[k].(map[string]interface{}); ok {
+				mergeMap(aMap, t)
+				continue
+			}
+			a[k] = v
+		default:
+			a[k] = v
+		}
+	}
 }
 
 // OutputYAML writes out each file contents  to out after removing comments and

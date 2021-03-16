@@ -1,4 +1,4 @@
 apiVersion: example.knative.dev/v1
-kind: AAA
+kind: Foo
 spec:
-  foo: bar
+  aaa: {{ .aaaMsg }}

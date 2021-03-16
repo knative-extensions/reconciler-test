@@ -1,7 +1,0 @@
-apiVersion: example.knative.dev/v1
-kind: AAA
-metadata:
-  name: aaa-{{ .name }}
-  namespace: {{ .namespace }}
-spec:
-  aaa: "{{ .aaaMsg }}"
