@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"os"
 	"path"
@@ -30,6 +29,8 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // ExecuteTemplates executes a set of templates found at path, filtering on
