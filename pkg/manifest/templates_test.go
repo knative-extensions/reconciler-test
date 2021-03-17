@@ -17,9 +17,10 @@ limitations under the License.
 package manifest_test
 
 import (
-	"knative.dev/reconciler-test/pkg/manifest"
 	"os"
 	"path"
+
+	"knative.dev/reconciler-test/pkg/manifest"
 )
 
 func Example_singleExecuteTemplates() {
