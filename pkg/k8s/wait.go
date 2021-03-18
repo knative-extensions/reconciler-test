@@ -44,7 +44,7 @@ import (
 // - passed timing slice [interval, timeout].
 // - values from from context.
 // - defaults.
-func PollTimings(ctx context.Context, timings ...time.Duration) (time.Duration /*interval*/, time.Duration /*timeout*/) {
+func PollTimings(ctx context.Context, timings []time.Duration) (time.Duration /*interval*/, time.Duration /*timeout*/) {
 	// Use the passed timing first, but it could be nil or a strange length.
 	if len(timings) >= 2 {
 		return timings[0], timings[1]
@@ -68,7 +68,7 @@ func PollTimings(ctx context.Context, timings ...time.Duration) (time.Duration /
 // WaitForReadyOrDone will wait for a resource to become ready or succeed.
 // Timing is optional but if provided is [interval, timeout].
 func WaitForReadyOrDone(ctx context.Context, ref corev1.ObjectReference, timing ...time.Duration) error {
-	interval, timeout := PollTimings(ctx, timing...)
+	interval, timeout := PollTimings(ctx, timing)
 
 	k := ref.GroupVersionKind()
 	gvr, _ := meta.UnsafeGuessKindToResource(k)
@@ -94,7 +94,7 @@ func WaitForReadyOrDone(ctx context.Context, ref corev1.ObjectReference, timing 
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
 // Timing is optional but if provided is [interval, timeout].
 func WaitForResourceReady(ctx context.Context, namespace, name string, gvr schema.GroupVersionResource, timing ...time.Duration) error {
-	interval, timeout := PollTimings(ctx, timing...)
+	interval, timeout := PollTimings(ctx, timing)
 
 	lastMsg := ""
 	like := &duckv1.KResource{}
@@ -178,7 +178,7 @@ func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 // WaitForAddress waits until a resource has an address.
 // Timing is optional but if provided is [interval, timeout].
 func WaitForAddress(ctx context.Context, gvr schema.GroupVersionResource, name string, timing ...time.Duration) (*apis.URL, error) {
-	interval, timeout := PollTimings(ctx, timing...)
+	interval, timeout := PollTimings(ctx, timing)
 
 	var addr *apis.URL
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
