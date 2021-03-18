@@ -295,7 +295,7 @@ func Install(message string) feature.StepFn {
 	}
 	return func(ctx context.Context, t *testing.T) {
 		if _, err := manifest.InstallLocalYaml(ctx, cfg); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	}
 }
