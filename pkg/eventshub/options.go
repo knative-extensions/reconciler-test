@@ -167,6 +167,9 @@ var AddSequence = envOption("ADD_SEQUENCE", "true")
 // EnableIncrementalId replaces the event id with a new incremental id for each sent event.
 var EnableIncrementalId = envOption("INCREMENTAL_ID", "true")
 
+// OverrideTime overrides the event time with the time when sending the event.
+var OverrideTime = envOption("OVERRIDE_TIME", "true")
+
 // SendMultipleEvents defines how much events to send and the period between them.
 func SendMultipleEvents(numberOfEvents int, period time.Duration) EventsHubOption {
 	return compose(
