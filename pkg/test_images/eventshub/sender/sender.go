@@ -182,6 +182,10 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 				return err
 			}
 		}
+		var eventId string
+		if event != nil {
+			eventId = event.ID()
+		}
 
 		if len(env.InputHeaders) != 0 {
 			for k, v := range env.InputHeaders {
@@ -204,7 +208,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 				Observer: env.SenderName,
 				Time:     time.Now(),
 				Sequence: uint64(sequence),
-				Id:       event.ID(),
+				SentId:   eventId,
 			}); err != nil {
 				return fmt.Errorf("cannot forward event info: %w", err)
 			}
@@ -216,7 +220,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 				Observer: env.SenderName,
 				Time:     time.Now(),
 				Sequence: uint64(sequence),
-				Id:       event.ID(),
+				SentId:   eventId,
 			}
 
 			sentHeaders := make(nethttp.Header)
@@ -247,7 +251,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 				Time:        time.Now(),
 				Sequence:    uint64(sequence),
 				StatusCode:  res.StatusCode,
-				Id:          event.ID(),
+				SentId:      eventId,
 			}
 			if responseMessage.ReadEncoding() == binding.EncodingUnknown {
 				body, err := ioutil.ReadAll(res.Body)
