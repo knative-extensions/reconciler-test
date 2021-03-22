@@ -68,6 +68,9 @@ type envConfig struct {
 	// InputBody to send (this overrides any event provided input)
 	InputBody string `envconfig:"INPUT_BODY" required:"false"`
 
+	// InputMethod to use when sending the http request
+	InputMethod string `envconfig:"INPUT_METHOD" default:"POST" required:"false"`
+
 	// Should tracing be added to events sent.
 	AddTracing bool `envconfig:"ADD_TRACING" default:"false" required:"false"`
 
@@ -152,7 +155,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 
 	ticker := time.NewTicker(period)
 	for {
-		req, err := nethttp.NewRequest(nethttp.MethodPost, env.Sink, nil)
+		req, err := nethttp.NewRequest(env.InputMethod, env.Sink, nil)
 		if err != nil {
 			logging.FromContext(ctx).Error("Cannot create the request: ", err)
 			return err
