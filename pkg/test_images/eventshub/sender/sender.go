@@ -80,6 +80,9 @@ type envConfig struct {
 	// Override the event id with an incremental id.
 	IncrementalId bool `envconfig:"INCREMENTAL_ID" default:"false" required:"false"`
 
+	// Override the event time with the time when sending the event.
+	OverrideTime bool `envconfig:"OVERRIDE_TIME" default:"false" required:"false"`
+
 	// The number of seconds between messages.
 	Period int `envconfig:"PERIOD" default:"5" required:"false"`
 
@@ -172,6 +175,9 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 			}
 			if env.IncrementalId {
 				event.SetID(strconv.Itoa(sequence))
+			}
+			if env.OverrideTime {
+				event.SetTime(time.Now())
 			}
 
 			logging.FromContext(ctx).Info("I'm going to send\n", event)
