@@ -64,11 +64,11 @@ func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.
 				internalT.Error("Panic happened:", r)
 			}
 		}()
-		internalT.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
 
 		mr.milestones.StepStarted(f.Name, s, internalT)
 		internalT.Cleanup(func() {
 			mr.milestones.StepFinished(f.Name, s, internalT)
+			wg.Done() // Make sure wg.Done() is always invoked, no matter what
 		})
 
 		// Perform step.
