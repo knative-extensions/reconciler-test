@@ -124,6 +124,29 @@ func TestRequirementSkip(t *testing.T) {
 	require.Equal(t, int32(0), atomic.LoadInt32(&counter))
 }
 
+func TestContextLifecycle(t *testing.T) {
+	// Signal to the go test framework that this test can be run in parallel
+	// with other tests.
+	t.Parallel()
+
+	ctx, env := global.Environment(environment.Managed(t))
+
+	// Build the feature
+	feat := feature.NewFeature()
+
+	var ctxVal context.Context
+	feat.Setup("get the context", func(ctx context.Context, t feature.T) {
+		ctxVal = ctx
+	})
+	feat.Assert("check the context is closed and different", func(ctx context.Context, t feature.T) {
+		require.NotSame(t, ctx, ctxVal)
+		require.NotNil(t, ctxVal.Err())
+		require.Nil(t, ctx.Err())
+	})
+
+	env.Test(ctx, t, feat)
+}
+
 func appender(stringBuilder *strings.Builder, val string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
 		stringBuilder.WriteString(val)

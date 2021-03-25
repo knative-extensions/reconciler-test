@@ -48,10 +48,6 @@ func (mr *MagicEnvironment) executeWithoutWrappingT(ctx context.Context, origina
 func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step, tDecorator func(t *testing.T) feature.T) feature.T {
 	originalT.Helper()
 
-	// Create a cancel tied to this step
-	ctx, cancelFn := context.WithCancel(ctx)
-	defer cancelFn()
-
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
@@ -59,20 +55,26 @@ func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.
 	originalT.Run(f.Name+"/"+s.T.String()+"/"+s.TestName(), func(st *testing.T) {
 		st.Helper()
 		internalT = tDecorator(st)
+
+		// Create a cancel tied to this step
+		internalCtx, internalCancelFn := context.WithCancel(ctx)
+
 		defer func() {
 			if r := recover(); r != nil {
-				internalT.Error("Panic happened:", r)
+				internalT.Errorf("Panic happened: '%v'", r)
 			}
+			// Close the context as soon as possible (this defer is invoked before the Cleanup)
+			internalCancelFn()
 		}()
 
 		mr.milestones.StepStarted(f.Name, s, internalT)
 		internalT.Cleanup(func() {
 			mr.milestones.StepFinished(f.Name, s, internalT)
-			wg.Done() // Make sure wg.Done() is always invoked, no matter what
+			wg.Done() // Make sure wg.Done() is invoked at the very end of the execution
 		})
 
 		// Perform step.
-		s.Fn(ctx, internalT)
+		s.Fn(internalCtx, internalT)
 	})
 
 	// Wait for the test to execute before spawning the next one
