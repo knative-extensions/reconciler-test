@@ -212,9 +212,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	originalT.Helper() // Helper marks the calling function as a test helper function.
 
 	mr.milestones.TestStarted(f.Name, originalT)
-	originalT.Cleanup(func() {
-		mr.milestones.TestFinished(f.Name, originalT)
-	})
+	defer mr.milestones.TestFinished(f.Name, originalT)
 
 	if f.State == nil {
 		f.State = &state.KVStore{}
@@ -295,9 +293,7 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 	t.Helper() // Helper marks the calling function as a test helper function
 
 	mr.milestones.TestSetStarted(fs.Name, t)
-	t.Cleanup(func() {
-		mr.milestones.TestSetFinished(fs.Name, t)
-	})
+	defer mr.milestones.TestSetFinished(fs.Name, t)
 
 	for _, f := range fs.Features {
 		// Make sure the name is appended

@@ -47,6 +47,8 @@ func (mr *MagicEnvironment) executeWithoutWrappingT(ctx context.Context, origina
 
 func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step, tDecorator func(t *testing.T) feature.T) feature.T {
 	originalT.Helper()
+
+	// Create a cancel tied to this step
 	ctx, cancelFn := context.WithCancel(ctx)
 	defer cancelFn()
 
@@ -63,10 +65,6 @@ func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.
 			}
 		}()
 		internalT.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what
-
-		// Create a cancel tied to this step
-		ctx, cancelFn := context.WithCancel(ctx)
-		internalT.Cleanup(cancelFn)
 
 		mr.milestones.StepStarted(f.Name, s, internalT)
 		internalT.Cleanup(func() {
