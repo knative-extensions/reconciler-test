@@ -30,12 +30,14 @@ func filterStepTimings(steps []feature.Step, timing feature.Timing) []feature.St
 }
 
 // executeWithSkippingT executes the step in a sub test wrapping t in order to never fail the subtest
+// This blocks until the test completes.
 func (mr *MagicEnvironment) executeWithSkippingT(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step) feature.T {
 	originalT.Helper()
 	return mr.executeStep(ctx, originalT, f, s, createSkippingT)
 }
 
-// executeWithoutWrappingT executes the step in a sub test without wrapping t
+// executeWithoutWrappingT executes the step in a sub test without wrapping t.
+// This blocks until the test completes.
 func (mr *MagicEnvironment) executeWithoutWrappingT(ctx context.Context, originalT *testing.T, f *feature.Feature, s *feature.Step) feature.T {
 	originalT.Helper()
 	return mr.executeStep(ctx, originalT, f, s, func(t *testing.T) feature.T {
@@ -52,12 +54,12 @@ func (mr *MagicEnvironment) executeStep(ctx context.Context, originalT *testing.
 	wg.Add(1)
 
 	var internalT feature.T
-	originalT.Run(s.T.String()+"/"+s.TestName(), func(st *testing.T) {
+	originalT.Run(f.Name+"/"+s.T.String()+"/"+s.TestName(), func(st *testing.T) {
 		st.Helper()
 		internalT = tDecorator(st)
 		defer func() {
 			if r := recover(); r != nil {
-				internalT.Error("panic happened", r)
+				internalT.Error("Panic happened:", r)
 			}
 		}()
 		internalT.Cleanup(wg.Done) // Make sure wg.Done() is always invoked, no matter what

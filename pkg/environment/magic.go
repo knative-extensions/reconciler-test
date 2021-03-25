@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -278,9 +277,6 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	for _, s := range steps[feature.Teardown] {
 		s := s
 
-		wg := &sync.WaitGroup{}
-		wg.Add(1)
-
 		// Teardown are executed always, no matter their level and state
 		mr.executeWithoutWrappingT(ctx, originalT, f, &s)
 	}
@@ -303,17 +299,11 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 		mr.milestones.TestSetFinished(fs.Name, t)
 	})
 
-	wg := &sync.WaitGroup{}
 	for _, f := range fs.Features {
-		wg.Add(1)
-		t.Run(fs.Name, func(t *testing.T) {
-			t.Cleanup(wg.Done)
-			// FeatureSets should be run in parallel.
-			mr.Test(ctx, t, &f)
-		})
+		// Make sure the name is appended
+		f.Name = fs.Name + "/" + f.Name
+		mr.Test(ctx, t, &f)
 	}
-
-	wg.Wait()
 }
 
 type envKey struct{}
