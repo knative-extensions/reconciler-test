@@ -328,6 +328,70 @@ spec:
 Will be processed first as a go template, then applied the Environment using the
 dynamic client.
 
+#### Communicating State
+
+There are times when the test author would rather pass state from a `Setup` or
+`Reqirement` of a feature without a complicated parameter passing or callbacks.
+An example of this would be generating names of resources. To Address this need,
+we added `f.State`.
+
+If State is not set on the `Feature` then a new `state.KVStore` is assigned for
+the invocation of `env.Test` (or via `env.TestSet`).
+
+State is stored into the context that is passed to each `StepFn`, implemented as
+a pointer to that feature instance's State object. Meaning, State is effectively
+global for the scope of the `env.Test` run.
+
+The recommended way to access state is to use the context accessors:
+
+```go
+import knative.dev/reconciler-test/pkg/state
+
+// Direct Store access:
+store := state.FromContext(ctx) Store
+
+// Helpers to work with Store without needing fetch Store directly.
+
+aString := state.GetStringOrFail(ctx, t, key)
+
+state.GetOrFail(ctx, t, key, value)
+
+state.SetOrFail(ctx, t, key, value)
+```
+
+In use,
+
+```go
+func FancyFeature(brokerName string) *feature.Feature {
+	f := feature.NewFeatureNamed("MyNewFeature")
+
+	f.Setup("Set Foo", func(ctx context.Context, t *testing.T) {
+		state.SetOrFail(ctx, t, "foo", "bar-"+random)
+    })
+
+    f.Stable("An aspect of the feature").
+      		Should("make some assertion", someAssertion)
+
+    return f
+}
+
+func someAssertion(ctx context.Context, t *testing.T) {
+    foo := state.GetOrFail(ctx, t, "foo")
+    // do something with foo.
+}
+```
+
+This shows `someAssertion` can be written in a way that does not require it to
+have some complicated callback logic wrapping it but still get custom parameters
+that are dependent on the specific test run. State is useful for passing
+generated names of know keys between `Setup` and `StepFn`s. It is intended to
+remove the need for oddly nested callbacks and globals. By default, `State` is
+scoped for the lifecycle of a `Feature` in the context of `Test`. Remember: when
+`FancyFeature` is called in the example above, its job is to compose a Feature
+for running later via `env.Test` or `env.TestSet`. With state, we are attempting
+to make it less difficult to communicate between `Setup` and `Assert` phases of
+testing.
+
 ### Running Tests
 
 Running tests is nothing more than using `go test`.
