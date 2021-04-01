@@ -76,7 +76,7 @@ func registerEventsHubStore(eventListener *k8s.EventListener, t feature.T, podNa
 	t.Logf("Store added to the EventListener, which has already seen %v events", numEventsAlreadyPresent)
 }
 
-func (ei *Store) GetDebugInfo() string {
+func (ei *Store) getDebugInfo() string {
 	return fmt.Sprintf("Pod '%s' in namespace '%s'", ei.podName, ei.podNamespace)
 }
 
@@ -220,7 +220,7 @@ func (ei *Store) waitAtLeastNMatch(f EventInfoMatcher, min int) ([]eventshub.Eve
 				"FAIL MATCHING: saw %d/%d matching events.\n- Store-\n%s\n- Recent events -\n%s\n- Match errors -\n%s\n",
 				count,
 				min,
-				ei.GetDebugInfo(),
+				ei.getDebugInfo(),
 				&sInfo,
 				formatErrors(matchErrs),
 			)
