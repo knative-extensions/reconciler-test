@@ -58,7 +58,7 @@ func RecorderFeature() *feature.Feature {
 
 	f.Requirement("recorder is addressable", func(ctx context.Context, t feature.T) {
 		to := state.GetStringOrFail(ctx, t, "to")
-		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)
+		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)(ctx, t)
 	})
 
 	f.Alpha("direct sending between a producer and a recorder").
