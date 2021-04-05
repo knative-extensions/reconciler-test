@@ -72,6 +72,10 @@ github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
+# github.com/cloudevents/conformance v0.2.0
+## explicit
+github.com/cloudevents/conformance/pkg/event
+github.com/cloudevents/conformance/pkg/http
 # github.com/cloudevents/sdk-go/v2 v2.2.0
 ## explicit
 github.com/cloudevents/sdk-go/v2
@@ -438,7 +442,7 @@ gopkg.in/alecthomas/kingpin.v2
 gopkg.in/evanphx/json-patch.v4
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.3.0
+# gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 gopkg.in/yaml.v3
