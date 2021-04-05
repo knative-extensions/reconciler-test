@@ -44,8 +44,8 @@ func RecorderFeature() *feature.Feature {
 
 	f.Setup("install recorder", func(ctx context.Context, t feature.T) {
 		to := feature.MakeRandomK8sName("recorder")
-		eventshub.Install(to, eventshub.StartReceiver)
 		state.SetOrFail(ctx, t, "to", to)
+		eventshub.Install(to, eventshub.StartReceiver)(ctx, t)
 	})
 
 	f.Setup("install sender", func(ctx context.Context, t feature.T) {
@@ -53,7 +53,7 @@ func RecorderFeature() *feature.Feature {
 		var event cloudevents.Event
 		state.GetOrFail(ctx, t, "event", &event)
 		from := feature.MakeRandomK8sName("sender")
-		eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event))
+		eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event))(ctx, t)
 	})
 
 	f.Requirement("recorder is addressable", func(ctx context.Context, t feature.T) {
@@ -67,7 +67,45 @@ func RecorderFeature() *feature.Feature {
 				to := state.GetStringOrFail(ctx, t, "to")
 				var event cloudevents.Event
 				state.GetOrFail(ctx, t, "event", &event)
-				OnStore(to).MatchEvent(HasId(event.ID())).Exact(1)
+				OnStore(to).MatchEvent(HasId(event.ID())).Exact(1)(ctx, t)
+			})
+
+	return f
+}
+
+func RecorderFeatureYAML() *feature.Feature {
+	svc := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
+
+	f := &feature.Feature{Name: "Record"}
+
+	f.Setup("install recorder", func(ctx context.Context, t feature.T) {
+		to := feature.MakeRandomK8sName("recorder")
+		state.SetOrFail(ctx, t, "to", to)
+		eventshub.Install(to, eventshub.StartReceiver)(ctx, t)
+	})
+
+	f.Setup("install sender with yaml events", func(ctx context.Context, t feature.T) {
+		to := state.GetStringOrFail(ctx, t, "to")
+		from := feature.MakeRandomK8sName("sender")
+		eventshub.Install(from, eventshub.StartSender(to),
+			eventshub.InputYAML("https://raw.githubusercontent.com/cloudevents/conformance/v0.2.0/yaml/v1.0/v1_minimum.yaml"))(ctx, t)
+	})
+
+	f.Requirement("recorder is addressable", func(ctx context.Context, t feature.T) {
+		to := state.GetStringOrFail(ctx, t, "to")
+		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)
+	})
+
+	f.Alpha("direct sending between a producer and a recorder").
+		Must("the recorder received all sent events within the time",
+			func(ctx context.Context, t feature.T) {
+				to := state.GetStringOrFail(ctx, t, "to")
+				OnStore(to).MatchEvent(HasId("conformance-0001")).Exact(1)(ctx, t)
+				OnStore(to).MatchEvent(HasId("conformance-0002")).Exact(1)(ctx, t)
+				OnStore(to).MatchEvent(HasId("conformance-0003")).Exact(1)(ctx, t)
+				OnStore(to).MatchEvent(HasId("conformance-0004")).Exact(1)(ctx, t)
+				OnStore(to).MatchEvent(HasId("conformance-0005")).Exact(1)(ctx, t)
+				OnStore(to).MatchEvent(HasId("conformance-0006")).Exact(1)(ctx, t)
 			})
 
 	return f

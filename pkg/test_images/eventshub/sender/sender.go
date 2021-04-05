@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cloudevents/sdk-go/v2/types"
 	"io/ioutil"
 	nethttp "net/http"
 	"strconv"
@@ -33,6 +32,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/cloudevents/sdk-go/v2/types"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/plugin/ochttp"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -59,7 +59,7 @@ type generator struct {
 
 	// InputYAML points to a file, folder, or url to load CloudEvents Conformance yaml event payload to send.
 	// If set, InputEvent, InputHeaders, InputBody, MaxMessages are ignored.
-	InputYAML string `envconfig:"INPUT_YAML" required:"false"`
+	InputYAML []string `envconfig:"INPUT_YAML" required:"false"`
 
 	// InputEvent json encoded
 	InputEvent string `envconfig:"INPUT_EVENT" required:"false"`
@@ -288,26 +288,28 @@ func (g *generator) init() error {
 		}
 	}
 
-	if g.InputYAML == "" && g.InputEvent == "" && g.InputBody == "" && len(g.InputHeaders) == 0 {
+	if len(g.InputYAML) == 0 && g.InputEvent == "" && g.InputBody == "" && len(g.InputHeaders) == 0 {
 		return fmt.Errorf("input values not provided")
 	}
 
 	if len(g.InputYAML) > 0 {
-		events, err := conformanceevent.FromYaml(g.InputYAML, true)
-		if err != nil {
-			return err
-		}
-		_ = events
-		fmt.Println("Loaded YAML events.", len(events))
-
-		g.eventQueue = events
-		// Inferred number is len(events).
-		if g.MaxMessages == -1 {
-			g.MaxMessages = len(events)
-		}
-
 		if g.baseEvent != nil {
 			return errors.New("only use InputYAML or InputEvent, not both")
+		}
+
+		for _, path := range g.InputYAML {
+			events, err := conformanceevent.FromYaml(path, true)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Loaded YAML events.", len(events))
+			if len(events) > 0 {
+				g.eventQueue = append(g.eventQueue, events...)
+			}
+		}
+		// Inferred number is len(g.eventQueue).
+		if g.MaxMessages == -1 {
+			g.MaxMessages = len(g.eventQueue)
 		}
 	}
 
@@ -377,7 +379,7 @@ func eventToEvent(conf conformanceevent.Event) *cloudevents.Event {
 
 	event.SetSpecVersion(conf.Attributes.SpecVersion)
 	event.SetType(conf.Attributes.Type)
-	if t, err := types.ParseTimestamp(conf.Attributes.Time); err == nil {
+	if t, _ := types.ParseTimestamp(conf.Attributes.Time); t != nil {
 		event.SetTime(t.Time)
 	}
 	event.SetID(conf.Attributes.ID)
