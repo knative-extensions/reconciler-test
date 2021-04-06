@@ -348,6 +348,9 @@ func (g *generator) nextQueued(ctx context.Context) (*nethttp.Request, *cloudeve
 	}
 
 	if g.AddSequence {
+		if next.Attributes.Extensions == nil {
+			next.Attributes.Extensions = make(conformanceevent.Extensions)
+		}
 		next.Attributes.Extensions["sequence"] = strconv.Itoa(g.sequence)
 	}
 	if g.IncrementalId {

@@ -17,7 +17,10 @@ limitations under the License.
 package eventshub_test
 
 import (
+	"encoding/json"
+	"knative.dev/reconciler-test/pkg/test_images/eventshub"
 	"os"
+	"testing"
 
 	"knative.dev/reconciler-test/pkg/manifest"
 )
@@ -123,4 +126,16 @@ func Example() {
 	//           value: "boof"
 	//         - name: "foo"
 	//           value: "bar"
+}
+
+func TestUnmarshal(t *testing.T) {
+	message := `{"kind":"Received","event":{"data":{"msg":"Hello, 🌎!"},"datacontenttype":"application/json","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`
+	//message := `{"kind":"Received","event":{"data":{"msg":"Hello, 🌎!"},"datacontenttype":"application/json; charset=utf-8","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`
+	//message := `{"kind":"Received","event":{"data":"Hello!","datacontenttype":"application/json; charset=utf-8","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`
+	eventInfo := eventshub.EventInfo{}
+	err := json.Unmarshal([]byte(message), &eventInfo)
+	if err != nil {
+		t.Errorf("Received EventInfo that cannot be unmarshalled! \n----\n%s\n----\n%+v\n", message, err)
+		return
+	}
 }
