@@ -44,7 +44,7 @@ func RecorderFeature() *feature.Feature {
 
 	f.Setup("install recorder", func(ctx context.Context, t feature.T) {
 		to := feature.MakeRandomK8sName("recorder")
-		eventshub.Install(to, eventshub.StartReceiver)
+		eventshub.Install(to, eventshub.StartReceiver)(ctx, t)
 		state.SetOrFail(ctx, t, "to", to)
 	})
 
@@ -53,12 +53,12 @@ func RecorderFeature() *feature.Feature {
 		var event cloudevents.Event
 		state.GetOrFail(ctx, t, "event", &event)
 		from := feature.MakeRandomK8sName("sender")
-		eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event))
+		eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event))(ctx, t)
 	})
 
 	f.Requirement("recorder is addressable", func(ctx context.Context, t feature.T) {
 		to := state.GetStringOrFail(ctx, t, "to")
-		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)
+		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)(ctx, t)
 	})
 
 	f.Alpha("direct sending between a producer and a recorder").
@@ -67,7 +67,7 @@ func RecorderFeature() *feature.Feature {
 				to := state.GetStringOrFail(ctx, t, "to")
 				var event cloudevents.Event
 				state.GetOrFail(ctx, t, "event", &event)
-				OnStore(to).MatchEvent(HasId(event.ID())).Exact(1)
+				OnStore(to).MatchEvent(HasId(event.ID())).Exact(1)(ctx, t)
 			})
 
 	return f
