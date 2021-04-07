@@ -18,11 +18,11 @@ package eventshub_test
 
 import (
 	"encoding/json"
-	"knative.dev/reconciler-test/pkg/test_images/eventshub"
 	"os"
 	"testing"
 
 	"knative.dev/reconciler-test/pkg/manifest"
+	"knative.dev/reconciler-test/pkg/test_images/eventshub"
 )
 
 func Example() {
@@ -129,13 +129,26 @@ func Example() {
 }
 
 func TestUnmarshal(t *testing.T) {
-	message := `{"kind":"Received","event":{"data":{"msg":"Hello, 🌎!"},"datacontenttype":"application/json","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`
-	//message := `{"kind":"Received","event":{"data":{"msg":"Hello, 🌎!"},"datacontenttype":"application/json; charset=utf-8","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`
-	//message := `{"kind":"Received","event":{"data":"Hello!","datacontenttype":"application/json; charset=utf-8","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`
-	eventInfo := eventshub.EventInfo{}
-	err := json.Unmarshal([]byte(message), &eventInfo)
-	if err != nil {
-		t.Errorf("Received EventInfo that cannot be unmarshalled! \n----\n%s\n----\n%+v\n", message, err)
-		return
+	tests := []struct {
+		name    string
+		message string
+	}{{
+		name:    "application/json",
+		message: `{"kind":"Received","event":{"data":{"msg":"Hello, 🌎!"},"datacontenttype":"application/json","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`,
+	}, {
+		name:    "application/json; charset=utf-8",
+		message: `{"kind":"Received","event":{"data":{"msg":"Hello, 🌎!"},"datacontenttype":"application/json; charset=utf-8","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`,
+	}, {
+		name:    "application/json; charset=utf-8 + string data",
+		message: `{"kind":"Received","event":{"data":"Hello!","datacontenttype":"application/json; charset=utf-8","id":"conformance-0004","source":"//github.com/cloudevents/cloudeventsconformance/yaml/v1.yaml","specversion":"1.0","type":"io.cloudevents.minimum"},"httpHeaders":{"Accept-Encoding":["gzip"],"Content-Length":["23"],"Content-Type":["application/json; charset=utf-8"],"Host":["recorder-ghpsazde.test-kdmxigkl.svc.cluster.local"],"User-Agent":["Go-http-client/1.1"]},"origin":"10.244.0.8:55854","observer":"recorder-ghpsazde","time":"2021-04-05T22:55:17.447409834Z","sequence":4,"id":""}`,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			eventInfo := eventshub.EventInfo{}
+			if err := json.Unmarshal([]byte(tt.message), &eventInfo); err != nil {
+				t.Errorf("EventInfo that cannot be unmarshalled! \n----\n%s\n----\n%+v\n", tt.message, err)
+			}
+		})
 	}
+
 }
