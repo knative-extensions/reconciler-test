@@ -52,6 +52,7 @@ func TestRecorder(t *testing.T) {
 
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, RecorderFeatureYAML())
 }
 
 // TestEcho is an example simple test.

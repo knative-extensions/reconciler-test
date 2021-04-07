@@ -72,7 +72,11 @@ github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/cloudevents/sdk-go/v2 v2.2.0
+# github.com/cloudevents/conformance v0.2.0
+## explicit
+github.com/cloudevents/conformance/pkg/event
+github.com/cloudevents/conformance/pkg/http
+# github.com/cloudevents/sdk-go/v2 v2.4.0
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -85,8 +89,6 @@ github.com/cloudevents/sdk-go/v2/event/datacodec
 github.com/cloudevents/sdk-go/v2/event/datacodec/json
 github.com/cloudevents/sdk-go/v2/event/datacodec/text
 github.com/cloudevents/sdk-go/v2/event/datacodec/xml
-github.com/cloudevents/sdk-go/v2/extensions
-github.com/cloudevents/sdk-go/v2/observability
 github.com/cloudevents/sdk-go/v2/protocol
 github.com/cloudevents/sdk-go/v2/protocol/http
 github.com/cloudevents/sdk-go/v2/test
@@ -158,9 +160,6 @@ github.com/json-iterator/go
 github.com/kelseyhightower/envconfig
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/lightstep/tracecontext.go v0.0.0-20181129014701-1757c391b1ac
-github.com/lightstep/tracecontext.go/traceparent
-github.com/lightstep/tracecontext.go/tracestate
 # github.com/mailru/easyjson v0.7.1-0.20191009090205-6c0755d89d1e
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
@@ -438,7 +437,7 @@ gopkg.in/alecthomas/kingpin.v2
 gopkg.in/evanphx/json-patch.v4
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.3.0
+# gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 gopkg.in/yaml.v3
