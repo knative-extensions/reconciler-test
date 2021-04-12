@@ -18,11 +18,10 @@ package example
 
 import (
 	"context"
+	"knative.dev/reconciler-test/resources/svc"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
@@ -34,8 +33,6 @@ import (
 )
 
 func RecorderFeature() *feature.Feature {
-	svc := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-
 	f := &feature.Feature{Name: "Record"}
 
 	f.Setup("create an event", func(ctx context.Context, t feature.T) {
@@ -58,7 +55,7 @@ func RecorderFeature() *feature.Feature {
 
 	f.Requirement("recorder is addressable", func(ctx context.Context, t feature.T) {
 		to := state.GetStringOrFail(ctx, t, "to")
-		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)(ctx, t)
+		k8s.IsAddressable(svc.GVR(), to, time.Second, 30*time.Second)(ctx, t)
 	})
 
 	f.Alpha("direct sending between a producer and a recorder").
@@ -74,8 +71,6 @@ func RecorderFeature() *feature.Feature {
 }
 
 func RecorderFeatureYAML() *feature.Feature {
-	svc := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
-
 	f := &feature.Feature{Name: "Record"}
 
 	f.Setup("install recorder", func(ctx context.Context, t feature.T) {
@@ -93,7 +88,7 @@ func RecorderFeatureYAML() *feature.Feature {
 
 	f.Requirement("recorder is addressable", func(ctx context.Context, t feature.T) {
 		to := state.GetStringOrFail(ctx, t, "to")
-		k8s.IsAddressable(svc, to, time.Second, 30*time.Second)
+		k8s.IsAddressable(svc.GVR(), to, time.Second, 30*time.Second)
 	})
 
 	f.Alpha("direct sending between a producer and a recorder").
