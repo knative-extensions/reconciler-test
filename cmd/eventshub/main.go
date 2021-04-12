@@ -23,7 +23,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/logging"
-	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/eventshub/logger_vent"
