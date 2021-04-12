@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
+	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/manifest"
-	"knative.dev/reconciler-test/pkg/test_images/eventshub"
 )
 
 func Example() {
