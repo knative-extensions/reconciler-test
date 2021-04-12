@@ -331,7 +331,7 @@ dynamic client.
 #### Communicating State
 
 There are times when the test author would rather pass state from a `Setup` or
-`Reqirement` of a feature without a complicated parameter passing or callbacks.
+`Requirement` of a feature without a complicated parameter passing or callbacks.
 An example of this would be generating names of resources. To Address this need,
 we added `f.State`.
 
@@ -384,7 +384,7 @@ func someAssertion(ctx context.Context, t *testing.T) {
 This shows `someAssertion` can be written in a way that does not require it to
 have some complicated callback logic wrapping it but still get custom parameters
 that are dependent on the specific test run. State is useful for passing
-generated names of know keys between `Setup` and `StepFn`s. It is intended to
+generated names of known keys between `Setup` and `StepFn`s. It is intended to
 remove the need for oddly nested callbacks and globals. By default, `State` is
 scoped for the lifecycle of a `Feature` in the context of `Test`. Remember: when
 `FancyFeature` is called in the example above, its job is to compose a Feature
