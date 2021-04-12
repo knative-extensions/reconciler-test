@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ func ProberFeatureYAML() *feature.Feature {
 
 	prober := eventshub.NewProber()
 
-	f.Setup("install recorder", prober.SenderInstall("recorder"))
+	f.Setup("install recorder", prober.ReceiverInstall("recorder"))
 
 	_ = prober.SetTargetKRef(prober.AsKReference("recorder"))
 
