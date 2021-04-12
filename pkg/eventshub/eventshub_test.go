@@ -18,11 +18,11 @@ package eventshub_test
 
 import (
 	"encoding/json"
+	eventshub2 "knative.dev/reconciler-test/pkg/eventshub"
 	"os"
 	"testing"
 
 	"knative.dev/reconciler-test/pkg/manifest"
-	"knative.dev/reconciler-test/pkg/test_images/eventshub"
 )
 
 func Example() {
@@ -144,7 +144,7 @@ func TestUnmarshal(t *testing.T) {
 	}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			eventInfo := eventshub.EventInfo{}
+			eventInfo := eventshub2.EventInfo{}
 			if err := json.Unmarshal([]byte(tt.message), &eventInfo); err != nil {
 				t.Errorf("EventInfo that cannot be unmarshalled! \n----\n%s\n----\n%+v\n", tt.message, err)
 			}
