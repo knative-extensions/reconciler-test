@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -179,7 +180,8 @@ func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, svcName str
 
 // WaitForPodRunningOrFail waits for the given pod to be in running state.
 func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
-	p := kubeclient.Get(ctx).CoreV1().Pods(environment.FromContext(ctx).Namespace())
+	podClient := kubeclient.Get(ctx).CoreV1().Pods(environment.FromContext(ctx).Namespace())
+	p := podClient
 	interval, timeout := PollTimings(ctx, nil)
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		p, err := p.Get(ctx, podName, metav1.GetOptions{})
@@ -189,8 +191,42 @@ func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 		return podRunning(p), nil
 	})
 	if err != nil {
+		sb := strings.Builder{}
+		if p, err := podClient.Get(ctx, podName, metav1.GetOptions{}); err != nil {
+			sb.WriteString(err.Error())
+			sb.WriteString("\n")
+		} else {
+			for _, c := range p.Spec.Containers {
+				if b, err := PodLogs(ctx, podName, c.Name, environment.FromContext(ctx).Namespace()); err != nil {
+					sb.WriteString(err.Error())
+				} else {
+					sb.Write(b)
+				}
+				sb.WriteString("\n")
+			}
+		}
 		t.Fatalf("Failed while waiting for pod %s running: %+v", podName, errors.WithStack(err))
 	}
+}
+
+// PodLogs returns Pod logs for given Pod and Container in the namespace
+func PodLogs(ctx context.Context, podName, containerName, namespace string) ([]byte, error) {
+	podClient := kubeclient.Get(ctx).CoreV1().Pods(namespace)
+	podList, err := podClient.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for i := range podList.Items {
+		// Pods are big, so avoid copying.
+		pod := &podList.Items[i]
+		if strings.Contains(pod.Name, podName) {
+			result := podClient.GetLogs(pod.Name, &corev1.PodLogOptions{
+				Container: containerName,
+			}).Do(ctx)
+			return result.Raw()
+		}
+	}
+	return nil, fmt.Errorf("could not find logs for %s/%s:%s", namespace, podName, containerName)
 }
 
 // WaitForAddress waits until a resource has an address.
