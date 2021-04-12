@@ -30,12 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
-	pkgtest "knative.dev/pkg/test"
-
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 )
@@ -163,14 +162,14 @@ func WaitForResourceReady(ctx context.Context, namespace, name string, gvr schem
 
 // WaitForServiceEndpointsOrFail wraps the utility from pkg and uses the context to extract kubeclient and namespace
 func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, svcName string, numberOfExpectedEndpoints int) {
-	if err := pkgtest.WaitForServiceEndpoints(ctx, kubeclient.Get(ctx), svcName, environment.FromContext(ctx).Namespace(), numberOfExpectedEndpoints); err != nil {
+	if err := WaitForServiceEndpoints(ctx, kubeclient.Get(ctx), svcName, environment.FromContext(ctx).Namespace(), numberOfExpectedEndpoints); err != nil {
 		t.Fatalf("Failed while waiting for %d endpoints in service %s: %+v", numberOfExpectedEndpoints, svcName, errors.WithStack(err))
 	}
 }
 
 // WaitForPodRunningOrFail wraps the utility from pkg and uses the context to extract kubeclient and namespace
 func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
-	if err := pkgtest.WaitForPodRunning(ctx, kubeclient.Get(ctx), podName, environment.FromContext(ctx).Namespace()); err != nil {
+	if err := WaitForPodRunning(ctx, kubeclient.Get(ctx), podName, environment.FromContext(ctx).Namespace()); err != nil {
 		t.Fatalf("Failed while waiting for pod %s running: %+v", podName, errors.WithStack(err))
 	}
 }
@@ -200,4 +199,60 @@ func WaitForAddress(ctx context.Context, gvr schema.GroupVersionResource, name s
 		return true, nil
 	})
 	return addr, err
+}
+
+// WaitForServiceHasAtLeastOneEndpoint polls the status of the specified Service
+// from client every interval until number of service endpoints = numOfEndpoints
+func WaitForServiceEndpoints(ctx context.Context, client kubernetes.Interface, svcName string, svcNamespace string, numOfEndpoints int) error {
+	endpointsService := client.CoreV1().Endpoints(svcNamespace)
+
+	interval, timeout := PollTimings(ctx, nil)
+	return wait.PollImmediate(interval, timeout, func() (bool, error) {
+		endpoint, err := endpointsService.Get(ctx, svcName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		return countEndpointsNum(endpoint) == numOfEndpoints, nil
+	})
+}
+
+func countEndpointsNum(e *corev1.Endpoints) int {
+	if e == nil || e.Subsets == nil {
+		return 0
+	}
+	num := 0
+	for _, sub := range e.Subsets {
+		num += len(sub.Addresses)
+	}
+	return num
+}
+
+// WaitForPodRunning waits for the given pod to be in running state
+func WaitForPodRunning(ctx context.Context, client kubernetes.Interface, name string, namespace string) error {
+	p := client.CoreV1().Pods(namespace)
+	interval, timeout := PollTimings(ctx, nil)
+	return wait.PollImmediate(interval, timeout, func() (bool, error) {
+		p, err := p.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return true, err
+		}
+		return podRunning(p), nil
+	})
+}
+
+// podsRunning will check the status conditions of the pod list and return true all pods are Running
+func podsRunning(podList *corev1.PodList) (bool, error) {
+	// Pods are big, so use indexing, to avoid copying.
+	for i := range podList.Items {
+		if isRunning := podRunning(&podList.Items[i]); !isRunning {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// podRunning will check the status conditions of the pod and return true if it's Running.
+func podRunning(pod *corev1.Pod) bool {
+	return pod.Status.Phase == corev1.PodRunning || pod.Status.Phase == corev1.PodSucceeded
 }
