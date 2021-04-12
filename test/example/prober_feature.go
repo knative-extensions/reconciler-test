@@ -34,8 +34,8 @@ func ProberFeature() *feature.Feature {
 	// Install the receiver, then the sender.
 	f.Setup("install recorder", prober.ReceiverInstall("to"))
 
-	prober.AsKRef("to")
-	_ = prober.SetTargetKRef(prober.AsKRef("to"))
+	prober.AsKReference("to")
+	_ = prober.SetTargetKRef(prober.AsKReference("to"))
 
 	f.Setup("install sender", prober.SenderInstall("from"))
 	f.Requirement("sender is done", prober.SenderDone("from"))
@@ -54,7 +54,7 @@ func ProberFeatureYAML() *feature.Feature {
 
 	f.Setup("install recorder", prober.SenderInstall("recorder"))
 
-	_ = prober.SetTargetKRef(prober.AsKRef("recorder"))
+	_ = prober.SetTargetKRef(prober.AsKReference("recorder"))
 
 	// Locally, tell the test what to expect
 	if err := prober.ExpectYAMLEvents("https://raw.githubusercontent.com/cloudevents/conformance/v0.2.0/yaml/v1.0/v1_minimum.yaml"); err != nil {

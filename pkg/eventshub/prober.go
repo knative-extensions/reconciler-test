@@ -20,16 +20,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"knative.dev/reconciler-test/pkg/environment"
 
 	conformanceevent "github.com/cloudevents/conformance/pkg/event"
 	cetest "github.com/cloudevents/sdk-go/v2/test"
 	"github.com/google/uuid"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/resources/svc"
 )
@@ -205,7 +205,9 @@ func (p *EventProber) SenderEventsFromURI(uri string) {
 	p.senderOptions = append(p.senderOptions, InputYAML(uri))
 }
 
-// SenderEventsFromSVC configures a sender to send a url/yaml based events.
+// SenderEventsFromSVC configures a sender to send a yaml based events fetched
+// a service in the testing environment. Namespace of the svc will come from
+// env.Namespace(), based on context from the StepFn.
 func (p *EventProber) SenderEventsFromSVC(svcName, path string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
 		u, err := svc.Address(ctx, svcName)
@@ -217,7 +219,7 @@ func (p *EventProber) SenderEventsFromSVC(svcName, path string) feature.StepFn {
 	}
 }
 
-// SenderFullEvents loads `count` cloudevents.FullEvent events with new IDs into a
+// SenderFullEvents creates `count` cloudevents.FullEvent events with new IDs into a
 // sender and registers them for the prober.
 func (p *EventProber) SenderFullEvents(count int) {
 	for i := 0; i < count; i++ {
@@ -229,7 +231,7 @@ func (p *EventProber) SenderFullEvents(count int) {
 	}
 }
 
-// SenderMinEvents loads `count` cloudevents.MinEvent events with new IDs into a
+// SenderMinEvents creates `count` cloudevents.MinEvent events with new IDs into a
 // sender and registers them for the prober.
 func (p *EventProber) SenderMinEvents(count int) {
 	for i := 0; i < count; i++ {
@@ -241,9 +243,9 @@ func (p *EventProber) SenderMinEvents(count int) {
 	}
 }
 
-// AsRef returns the short-named component as a KReference.
-func (p *EventProber) AsKRef(prefix string) *duckv1.KReference {
-	return svc.AsRef(p.shortNameToName[prefix])
+// AsKReference returns the short-named component as a KReference.
+func (p *EventProber) AsKReference(prefix string) *duckv1.KReference {
+	return svc.AsKReference(p.shortNameToName[prefix])
 }
 
 // AssertSentAll tests that `fromPrefix` sent all known events known to the prober.

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -48,8 +48,8 @@ func Install(name, selectorKey, selectorValue string) feature.StepFn {
 	}
 }
 
-// AsKRef returns a KReference for a Service without namespace.
-func AsRef(name string) *duckv1.KReference {
+// AsKReference returns a KReference for a Service without namespace.
+func AsKReference(name string) *duckv1.KReference {
 	return &duckv1.KReference{
 		Kind:       "Service",
 		Name:       name,
@@ -67,7 +67,7 @@ func AsTrackerReference(name string) *tracker.Reference {
 
 func AsDestinationRef(name string) *duckv1.Destination {
 	return &duckv1.Destination{
-		Ref: AsRef(name),
+		Ref: AsKReference(name),
 	}
 }
 

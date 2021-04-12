@@ -18,7 +18,6 @@ package example
 
 import (
 	"context"
-	"knative.dev/reconciler-test/resources/svc"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -26,6 +25,7 @@ import (
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/state"
+	"knative.dev/reconciler-test/resources/svc"
 
 	// Dot import the eventshub asserts and sdk-go test packages to include all the assert utilities
 	. "github.com/cloudevents/sdk-go/v2/test"
