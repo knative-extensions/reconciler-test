@@ -17,6 +17,7 @@ limitations under the License.
 package example
 
 import (
+	"context"
 	"fmt"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
@@ -39,10 +40,58 @@ func ProberFeature() *feature.Feature {
 
 	f.Setup("install sender", prober.SenderInstall("from"))
 	f.Requirement("sender is done", prober.SenderDone("from"))
+	f.Requirement("receiver is done", prober.ReceiverDone("from", "to"))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", prober.AssertSentAll("from")).
 		Must("the recorder received all sent events", prober.AssertReceivedAll("from", "to"))
+
+	return f
+}
+
+func ProberFeatureWithDrop() *feature.Feature {
+	f := &feature.Feature{Name: "Prober with Drop"}
+
+	from := "xxxfrom"
+	to := "xxxto"
+
+	prober := eventshub.NewProber()
+	prober.ReceiversDropFirstN(5)
+
+	// Configured the sender for how many events it will be sending.
+	prober.SenderFullEvents(6)
+
+	// Install the receiver, then the sender.
+	f.Setup("install recorder", prober.ReceiverInstall(to))
+
+	prober.AsKReference(to)
+	_ = prober.SetTargetKRef(prober.AsKReference(to))
+
+	f.Setup("install sender", prober.SenderInstall(from))
+	f.Requirement("sender is done", prober.SenderDone(from))
+	f.Requirement("receiver is done", prober.ReceiverDone(from, to))
+
+	f.Alpha("direct sending between a producer and a recorder").
+		Must("the sender sent all events", func(ctx context.Context, t feature.T) {
+			events := prober.SentBy(ctx, from)
+			if 6 != len(events) {
+				t.Errorf("expected %q to have sent %d events, actually sent %d",
+					from, 6, len(events))
+			}
+			for _, event := range events {
+				switch event.Sent.SentId {
+				case "1", "2", "3", "4", "5":
+					if event.Response.StatusCode/100 != 4 {
+						t.Errorf("For %s, expected 4xx response, got %d", event.Sent.SentId, event.Response.StatusCode)
+					}
+				case "6":
+					if event.Response.StatusCode/100 != 2 {
+						t.Errorf("For %s, expected 2xx response, got %d", event.Sent.SentId, event.Response.StatusCode)
+					}
+				}
+			}
+		}).
+		Must("the recorder received all sent events", prober.AssertReceivedOrRejectedAll(from, to))
 
 	return f
 }
@@ -66,6 +115,7 @@ func ProberFeatureYAML() *feature.Feature {
 	f.Setup("install sender with yaml events", prober.SenderInstall("sender"))
 
 	f.Requirement("sender is done", prober.SenderDone("sender"))
+	f.Requirement("receiver is done", prober.ReceiverDone("sender", "recorder"))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", prober.AssertSentAll("sender")).
