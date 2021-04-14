@@ -237,12 +237,12 @@ feature.Features, with a name for context.
 
 ```go
 fs := &feature.FeatureSet{
-    Name:     "Some higher order idea",
-    Features: []feature.Feature{
-        *OneAspectFeature(),
-        *AnotherAspectFeature(),
-        *OptionalAspectFeature(),
-    },
+	Name:     "Some higher order idea",
+	Features: []feature.Feature{
+		*OneAspectFeature(),
+		*AnotherAspectFeature(),
+		*OptionalAspectFeature(),
+	},
 }
 ```
 
@@ -367,12 +367,12 @@ func FancyFeature(brokerName string) *feature.Feature {
 
 	f.Setup("Set Foo", func(ctx context.Context, t *testing.T) {
 		state.SetOrFail(ctx, t, "foo", "bar-"+random)
-    })
+	})
 
-    f.Stable("An aspect of the feature").
-      		Should("make some assertion", someAssertion)
+	f.Stable("An aspect of the feature").
+		Should("make some assertion", someAssertion)
 
-    return f
+	return f
 }
 
 func someAssertion(ctx context.Context, t *testing.T) {
