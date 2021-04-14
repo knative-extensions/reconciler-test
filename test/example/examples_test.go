@@ -76,6 +76,7 @@ func TestProber(t *testing.T) {
 	// With the instance of an Environment, perform one or more calls to Test().
 	env.Test(ctx, t, ProberFeature())
 	env.Test(ctx, t, ProberFeatureYAML())
+	env.Test(ctx, t, ProberFeatureWithDrop())
 }
 
 // TestEcho is an example simple test.
