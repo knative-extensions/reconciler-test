@@ -97,8 +97,8 @@ func (p *EventProber) SetTargetURI(targetURI string) {
 	}
 }
 
-// ReceiversDropFirstN adds DropFirstN to the default config for new receivers.
-func (p *EventProber) ReceiversDropFirstN(n uint) {
+// ReceiversRejectFirstN adds DropFirstN to the default config for new receivers.
+func (p *EventProber) ReceiversRejectFirstN(n uint) {
 	p.receiverOptions = append(p.receiverOptions, DropFirstN(n))
 }
 
@@ -234,6 +234,21 @@ func (p *EventProber) RejectedBy(ctx context.Context, prefix string) []EventInfo
 	return events
 }
 
+// ReceivedOrRejectedBy returns events received or rejected by the named receiver.
+func (p *EventProber) ReceivedOrRejectedBy(ctx context.Context, prefix string) []EventInfo {
+	name := p.shortNameToName[prefix]
+	store := StoreFromContext(ctx, name)
+
+	events, _, _, _ := store.Find(func(info EventInfo) error {
+		if info.Observer == name && (info.Kind == EventReceived || info.Kind == EventRejected) {
+			return nil
+		}
+		return errors.New("not a match")
+	})
+
+	return events
+}
+
 // ExpectYAMLEvents registered expected events into the prober.
 func (p *EventProber) ExpectYAMLEvents(path string) error {
 	events, err := conformanceevent.FromYaml(path, true)
@@ -355,7 +370,7 @@ func (p *EventProber) AssertReceivedAll(fromPrefix, toPrefix string) feature.Ste
 		for _, id := range ids {
 			found := false
 			for _, event := range events {
-				if id == event.SentId {
+				if event.Event != nil && id == event.Event.ID() {
 					found = true
 					break
 				}
@@ -376,9 +391,7 @@ func (p *EventProber) AssertReceivedOrRejectedAll(fromPrefix, toPrefix string) f
 			ids[i] = s.Sent.SentId
 		}
 
-		received := p.ReceivedBy(ctx, toPrefix)
-		rejected := p.RejectedBy(ctx, toPrefix)
-		events := append(received, rejected...)
+		events := p.ReceivedOrRejectedBy(ctx, toPrefix)
 
 		if len(ids) != len(events) {
 			t.Errorf("expected %q to have received %d events, actually received %d",
