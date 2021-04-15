@@ -342,6 +342,10 @@ State is stored into the context that is passed to each `StepFn`, implemented as
 a pointer to that feature instance's State object. Meaning, State is effectively
 global for the scope of the `env.Test` run.
 
+> Note: the default implementation in reconciler-test uses JSON marshaling to
+> save and load values to/from the store. You may provide your own
+> implementation by implementing the `state.Store` interface.
+
 The recommended way to access state is to use the context accessors:
 
 ```go
@@ -350,11 +354,15 @@ import knative.dev/reconciler-test/pkg/state
 // Direct Store access:
 store := state.FromContext(ctx) Store
 
+store.Set(ctx, key, value)
+
+store.Get(ctx, key, &value)
+
 // Helpers to work with Store without needing fetch Store directly.
 
 aString := state.GetStringOrFail(ctx, t, key)
 
-state.GetOrFail(ctx, t, key, value)
+state.GetOrFail(ctx, t, key, &value)
 
 state.SetOrFail(ctx, t, key, value)
 ```
@@ -365,19 +373,27 @@ In use,
 func FancyFeature(brokerName string) *feature.Feature {
 	f := feature.NewFeatureNamed("MyNewFeature")
 
-	f.Setup("Set Foo", func(ctx context.Context, t *testing.T) {
-		state.SetOrFail(ctx, t, "foo", "bar-"+random)
+	f.Setup("Set Foo and Bar", func(ctx context.Context, t *testing.T) {
+		state.SetOrFail(ctx, t, "foo", "baz-"+random)
+        state.SetOrFail(ctx, t, "bar", CustomStruct{Exported:"values"})
 	})
 
 	f.Stable("An aspect of the feature").
-		Should("make some assertion", someAssertion)
+		Should("make some assertion with foo", someAssertion).
+		Must("another assertion with bar", anotherAssertion)
 
 	return f
 }
 
 func someAssertion(ctx context.Context, t *testing.T) {
-    foo := state.GetOrFail(ctx, t, "foo")
-    // do something with foo.
+    foo := state.GetStringOrFail(ctx, t, "foo")
+    // do something with the string `foo`.
+}
+
+func someAssertion(ctx context.Context, t *testing.T) {
+    bar := CustomStruct{}
+    state.GetOrFail(ctx, t, "bar", &bar)
+    // do something with the struct `bar`.
 }
 ```
 
