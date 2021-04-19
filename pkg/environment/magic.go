@@ -225,6 +225,8 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	skipRequirements := false
 	skipReason := ""
 
+	mr.milestones.StepsPlanned(f.Name, steps, originalT)
+
 	for _, s := range steps[feature.Setup] {
 		s := s
 
