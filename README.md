@@ -133,7 +133,8 @@ Requirement, Assert, and Teardown. The step functions run in that order.
 - **Setup** is used to install required components or configuration in the
   environment.
 - **Requirement** is used to validate the cluster, environment, or anything
-  else. Think of this as a preflight validation for the assertions.
+  else. Think of this as a preflight validation for the assertions. This can be
+  used as a fast-fail for a feature test before running assert phase steps.
 - **Assert** should assume the namespace is ready to perform or validate the
   test.
 - **Teardown** should be used to do final feature cleanup, if needed. There is
