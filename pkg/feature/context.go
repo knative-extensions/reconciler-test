@@ -24,15 +24,15 @@ type envKey struct{}
 
 // ContextWith decorates the given context with the provided Feature, and returns
 // the resulting context.
-func ContextWith(ctx context.Context, f Feature) context.Context {
+func ContextWith(ctx context.Context, f *Feature) context.Context {
 	return context.WithValue(ctx, envKey{}, f)
 }
 
 // FromContext returns the Feature from Context, if not found FromContext will
 // panic.
 // TODO: revisit if we really want to panic here... likely not.
-func FromContext(ctx context.Context) Feature {
-	if e, ok := ctx.Value(envKey{}).(Feature); ok {
+func FromContext(ctx context.Context) *Feature {
+	if e, ok := ctx.Value(envKey{}).(*Feature); ok {
 		return e
 	}
 	panic("no Store found in context")
