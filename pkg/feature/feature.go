@@ -19,14 +19,14 @@ package feature
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/injection/clients/dynamicclient"
 	"runtime"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/injection/clients/dynamicclient"
 
 	"knative.dev/reconciler-test/pkg/state"
 )
@@ -97,7 +97,8 @@ func (f *Feature) Reference(ref ...corev1.ObjectReference) {
 	f.refs = append(f.refs, ref...)
 }
 
-// References returns all known resources to the Feature registered via `Reference`.
+// References returns all known resources to the Feature registered via
+// `Reference`.
 func (f *Feature) References() []corev1.ObjectReference {
 	return f.refs
 }
@@ -118,6 +119,7 @@ func (f *Feature) DeleteResources(ctx context.Context, t T) {
 			}
 		}
 	}
+	f.refs = []corev1.ObjectReference{nil}
 }
 
 // Setup adds a step function to the feature set at the Setup timing phase.
