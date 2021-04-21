@@ -84,6 +84,8 @@ func EchoFeature() *feature.Feature {
 			t.Log("ran inside of a SHOULD")
 		})
 
+	f.Teardown("cleanup", f.DeleteResources)
+
 	return f
 }
 
