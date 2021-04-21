@@ -119,7 +119,7 @@ func (f *Feature) DeleteResources(ctx context.Context, t T) {
 			}
 		}
 	}
-	f.refs = []corev1.ObjectReference{nil}
+	f.refs = []corev1.ObjectReference(nil)
 }
 
 // Setup adds a step function to the feature set at the Setup timing phase.
