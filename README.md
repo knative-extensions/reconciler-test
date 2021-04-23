@@ -361,6 +361,7 @@ disabled using the following flags:
 | --requirement.shouldnot | Boolean | Enable/Disable running Should Not level features. |
 | --requirement.may       | Boolean | Enable/Disable running May level features.        |
 | --requirement.all       | Boolean | Enable/Disable running All level features.        |
+| --feature               | RegExp  | Specify features to run.                          |
 
 They can be used in combination, to run only Beta state features:
 
@@ -378,4 +379,10 @@ And normal go filters work on the go test entry point names.
 
 ```shell
 go test -v -count=1 -tags=e2e ./test/... --feature.any=false --feature.beta -run TestKoPublish
+```
+
+Run all instances of Noop feature, including instances in a Feature Set
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... --feature=Noop
 ```
