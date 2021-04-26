@@ -123,7 +123,7 @@ similar to a unit test. It has a scoped objective, and if written with care, a
 step can be composed and shared in downstream features.
 
 Features have several phases that can be registered, each phase is executed in
-order, but there are no order guarantees in phases that are equal. If struct
+order, but there are no order guarantees for steps in the same phase. If strict
 ordering is required it is recommended to break that into an independent feature
 that is tested on an environment in order required.
 
@@ -219,7 +219,7 @@ being tested in.
 
 Sometimes it makes sense to be able to provide a set of Features all at once. We
 call these "Feature Sets". They are intended to allow upstreams to bundle sets
-of features together to provide a simple low code way to vender and run a
+of features together to provide a simple low code way to vendor and run a
 collection of Features together. `Test` and `TestSet` can be used together on an
 environment.
 
