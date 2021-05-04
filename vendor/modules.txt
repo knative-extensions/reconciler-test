@@ -770,10 +770,10 @@ k8s.io/kube-openapi/pkg/util/sets
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20210325223819-b6ab329907d3
+# knative.dev/hack v0.0.0-20210428122153-93ad9129c268
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20210420053235-1afd04993622
+# knative.dev/pkg v0.0.0-20210428141353-878c85083565
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
