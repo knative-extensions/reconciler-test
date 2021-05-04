@@ -268,35 +268,40 @@ func init() {
 }
 ```
 
-This can be discovered dynamically by the helper function to scan local YAML
-files for `ko://` images, `manifest.ImagesLocalYaml()`
+This can be discovered dynamically by the helper function to scan embedded filesystem YAML
+files for `ko://` images, `manifest.ImagesFromFS(fs)`
 
 ```go
 import (
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
+//go:embed job.yaml
+var jobTemplate embed.FS
 
 func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
+	environment.RegisterPackage(manifest.ImagesFromFS(jobTemplate)...)
 }
 ```
 
-Images registred with the environment package will be produced on the first call
+Images registered with the environment package will be produced on the first call
 to `environment.ProduceImages()`, which happens as a byproduct of calling
 `global.Environment()`. These images replace the `ko://` tags in YAML files that
-are applied the the cluster with `manifest.InstallLocalYaml`.
+are applied to the cluster with `manifest.InstallYamlFS`.
 
 A go file local to the target YAML can have an install step function like:
 
 ```go
+//go:embed job.yaml
+var jobTemplate embed.FS
+
 func Install(message string) feature.StepFn {
 	cfg := map[string]interface{}{
 		"additional": "this",
 		"customizations": message,
 	}
 	return func(ctx context.Context, t *testing.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, cfg); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, jobTemplate, cfg); err != nil {
 			t.Fatal(err)
 		}
 	}

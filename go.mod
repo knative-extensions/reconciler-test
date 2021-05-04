@@ -1,6 +1,6 @@
 module knative.dev/reconciler-test
 
-go 1.14
+go 1.16
 
 require (
 	github.com/cloudevents/conformance v0.2.0
