@@ -34,6 +34,10 @@ jobs:
             org: knative-sandbox
           - repo: eventing-natss
             org: knative-sandbox
+          - repo: eventing-kafka
+            org: knative-sandbox
+          - repo: eventing-kafka-broker
+            org: knative-sandbox
 
     runs-on: ubuntu-latest
     env:
