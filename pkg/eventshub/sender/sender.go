@@ -51,6 +51,10 @@ type generator struct {
 	// The number of seconds to wait before starting sending the first message
 	Delay int `envconfig:"DELAY" default:"5" required:"false"`
 
+	// The number of milliseconds to wait before starting sending the first message
+	// Take precedence over Delay
+	DelayMs int `envconfig:"DELAY_MS" required:"false"`
+
 	// ProbeSink will probe the sink until it responds.
 	ProbeSink bool `envconfig:"PROBE_SINK" default:"true"`
 
@@ -91,6 +95,10 @@ type generator struct {
 	// The number of seconds between messages.
 	Period int `envconfig:"PERIOD" default:"5" required:"false"`
 
+	// The number of milliseconds between messages.
+	// Take precedence over Period
+	PeriodMs int `envconfig:"PERIOD_MS" required:"false"`
+
 	// The number of messages to attempt to send. -1 for inferred, 0 for unlimited.
 	MaxMessages int `envconfig:"MAX_MESSAGES" default:"-1" required:"false"`
 
@@ -118,7 +126,14 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 	logging.FromContext(ctx).Infof("Sender environment configuration: %+v", env)
 
 	period := time.Duration(env.Period) * time.Second
+	if env.PeriodMs > 0 {
+		period = time.Duration(env.PeriodMs) * time.Millisecond
+	}
+
 	delay := time.Duration(env.Delay) * time.Second
+	if env.DelayMs > 0 {
+		delay = time.Duration(env.DelayMs) * time.Millisecond
+	}
 
 	if delay > 0 {
 		logging.FromContext(ctx).Info("will sleep for ", delay)
