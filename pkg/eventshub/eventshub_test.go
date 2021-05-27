@@ -17,6 +17,7 @@ limitations under the License.
 package eventshub_test
 
 import (
+	"embed"
 	"encoding/json"
 	"os"
 	"testing"
@@ -24,6 +25,9 @@ import (
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
+
+//go:embed *.yaml
+var templates embed.FS
 
 func Example() {
 	images := map[string]string{
@@ -39,7 +43,7 @@ func Example() {
 		},
 	}
 
-	files, err := manifest.ExecuteLocalYAML(images, cfg)
+	files, err := manifest.ExecuteYAML(templates, images, cfg)
 	if err != nil {
 		panic(err)
 	}

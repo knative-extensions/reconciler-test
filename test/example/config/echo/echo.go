@@ -18,14 +18,18 @@ package echo
 
 import (
 	"context"
+	"embed"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
+//go:embed *.yaml
+var templates embed.FS
+
 func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
+	environment.RegisterPackage(manifest.ImagesFromFS(templates)...)
 }
 
 // Output is the base output we can expect from a echo job.
@@ -36,7 +40,7 @@ type Output struct {
 
 func Install(name, message string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
+		if _, err := manifest.InstallYamlFS(ctx, templates, map[string]interface{}{
 			"name":    name,
 			"message": message,
 		}); err != nil {
