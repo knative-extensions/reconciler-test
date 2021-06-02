@@ -26,17 +26,7 @@ jobs:
       fail-fast: false # Keep running if one leg fails.
       matrix:
         include:
-          - repo: eventing
-            org: knative
           - repo: discovery
-            org: knative-sandbox
-          - repo: eventing-rabbitmq
-            org: knative-sandbox
-          - repo: eventing-natss
-            org: knative-sandbox
-          - repo: eventing-kafka
-            org: knative-sandbox
-          - repo: eventing-kafka-broker
             org: knative-sandbox
 
     runs-on: ubuntu-latest
@@ -60,7 +50,7 @@ jobs:
         repository: ${{ matrix.org }}/${{ matrix.repo }}
         path: ./src/knative.dev/${{ matrix.repo }}
     - name: Test Downstream
-      uses: knative-sandbox/actions-downstream-test@v1
+      uses: benmoss/actions-downstream-test@v1.0.3
       with:
         upstream-module: knative.dev/${{ github.event.repository.name }}
         downstream-module: knative.dev/${{ matrix.repo }}
