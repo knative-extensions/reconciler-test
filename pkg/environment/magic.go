@@ -109,9 +109,15 @@ func Managed(t feature.T) EnvOpts {
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
-	images, err := ProduceImages()
-	if err != nil {
-		panic(err)
+	var (
+		images map[string]string
+		err    error
+	)
+	if *publish {
+		images, err = ProduceImages()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	namespace := feature.MakeK8sNamePrefix(feature.AppendRandomString("test"))
