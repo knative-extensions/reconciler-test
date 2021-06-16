@@ -113,6 +113,12 @@ func DropFirstN(n uint) EventsHubOption {
 	)
 }
 
+func DropEventsResponseCode(code int) EventsHubOption {
+	return compose(
+		envOption("SKIP_RESPONSE_CODE", strconv.Itoa(code)),
+	)
+}
+
 // --- Sender options
 
 // InitialSenderDelay defines how much the sender has to wait, when started, before start sending events.

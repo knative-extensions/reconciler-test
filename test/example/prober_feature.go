@@ -60,6 +60,7 @@ func ProberFeatureWithDrop() *feature.Feature {
 
 	prober := eventshub.NewProber()
 	prober.ReceiversRejectFirstN(5)
+	prober.ReceiversRejectResponseCode(429)
 
 	// Configured the sender for how many events it will be sending.
 	prober.SenderFullEvents(6)
@@ -84,8 +85,8 @@ func ProberFeatureWithDrop() *feature.Feature {
 			for _, event := range events {
 				switch event.Sent.SentId {
 				case "1", "2", "3", "4", "5":
-					if event.Response.StatusCode/100 != 4 {
-						t.Errorf("For %s, expected 4xx response, got %d", event.Sent.SentId, event.Response.StatusCode)
+					if event.Response.StatusCode != 429 {
+						t.Errorf("For %s, expected 429 response, got %d", event.Sent.SentId, event.Response.StatusCode)
 					}
 				case "6":
 					if event.Response.StatusCode/100 != 2 {
