@@ -65,13 +65,6 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			t.Fatal(err)
 		}
 
-		k8s.WaitForPodRunningOrFail(ctx, t, name)
-
-		// If the eventhubs starts an event receiver, we need to wait for the service endpoint to be synced
-		if strings.Contains(envs["EVENT_GENERATORS"], "receiver") {
-			k8s.WaitForServiceEndpointsOrFail(ctx, t, name, 1)
-		}
-
 		// Register the event info store to assert later the events published by the eventshub
 		registerEventsHubStore(
 			k8s.EventListenerFromContext(ctx),
@@ -79,5 +72,13 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			name,
 			environment.FromContext(ctx).Namespace(),
 		)
+
+		k8s.WaitForPodRunningOrFail(ctx, t, name)
+
+		// If the eventhubs starts an event receiver, we need to wait for the service endpoint to be synced
+		if strings.Contains(envs["EVENT_GENERATORS"], "receiver") {
+			k8s.WaitForServiceEndpointsOrFail(ctx, t, name, 1)
+		}
+
 	}
 }
