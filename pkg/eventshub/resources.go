@@ -31,8 +31,10 @@ import (
 //go:embed *.yaml
 var templates embed.FS
 
+const imageName = "ko://knative.dev/reconciler-test/cmd/eventshub"
+
 func init() {
-	environment.RegisterPackage(manifest.ImagesFromFS(templates)...)
+	environment.RegisterPackage(imageName)
 }
 
 // Install starts a new eventshub with the provided name
@@ -46,6 +48,11 @@ func init() {
 //     k8s.WithEventListener,
 //   )
 func Install(name string, options ...EventsHubOption) feature.StepFn {
+	return InstallCustomImage(name, imageName, options...)
+}
+
+// InstallCustomImage is like Install, but allows you to specify a custom eventshub image.
+func InstallCustomImage(name string, image string, options ...EventsHubOption) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
 		// Compute the user provided envs
 		envs := make(map[string]string)
@@ -67,8 +74,9 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 
 		// Deploy
 		if _, err := manifest.InstallYamlFS(ctx, templates, map[string]interface{}{
-			"name": name,
-			"envs": envs,
+			"name":  name,
+			"envs":  envs,
+			"image": image,
 		}); err != nil {
 			t.Fatal(err)
 		}
