@@ -36,7 +36,7 @@ func Example() {
 	cfg := map[string]interface{}{
 		"name":      "hubhub",
 		"namespace": "example",
-		"message":   "Hello, World!",
+		"image":     "ko://knative.dev/reconciler-test/cmd/eventshub",
 		"envs": map[string]string{
 			"foo": "bar",
 			"baz": "boof",
