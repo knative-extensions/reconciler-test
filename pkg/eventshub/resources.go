@@ -32,7 +32,7 @@ import (
 var templates embed.FS
 
 func init() {
-	environment.RegisterPackage(defaultEventshubImage)
+	environment.RegisterPackage(thisPackage)
 }
 
 // Install starts a new eventshub with the provided name
