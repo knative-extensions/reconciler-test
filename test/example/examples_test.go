@@ -44,7 +44,7 @@ func TestRecorder(t *testing.T) {
 	// if customization is required.
 	ctx, env := global.Environment(
 		environment.Managed(t), // Will call env.Finish() when the test exits.
-		knative.WithKnativeNamespace("knative-eventing"),
+		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
@@ -67,7 +67,7 @@ func TestProber(t *testing.T) {
 	// if customization is required.
 	ctx, env := global.Environment(
 		environment.Managed(t), // Will call env.Finish() when the test exits.
-		knative.WithKnativeNamespace("knative-eventing"),
+		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
