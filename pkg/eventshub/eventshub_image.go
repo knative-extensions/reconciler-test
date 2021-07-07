@@ -22,8 +22,10 @@ import (
 	"knative.dev/reconciler-test/pkg/environment"
 )
 
-const thisPackage = "knative.dev/reconciler-test/cmd/eventshub"
-const defaultEventshubImage = "ko://" + thisPackage
+const (
+	thisPackage           = "knative.dev/reconciler-test/cmd/eventshub"
+	defaultEventshubImage = "ko://" + thisPackage
+)
 
 type eventshubImageKey struct{}
 
