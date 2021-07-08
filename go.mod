@@ -22,5 +22,5 @@ require (
 	k8s.io/client-go v0.20.7
 	k8s.io/klog v1.0.0
 	knative.dev/hack v0.0.0-20210622141627-e28525d8d260
-	knative.dev/pkg v0.0.0-20210622173328-dd0db4b05c80
+	knative.dev/pkg v0.0.0-20210706174620-fe90576475ca
 )
