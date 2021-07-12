@@ -122,16 +122,10 @@ func DropEventsResponseCode(code int) EventsHubOption {
 
 // --- Sender options
 
-// InitialSenderDelay defines how much the sender has to wait (in seconds), when started, before start sending events.
+// InitialSenderDelay defines how much the sender has to wait (in millisecond), when started, before start sending events.
 // Note: this delay is executed before the probe sink.
 func InitialSenderDelay(delay time.Duration) EventsHubOption {
 	return envDuration("DELAY", delay)
-}
-
-// InitialSenderDelayMs defines how much the sender has to wait (in milliseconds), when started, before start sending events.
-// Note: this delay is executed before the probe sink.
-func InitialSenderDelayMs(delay time.Duration) EventsHubOption {
-	return envDuration("DELAY_MS", delay)
 }
 
 // EnableProbeSink probes the sink with HTTP head requests up until the sink replies.
@@ -205,19 +199,11 @@ var EnableIncrementalId = envOption("INCREMENTAL_ID", "true")
 // OverrideTime overrides the event time with the time when sending the event.
 var OverrideTime = envOption("OVERRIDE_TIME", "true")
 
-// SendMultipleEvents defines how much events to send and the period (in second) between them.
+// SendMultipleEvents defines how much events to send and the period (in millisecond) between them.
 func SendMultipleEvents(numberOfEvents int, period time.Duration) EventsHubOption {
 	return compose(
 		envOption("MAX_MESSAGES", strconv.Itoa(numberOfEvents)),
 		envDuration("PERIOD", period),
-	)
-}
-
-// SendMultipleEventsMs defines how much events to send and the period (in millisecond) between them.
-func SendMultipleEventsMs(numberOfEvents int, period time.Duration) EventsHubOption {
-	return compose(
-		envOption("MAX_MESSAGES", strconv.Itoa(numberOfEvents)),
-		envDuration("PERIOD_MS", period),
 	)
 }
 
