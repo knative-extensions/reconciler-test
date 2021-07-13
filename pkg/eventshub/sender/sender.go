@@ -118,17 +118,15 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 
 	logging.FromContext(ctx).Infof("Sender environment configuration: %+v", env)
 
-	p, err := time.ParseDuration(durationWithUnit(env.Period))
+	period, err := time.ParseDuration(durationWithUnit(env.Period))
 	if err != nil {
 		return err
 	}
-	period := time.Duration(p)
 
-	d, err := time.ParseDuration(durationWithUnit(env.Delay))
+	delay, err := time.ParseDuration(durationWithUnit(env.Delay))
 	if err != nil {
 		return err
 	}
-	delay := time.Duration(d)
 
 	if delay > 0 {
 		logging.FromContext(ctx).Info("will sleep for ", delay)
