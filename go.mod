@@ -3,7 +3,6 @@ module knative.dev/reconciler-test
 go 1.16
 
 require (
-	github.com/aws/aws-sdk-go v1.31.12 // indirect
 	github.com/cloudevents/conformance v0.2.0
 	github.com/cloudevents/sdk-go/v2 v2.4.1
 	github.com/go-openapi/spec v0.19.6 // indirect
@@ -22,5 +21,5 @@ require (
 	k8s.io/client-go v0.20.7
 	k8s.io/klog v1.0.0
 	knative.dev/hack v0.0.0-20210622141627-e28525d8d260
-	knative.dev/pkg v0.0.0-20210713175550-7d1b0f19ef71
+	knative.dev/pkg v0.0.0-20210803032247-552bbc106170
 )
