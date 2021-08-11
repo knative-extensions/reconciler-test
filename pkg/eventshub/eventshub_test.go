@@ -51,44 +51,6 @@ func Example() {
 	manifest.OutputYAML(os.Stdout, files)
 	// Output:
 	// apiVersion: v1
-	// kind: ServiceAccount
-	// metadata:
-	//   name: hubhub
-	//   namespace: example
-	// ---
-	// apiVersion: rbac.authorization.k8s.io/v1
-	// kind: Role
-	// metadata:
-	//   name: hubhub
-	//   namespace: example
-	// rules:
-	//   - apiGroups: [ "" ]
-	//     resources:
-	//       - "pods"
-	//     verbs:
-	//       - "get"
-	//       - "list"
-	//   - apiGroups: [ "" ]
-	//     resources:
-	//       - "events"
-	//     verbs:
-	//       - "*"
-	// ---
-	// apiVersion: rbac.authorization.k8s.io/v1
-	// kind: RoleBinding
-	// metadata:
-	//   name: hubhub
-	//   namespace: example
-	// roleRef:
-	//   apiGroup: rbac.authorization.k8s.io
-	//   kind: Role
-	//   name: hubhub
-	// subjects:
-	//   - kind: ServiceAccount
-	//     name: hubhub
-	//     namespace: example
-	// ---
-	// apiVersion: v1
 	// kind: Service
 	// metadata:
 	//   name: hubhub
@@ -109,7 +71,7 @@ func Example() {
 	//   labels:
 	//     app: eventshub-hubhub
 	// spec:
-	//   serviceAccountName: "hubhub"
+	//   serviceAccountName: "example"
 	//   restartPolicy: "Never"
 	//   containers:
 	//     - name: eventshub
