@@ -19,8 +19,9 @@ package eventshub
 import (
 	"context"
 	"embed"
-	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 	"strings"
+
+	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"

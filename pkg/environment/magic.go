@@ -119,12 +119,12 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	}
 
 	env := &MagicEnvironment{
-		c:            	mr.c,
-		l:            	mr.RequirementLevel,
-		s:            	mr.FeatureState,
-		featureMatch: 	mr.FeatureMatch,
+		c:              mr.c,
+		l:              mr.RequirementLevel,
+		s:              mr.FeatureState,
+		featureMatch:   mr.FeatureMatch,
 		reuseNamespace: mr.reuseNamespace,
-		images:       	images,
+		images:         images,
 	}
 
 	if env.reuseNamespace {
