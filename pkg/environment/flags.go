@@ -29,6 +29,7 @@ var (
 	s = new(feature.States)
 	l = new(feature.Levels)
 	f = new(string)
+	r = new(bool)
 )
 
 // InitFlags registers the requirement and state filter flags supported by the
@@ -54,6 +55,7 @@ func InitFlags(fs *flag.FlagSet) {
 
 	// Feature
 	fs.StringVar(f, "feature", "", "run only Features matching `regexp`")
+	fs.BoolVar(r, "reusenamespace", false, "reuse existing namespaces for tests")
 }
 
 type stateValue struct {

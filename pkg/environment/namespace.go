@@ -19,6 +19,8 @@ package environment
 import (
 	"context"
 	"fmt"
+	"os"
+	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,8 +29,16 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
+var (
+	nsMutex        sync.Mutex
+	namespaceCount int
+)
+
 // CreateNamespaceIfNeeded creates a new namespace if it does not exist.
 func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
+	if mr.reuseNamespace {
+		return nil
+	}
 	c := kubeclient.Get(mr.c)
 	nsSpec, err := c.CoreV1().Namespaces().Get(context.Background(), mr.namespace, metav1.GetOptions{})
 
@@ -85,4 +95,22 @@ func (mr *MagicEnvironment) DeleteNamespaceIfNeeded() error {
 	}
 
 	return nil
+}
+
+// NextNamespace returns the next unique namespace.
+func NextNamespace() string {
+	ns := os.Getenv("REKT_NAMESPACE")
+	if ns == "" {
+		ns = "rekt"
+	}
+	return fmt.Sprintf("%s%d", ns, GetNextNamespaceId())
+}
+
+// GetNextNamespaceId return the next unique ID for the next namespace.
+func GetNextNamespaceId() int {
+	nsMutex.Lock()
+	defer nsMutex.Unlock()
+	current := namespaceCount
+	namespaceCount++
+	return current
 }

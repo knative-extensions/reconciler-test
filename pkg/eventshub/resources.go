@@ -19,10 +19,10 @@ package eventshub
 import (
 	"context"
 	"embed"
+	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 	"strings"
 
 	"knative.dev/reconciler-test/pkg/environment"
-	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
@@ -66,8 +66,12 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			environment.FromContext(ctx).Namespace(),
 		)
 
-		// Install ServiceAccount, Role, RoleBinding
-		eventshubrbac.Install()(ctx, t)
+		if environment.FromContext(ctx).ReuseNamespace() {
+			t.Log("Flag -reusenamespace enabled. Skipping RBAC installation")
+		} else {
+			// Install ServiceAccount, Role, RoleBinding
+			eventshubrbac.Install()(ctx, t)
+		}
 
 		// Deploy
 		if _, err := manifest.InstallYamlFS(ctx, templates, map[string]interface{}{

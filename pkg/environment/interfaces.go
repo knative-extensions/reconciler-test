@@ -50,6 +50,9 @@ type Environment interface {
 	// Namespace returns the namespace of this environment.
 	Namespace() string
 
+	// ReuseNamespace indicates whether an existing test namespace should be used.
+	ReuseNamespace() bool
+
 	// RequirementLevel returns the requirement level for this environment.
 	RequirementLevel() feature.Levels
 

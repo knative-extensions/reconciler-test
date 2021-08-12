@@ -40,6 +40,7 @@ func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
 	return &MagicGlobalEnvironment{
 		c:                ctx,
 		instanceID:       uuid.New().String(),
+		reuseNamespace:   *r,
 		RequirementLevel: *l,
 		FeatureState:     *s,
 		FeatureMatch:     regexp.MustCompile(*f),
@@ -51,6 +52,8 @@ type MagicGlobalEnvironment struct {
 	// instanceID represents this instance of the GlobalEnvironment. It is used
 	// to link runs together from a single global environment.
 	instanceID string
+
+	reuseNamespace bool
 
 	RequirementLevel feature.Levels
 	FeatureState     feature.States
@@ -65,6 +68,7 @@ type MagicEnvironment struct {
 
 	images           map[string]string
 	namespace        string
+	reuseNamespace   bool
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
 
@@ -114,16 +118,20 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		panic(err)
 	}
 
-	namespace := feature.MakeK8sNamePrefix(feature.AppendRandomString("test"))
-
 	env := &MagicEnvironment{
-		c:            mr.c,
-		l:            mr.RequirementLevel,
-		s:            mr.FeatureState,
-		featureMatch: mr.FeatureMatch,
+		c:            	mr.c,
+		l:            	mr.RequirementLevel,
+		s:            	mr.FeatureState,
+		featureMatch: 	mr.FeatureMatch,
+		reuseNamespace: mr.reuseNamespace,
+		images:       	images,
+	}
 
-		images:    images,
-		namespace: namespace,
+	if env.reuseNamespace {
+		// Use the namespace with numeric suffix so that namespaces can be generated in advance.
+		env.namespace = NextNamespace()
+	} else {
+		env.namespace = feature.MakeK8sNamePrefix(feature.AppendRandomString("test"))
 	}
 
 	ctx := ContextWith(mr.c, env)
@@ -137,7 +145,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	// It is possible to have milestones set in the options, check for nil in
 	// env first before attempting to pull one from the os environment.
 	if env.milestones == nil {
-		milestones, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, namespace)
+		milestones, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, env.Namespace())
 		if err != nil {
 			// This is just an FYI error, don't block the test run.
 			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
@@ -200,6 +208,10 @@ func InNamespace(namespace string) EnvOpts {
 
 func (mr *MagicEnvironment) Namespace() string {
 	return mr.namespace
+}
+
+func (mr *MagicEnvironment) ReuseNamespace() bool {
+	return mr.reuseNamespace
 }
 
 func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *feature.Feature) {
