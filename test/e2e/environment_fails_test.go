@@ -1,3 +1,4 @@
+//go:build e2errors
 // +build e2errors
 
 /*
