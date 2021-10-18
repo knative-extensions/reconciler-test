@@ -19,7 +19,7 @@ name: Build
 
 on:
   pull_request:
-    branches: [ 'main', 'master', 'release-*', 'mkdocs' ]
+    branches: [ 'main', 'master', 'release-*' ]
 
 jobs:
 
@@ -27,7 +27,7 @@ jobs:
     name: Build
     strategy:
       matrix:
-        go-version: [1.16.x]
+        go-version: [1.17.x]
         platform: [ubuntu-latest]
 
     runs-on: ${{ matrix.platform }}
