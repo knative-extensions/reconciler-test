@@ -12,18 +12,20 @@ aliases:
   - markusthoemmes
   - vagababov
   client-wg-leads:
+  - dsimansk
   - navidshaikh
   - rhuss
   client-writers:
+  - dsimansk
   - navidshaikh
   - rhuss
   control-protocol-approvers:
   - devguyio
+  - eric-sap
   - lionelvillard
   - matzew
+  - travis-minke-sap
   - vaikas
-  delivery-wg-leads:
-  - matzew
   discovery-approvers:
   - lberk
   - n3wscott
@@ -60,31 +62,41 @@ aliases:
   - steven0711dong
   - travis-minke-sap
   eventing-kafka-broker-approvers:
+  - matzew
   - pierDipi
   eventing-kafka-mtsource-approvers:
   - steven0711dong
+  eventing-kafka-wg-leads:
+  - devguyio
+  - lionelvillard
+  - travis-minke-sap
+  eventing-kafka-writers:
+  - devguyio
+  - lionelvillard
+  - travis-minke-sap
+  eventing-kogito-approvers:
+  - ricardozanini
+  - spolti
+  - vaibhavjainwiz
   eventing-natss-approvers:
   - devguyio
   - zhaojizhuang
   eventing-prometheus-approvers:
   - lberk
   eventing-rabbitmq-approvers:
-  - n3wscott
+  - benmoss
   - sbawaska
   - vaikas
+  - xtreme-sameer-vohra
   eventing-redis-approvers:
   - aavarghese
   - lionelvillard
   eventing-wg-leads:
   - devguyio
   - lionelvillard
-  - vaikas
   eventing-writers:
   - devguyio
   - lionelvillard
-  - matzew
-  - n3wscott
-  - vaikas
   homebrew-kn-plugins-approvers:
   - dsimansk
   - maximilien
@@ -101,9 +113,18 @@ aliases:
   kn-plugin-event-approvers:
   - cardil
   - rhuss
+  kn-plugin-func-approvers:
+  - lance
+  - lkingland
+  - matejvasek
+  - zroubalik
   kn-plugin-migration-approvers:
   - maximilien
   - zhangtbj
+  kn-plugin-quickstart-approvers:
+  - csantanapr
+  - omerbensaadon
+  - psschwei
   kn-plugin-sample-approvers:
   - maximilien
   - navidshaikh
@@ -121,6 +142,7 @@ aliases:
   - nicolaferraro
   - rhuss
   knative-admin:
+  - ZhiminXiang
   - bsnchan
   - dprotaso
   - evankanderson
@@ -130,37 +152,14 @@ aliases:
   - knative-prow-updater-robot
   - knative-test-reporter-robot
   - markusthoemmes
-  - matzew
   - mbehrendt
   - pmorie
   - rhuss
   - thisisnotapril
   - vaikas
-  knative-milestone-maintainers:
-  - ZhiminXiang
-  - akashrv
-  - aslom
-  - chaodaiG
-  - csantanapr
-  - dprotaso
-  - evankanderson
-  - josephburnett
-  - julz
-  - k4leung4
-  - lionelvillard
-  - markusthoemmes
-  - matzew
-  - mikehelmick
-  - n3wscott
-  - nak3
-  - navidshaikh
-  - rhuss
-  - tcnghia
-  - vagababov
-  - vaikas
   knative-release-leads:
-  - dprotaso
-  - matzew
+  - ZhiminXiang
+  - evankanderson
   knative-robots:
   - knative-prow-releaser-robot
   - knative-prow-robot
@@ -171,21 +170,26 @@ aliases:
   - zhanggbj
   net-certmanager-approvers:
   - ZhiminXiang
+  - tcnghia
   net-contour-approvers:
   - dprotaso
-  net-http---approvers:
   - tcnghia
-  net-ingressv--approvers:
+  net-http01-approvers:
+  - tcnghia
+  net-ingressv2-approvers:
   - markusthoemmes
   - nak3
+  - tcnghia
   net-istio-approvers:
   - JRBANCEL
   - ZhiminXiang
   - nak3
+  - tcnghia
   - vagababov
   net-kourier-approvers:
   - davidor
   - jmprusi
+  - tcnghia
   networking-wg-leads:
   - ZhiminXiang
   - nak3
@@ -215,7 +219,6 @@ aliases:
   - vagababov
   source-wg-leads:
   - lionelvillard
-  - n3wscott
   steering-committee:
   - bsnchan
   - mbehrendt
