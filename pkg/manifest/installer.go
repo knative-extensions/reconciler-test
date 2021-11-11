@@ -138,6 +138,5 @@ func isWebhookError(err error) bool {
 	// Internal error occurred: failed calling webhook "defaulting.webhook.kafka.eventing.knative.dev": Post "https://kafka-webhook-eventing.knative-eventing.svc:443/defaulting?timeout=2s": EOF
 	return strings.Contains(str, "webhook") &&
 		strings.Contains(str, "https") &&
-		strings.Contains(str, "knative.dev") &&
 		strings.Contains(str, "EOF")
 }
