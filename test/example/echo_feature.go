@@ -43,7 +43,7 @@ func EchoFeature() *feature.Feature {
 		env := environment.FromContext(ctx)
 		client := kubeclient.Get(ctx)
 
-		if err := k8s.WaitUntilJobDone(ctx, client, env.Namespace(), name); err != nil {
+		if err := k8s.WaitUntilJobDone(ctx, t, client, env.Namespace(), name); err != nil {
 			t.Errorf("failed to wait for job to finish, %s", err)
 		}
 	})
@@ -55,7 +55,7 @@ func EchoFeature() *feature.Feature {
 				client := kubeclient.Get(ctx)
 
 				// The usage of WaitForJobTerminationMessage here explicitly sets the poll timings.
-				log, err := k8s.WaitForJobTerminationMessage(ctx, client, env.Namespace(), name, time.Second, 30*time.Second)
+				log, err := k8s.WaitForJobTerminationMessage(ctx, t, client, env.Namespace(), name, time.Second, 30*time.Second)
 				if err != nil {
 					t.Error("failed to get termination message from pod, ", err)
 				}
