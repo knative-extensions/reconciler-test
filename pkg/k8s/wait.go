@@ -169,7 +169,7 @@ func isReady(t feature.T, name string) ConditionFunc {
 		allReady := true
 		for _, c := range obj.Status.Conditions {
 			if !c.IsTrue() {
-				msg := fmt.Sprintf("%s is not %s\n\nResource: %s\n", name, ready.Type, resource(obj))
+				msg := fmt.Sprintf("%s is not %s, %s: %s\n\nResource: %s\n", name, c.Type, c.Reason, c.Message, resource(obj))
 				if msg != lastMsg {
 					t.Log(msg)
 					lastMsg = msg
