@@ -9,8 +9,7 @@ aliases:
   - julz
   - maximilien
   autoscaling-wg-leads:
-  - markusthoemmes
-  - vagababov
+  - julz
   client-wg-leads:
   - dsimansk
   - navidshaikh
@@ -21,7 +20,6 @@ aliases:
   - rhuss
   container-freezer-approvers:
   - julz
-  - markusthoemmes
   - psschwei
   control-protocol-approvers:
   - devguyio
@@ -68,9 +66,11 @@ aliases:
   - lberk
   - matzew
   - phamilton
+  - pierDipi
   - steven0711dong
   - travis-minke-sap
   eventing-kafka-broker-approvers:
+  - aliok
   - matzew
   - pierDipi
   eventing-kafka-mtsource-approvers:
@@ -95,8 +95,7 @@ aliases:
   - matzew
   eventing-rabbitmq-approvers:
   - benmoss
-  - sbawaska
-  - vaikas
+  - salaboy
   - xtreme-sameer-vohra
   eventing-redis-approvers:
   - aavarghese
@@ -128,6 +127,8 @@ aliases:
   - lance
   - lkingland
   - matejvasek
+  - nainaz
+  - omerbensaadon
   - zroubalik
   kn-plugin-migration-approvers:
   - maximilien
@@ -160,8 +161,7 @@ aliases:
   - nicolaferraro
   - rhuss
   knative-admin:
-  - benmoss
-  - bsnchan
+  - csantanapr
   - dprotaso
   - evankanderson
   - julz
@@ -169,17 +169,17 @@ aliases:
   - knative-prow-robot
   - knative-prow-updater-robot
   - knative-test-reporter-robot
+  - lance
   - markusthoemmes
-  - mbehrendt
+  - matzew
+  - nak3
   - pmorie
   - rhuss
-  - salaboy
   - thisisnotapril
   - vaikas
   knative-release-leads:
-  - benmoss
-  - julz
-  - salaboy
+  - matzew
+  - nak3
   knative-robots:
   - knative-prow-releaser-robot
   - knative-prow-robot
@@ -234,14 +234,13 @@ aliases:
   serving-writers:
   - ZhiminXiang
   - dprotaso
-  - markusthoemmes
+  - julz
   - nak3
-  - vagababov
   source-wg-leads:
   - lionelvillard
   steering-committee:
-  - bsnchan
-  - mbehrendt
+  - csantanapr
+  - lance
   - pmorie
   - thisisnotapril
   - vaikas
