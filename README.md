@@ -51,13 +51,11 @@ import (
 // config as well as the parsing level and state flags.
 var global environment.GlobalEnvironment
 
-func init() {
-	// environment.InitFlags registers state and level filter flags.
-	environment.InitFlags(flag.CommandLine)
-}
-
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
+	// environment.InitFlags registers state and level filter flags.
+	environment.InitFlags(flag.CommandLine)
+
 	// We get a chance to parse flags to include the framework flags for the
 	// framework as well as any additional flags included in the integration.
 	flag.Parse()

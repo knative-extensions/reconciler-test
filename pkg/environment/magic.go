@@ -19,7 +19,6 @@ package environment
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -35,7 +34,13 @@ import (
 )
 
 func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
-	fmt.Printf("level %s, state %s, feature %s\n\n", l, s, *f)
+	log := logging.FromContext(ctx)
+	if l.Valid() && s.Valid() {
+		log.Infof("Global environment settings: level %s, state %s, feature %#v", l, s, *f)
+	} else {
+		log.Fatal("Flags are not initialized properly. Ensure to call " +
+			"environment.InitFlags() func.")
+	}
 
 	return &MagicGlobalEnvironment{
 		c:                ctx,

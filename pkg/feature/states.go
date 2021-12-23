@@ -60,6 +60,16 @@ func (s States) String() string {
 	return b.String()
 }
 
+func (s States) Valid() bool {
+	values := []States{Alpha, Beta, Stable, Any}
+	for _, value := range values {
+		if s == value {
+			return true
+		}
+	}
+	return false
+}
+
 var StatesMapping = map[States]string{
 	Alpha:  "Alpha",
 	Beta:   "Beta",

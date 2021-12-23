@@ -71,6 +71,16 @@ func (l Levels) String() string {
 	return b.String()
 }
 
+func (l Levels) Valid() bool {
+	values := []Levels{Must, MustNot, Should, ShouldNot, May, All}
+	for _, value := range values {
+		if l == value {
+			return true
+		}
+	}
+	return false
+}
+
 var LevelMapping = map[Levels]string{
 	Must:      "MUST",
 	MustNot:   "MUST NOT",

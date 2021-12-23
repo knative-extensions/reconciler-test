@@ -38,13 +38,11 @@ import (
 // config as well as the parsing level and state flags.
 var global environment.GlobalEnvironment
 
-func init() {
-	// environment.InitFlags registers state and level filter flags.
-	environment.InitFlags(flag.CommandLine)
-}
-
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
+	// environment.InitFlags registers state and level filter flags.
+	environment.InitFlags(flag.CommandLine)
+
 	// We get a chance to parse flags to include the framework flags for the
 	// framework as well as any additional flags included in the integration.
 	flag.Parse()
@@ -53,7 +51,7 @@ func TestMain(m *testing.M) {
 	// testing framework for namespace management, and could be leveraged by
 	// features to pull Kubernetes clients or the test environment out of the
 	// context passed in the features.
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
+	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) // nolint
 	startInformers()
 
 	// global is used to make instances of Environments, NewGlobalEnvironment
