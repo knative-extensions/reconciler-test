@@ -20,6 +20,7 @@ limitations under the License.
 package eventshub_test
 
 import (
+	"os"
 	"testing"
 
 	"knative.dev/reconciler-test/pkg/environment"
@@ -29,6 +30,13 @@ import (
 )
 
 func TestEventsHubReceiverReadiness(t *testing.T) {
+	// FIXME: Remove conditional skip after fixing
+	//        https://github.com/knative-sandbox/reconciler-test/issues/270
+	if os.Getenv("RECONCILER-TEST-REPRODUCER-270") == "" {
+		t.Skip("skipped because knative-sandbox/reconciler-test#270, to " +
+			"force running set environment variable " +
+			"RECONCILER-TEST-REPRODUCER-270=true")
+	}
 	// Signal to the go test framework that this test can be run in parallel
 	// with other tests.
 	t.Parallel()
