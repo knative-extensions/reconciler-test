@@ -26,4 +26,5 @@ require (
 	k8s.io/klog v1.0.0
 	knative.dev/hack v0.0.0-20211203062838-e11ac125e707
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
+	sigs.k8s.io/yaml v1.3.0
 )
