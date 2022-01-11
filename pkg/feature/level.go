@@ -17,6 +17,7 @@ limitations under the License.
 package feature
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -53,6 +54,9 @@ func (l Levels) String() string {
 	if l == All {
 		return "All"
 	}
+	if !l.Valid() {
+		return fmt.Sprintf("Invalid(%d)", uint8(l))
+	}
 
 	var b strings.Builder
 
@@ -71,14 +75,14 @@ func (l Levels) String() string {
 	return b.String()
 }
 
+// Valid checks if given level is valid (not empty combination of Levels values).
 func (l Levels) Valid() bool {
-	values := []Levels{Must, MustNot, Should, ShouldNot, May, All}
-	for _, value := range values {
-		if l == value {
-			return true
-		}
+	val := uint8(l)
+	if val == 0 {
+		return false
 	}
-	return false
+	val &^= uint8(All)
+	return val == 0
 }
 
 var LevelMapping = map[Levels]string{

@@ -17,6 +17,7 @@ limitations under the License.
 package feature
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -43,6 +44,9 @@ func (s States) String() string {
 	if s == Any {
 		return "Any"
 	}
+	if !s.Valid() {
+		return fmt.Sprintf("Invalid(%d)", uint8(s))
+	}
 
 	var b strings.Builder
 
@@ -61,13 +65,12 @@ func (s States) String() string {
 }
 
 func (s States) Valid() bool {
-	values := []States{Alpha, Beta, Stable, Any}
-	for _, value := range values {
-		if s == value {
-			return true
-		}
+	val := uint8(s)
+	if val == 0 {
+		return false
 	}
-	return false
+	val &^= uint8(All)
+	return val == 0
 }
 
 var StatesMapping = map[States]string{
