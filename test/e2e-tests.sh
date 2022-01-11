@@ -14,8 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -Eeo pipefail
+
+rootdir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
+readonly rootdir
+
+source "${rootdir}/vendor/knative.dev/hack/e2e-tests.sh"
+
+function knative_setup() {
+  kubectl apply -f "${rootdir}/test/config"
+}
+
+initialize "$@"
+
 set -Eeuo pipefail
 
-source "$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")/vendor/knative.dev/hack/presubmit-tests.sh"
+go_test_e2e ./test/...
 
-main "$@"
+success
