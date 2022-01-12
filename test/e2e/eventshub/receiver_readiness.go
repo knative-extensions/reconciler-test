@@ -89,7 +89,7 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 					Image:   ubi8Image,
 					Command: []string{"/bin/sh"},
 					Args: []string{"-c", "echo $K_EVENT | base64 -d " +
-						"| curl -v -XPOST -d @- " +
+						"| curl --trace-ascii - --trace-time -d @- " +
 						"-H \"content-type: application/cloudevents+json\" " +
 						sinkURI},
 					Env: []corev1.EnvVar{{
