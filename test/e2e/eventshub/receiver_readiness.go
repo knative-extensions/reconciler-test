@@ -24,6 +24,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -70,7 +71,7 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 		sinkURI := fmt.Sprintf("http://%s.%s.svc.cluster.local", sinkName, ns)
 		bytes, err := json.Marshal(ev)
 		kevent := base64.StdEncoding.EncodeToString(bytes)
-		errorIsNil(t, err)
+		checkError(t.Fatal, err)
 		pods := kube.CoreV1().Pods(ns)
 		name := feature.MakeRandomK8sName("sender")
 		pod := &corev1.Pod{
@@ -84,7 +85,7 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 			Spec: corev1.PodSpec{
 				RestartPolicy: corev1.RestartPolicyNever,
 				Containers: []corev1.Container{{
-					Name:    "sender",
+					Name:    name,
 					Image:   ubi8Image,
 					Command: []string{"/bin/sh"},
 					Args: []string{"-c", "echo $K_EVENT | base64 -d " +
@@ -99,19 +100,20 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 			},
 		}
 		_, err = pods.Create(ctx, pod, metav1.CreateOptions{})
-		errorIsNil(t, err)
+		checkError(t.Fatal, err)
 		env.Reference(kmeta.ObjectReference(pod))
 
-		errorIsNil(t, waitForCompletion(ctx, t, pod))
+		checkError(t.Error, waitForCompletion(ctx, t, pod))
 		// fetch current state
 		pod, err = pods.Get(ctx, pod.Name, metav1.GetOptions{})
-		errorIsNil(t, err)
+		checkError(t.Fatal, err)
 		if pod.Status.Phase != corev1.PodSucceeded {
-			logs, err := k8s.PodLogs(ctx, pod.Name, "sender", pod.Namespace)
-			errorIsNil(t, err)
-			status, err := yaml.Marshal(pod.Status)
-			errorIsNil(t, err)
-			t.Fatalf("wanted pod to success, got: \n%s\n\nLogs: %s", status, string(logs))
+			var logs, status []byte
+			logs, err = k8s.PodLogs(ctx, pod.Name, pod.Name, pod.Namespace)
+			checkError(t.Fatal, err)
+			status, err = yaml.Marshal(pod.Status)
+			checkError(t.Fatal, err)
+			t.Fatalf("wanted pod to success, got: \n%s\n\nLogs: %s", status, logs)
 		}
 	}
 }
@@ -141,7 +143,7 @@ func precacheSenderImage(ctx context.Context, t feature.T) {
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
-						Name:    "sender",
+						Name:    name,
 						Image:   ubi8Image,
 						Command: []string{"/bin/sh"},
 						Args:    []string{"-c", "while true; do sleep 10; done"},
@@ -151,10 +153,12 @@ func precacheSenderImage(ctx context.Context, t feature.T) {
 		},
 	}
 	_, err := daemonSets.Create(ctx, ds, metav1.CreateOptions{})
-	errorIsNil(t, err)
+	checkError(t.Fatal, err)
+	defer func() {
+		checkError(t.Fatal, daemonSets.Delete(ctx, name, metav1.DeleteOptions{}))
+	}()
 	env.Reference(kmeta.ObjectReference(ds))
-	errorIsNil(t, waitForDaemonSetReady(ctx, t, ds))
-	errorIsNil(t, daemonSets.Delete(ctx, name, metav1.DeleteOptions{}))
+	checkError(t.Error, waitForDaemonSetReady(ctx, t, ds))
 }
 
 func receiveEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
@@ -172,7 +176,7 @@ func waitForDaemonSetReady(ctx context.Context, t feature.T, ds *appsv1.DaemonSe
 		current, err := daemonSets.Get(ctx, ds.Name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				t.Log(ds.Namespace, ds.Name, "not found", err)
+				t.Log(ds.Namespace, ds.Name, err)
 				// keep polling
 				return false, nil
 			}
@@ -196,7 +200,7 @@ func waitForCompletion(ctx context.Context, t feature.T, pod *corev1.Pod, timing
 		current, err := pods.Get(ctx, pod.Name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				t.Log(pod.Namespace, pod.Name, "not found", err)
+				t.Log(pod.Namespace, pod.Name, err)
 				// keep polling
 				return false, nil
 			}
@@ -209,8 +213,8 @@ func waitForCompletion(ctx context.Context, t feature.T, pod *corev1.Pod, timing
 	})
 }
 
-func errorIsNil(t feature.T, err error) {
+func checkError(fn func(...interface{}), err error) {
 	if err != nil {
-		t.Fatal("unexpected error: ", err)
+		fn("unexpected error:", err, "\n", string(debug.Stack()))
 	}
 }
