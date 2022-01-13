@@ -89,7 +89,7 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 					Image:   ubi8Image,
 					Command: []string{"/bin/sh"},
 					Args: []string{"-c", "echo $K_EVENT | base64 -d " +
-						"| curl --trace-ascii - --trace-time -d @- " +
+						"| curl --trace % --trace-time -d @- " +
 						"-H \"content-type: application/cloudevents+json\" " +
 						sinkURI},
 					Env: []corev1.EnvVar{{
@@ -113,7 +113,7 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 			checkError(t.Fatal, err)
 			status, err = yaml.Marshal(pod.Status)
 			checkError(t.Fatal, err)
-			t.Fatalf("wanted pod to success, got: \n%s\n\nLogs: %s", status, logs)
+			t.Fatalf("wanted pod to succeed, status:\n%s\n---\nLogs:\n-----\n%s", status, logs)
 		}
 	}
 }
