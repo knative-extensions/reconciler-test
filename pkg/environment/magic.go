@@ -91,6 +91,10 @@ func (mr *MagicEnvironment) Finish() {
 	// Delete the namespace after sending the Finished milestone event
 	// since emitters might use the namespace.
 	mr.milestones.Finished()
+	// Delete the namespace after exporting logs
+	// since we use the namespace.
+	mr.exportLogs()
+
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
 		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
 		panic(err)

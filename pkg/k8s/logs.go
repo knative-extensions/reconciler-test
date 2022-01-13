@@ -19,39 +19,44 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 )
 
-func LogsFor(client kubernetes.Interface, namespace, name string, gvr schema.GroupVersionResource) (string, error) {
-	// Get all pods in this namespace.
-	pods, err := client.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
+func LogsFor(client kubernetes.Interface, namespace, name string) (string, error) {
+	logs, err := client.CoreV1().
+		Pods(namespace).
+		GetLogs(name, &corev1.PodLogOptions{}).
+		DoRaw(context.Background())
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get logs for %s/%s: %w", namespace, name, err)
 	}
 
-	logs := make([]string, 0)
+	return string(logs), nil
+}
 
-	// Look for a pod with the name that was passed in inside the pod name.
-	for _, pod := range pods.Items {
-		if strings.Contains(pod.Name, name) {
-			// Collect all the logs from all the containers for this pod.
-			if l, err := client.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(context.Background()); err != nil {
-				logs = append(logs, err.Error())
-			} else {
-				logs = append(logs, string(l))
-			}
+func LogsForNamespace(client kubernetes.Interface, namespace string) (map[string]string, error) {
+	pods, err := client.CoreV1().
+		Pods(namespace).
+		List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pods in namespace %s: %w", namespace, err)
+	}
+
+	logs := make(map[string]string, len(pods.Items))
+	globalErr := multierr.Combine()
+
+	for _, p := range pods.Items {
+		l, err := LogsFor(client, namespace, p.Name)
+		if err != nil {
+			globalErr = multierr.Append(globalErr, err)
 		}
+		// Append pod name and logs
+		logs[p.Name] = l
 	}
 
-	// Did we find a match like the given name?
-	if len(logs) == 0 {
-		return "", fmt.Errorf(`pod for "%s/%s" [%s] not found`, namespace, name, gvr.String())
-	}
-
-	return strings.Join(logs, "\n"), nil
+	return logs, globalErr
 }
