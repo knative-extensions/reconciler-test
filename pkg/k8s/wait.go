@@ -246,7 +246,14 @@ func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 		if err != nil {
 			return true, err
 		}
-		return podRunning(p), nil
+		isRunning := podRunning(p)
+
+		if !isRunning {
+			b, _ := json.MarshalIndent(p, "", " ")
+			t.Log(string(b))
+		}
+
+		return isRunning, nil
 	})
 	if err != nil {
 		sb := strings.Builder{}
