@@ -57,7 +57,9 @@ func (f Feature) MarshalJSON() ([]byte, error) {
 	return json.MarshalIndent(in, "", " ")
 }
 
-func (f Feature) Logf(log func(args ...interface{})) {
+// DumpWith calls the provided log function with a nicely formatted string
+// that represents the Feature.
+func (f Feature) DumpWith(log func(args ...interface{})) {
 	b, err := f.MarshalJSON()
 	if err != nil {
 		log("Skipping feature logging due to error: " + err.Error())
