@@ -35,6 +35,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/pkg/logging"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -218,21 +219,53 @@ func readyCondition(obj duckv1.KResource) *apis.Condition {
 	return obj.Status.GetCondition(apis.ConditionSucceeded)
 }
 
-// WaitForServiceEndpointsOrFail polls the status of the specified Service
+// ErrWaitingForServiceEndpoints if waiting for service endpoints failed.
+var ErrWaitingForServiceEndpoints = errors.New("waiting for service endpoints")
+
+// WaitForServiceEndpoints polls the status of the specified Service
 // every interval until number of service endpoints >= numOfEndpoints.
-func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, svcName string, numberOfExpectedEndpoints int) {
-	endpointsService := kubeclient.Get(ctx).CoreV1().Endpoints(environment.FromContext(ctx).Namespace())
+func WaitForServiceEndpoints(ctx context.Context, name string, numberOfExpectedEndpoints int) error {
+	log := logging.FromContext(ctx)
+	ns := environment.FromContext(ctx).Namespace()
 	interval, timeout := PollTimings(ctx, nil)
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		endpoint, err := endpointsService.Get(ctx, svcName, metav1.GetOptions{})
+	endpoints := kubeclient.Get(ctx).CoreV1().Endpoints(ns)
+	services := kubeclient.Get(ctx).CoreV1().Services(ns)
+	if err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+		svc, err := services.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
+		ip := svc.Spec.ClusterIP
+		log.Debugf("Service %s/%s, ip: %s", ns, name, ip)
 
-		return countEndpointsNum(endpoint) >= numberOfExpectedEndpoints, nil
-	})
-	if err != nil {
-		t.Fatalf("Failed while waiting for %d endpoints in service %s: %+v", numberOfExpectedEndpoints, svcName, errors.WithStack(err))
+		return ip != "", nil
+	}); err != nil {
+		return fmt.Errorf("%w (%d) in %s/%s: %+v",
+			ErrWaitingForServiceEndpoints, numberOfExpectedEndpoints,
+			ns, name, errors.WithStack(err))
+	}
+	if err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+		endpoint, err := endpoints.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		num := countEndpointsNum(endpoint)
+		log.Debugf("Endpoints for service %s/%s, got %d, want >= %d",
+			ns, name, num, numberOfExpectedEndpoints)
+		return num >= numberOfExpectedEndpoints, nil
+	}); err != nil {
+		return fmt.Errorf("%w (%d) in %s/%s: %+v",
+			ErrWaitingForServiceEndpoints, numberOfExpectedEndpoints,
+			ns, name, errors.WithStack(err))
+	}
+	return nil
+}
+
+// WaitForServiceEndpointsOrFail polls the status of the specified Service
+// every interval until number of service endpoints >= numOfEndpoints.
+func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, name string, numberOfExpectedEndpoints int) {
+	if err := WaitForServiceEndpoints(ctx, name, numberOfExpectedEndpoints); err != nil {
+		t.Fatalf("Failed while %+v", err)
 	}
 }
 

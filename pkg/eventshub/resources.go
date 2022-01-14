@@ -21,6 +21,8 @@ import (
 	"embed"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/tracker"
 	"knative.dev/reconciler-test/pkg/environment"
 	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -48,6 +50,8 @@ func init() {
 //   )
 func Install(name string, options ...EventsHubOption) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
+		namespace := environment.FromContext(ctx).Namespace()
+
 		// Compute the user provided envs
 		envs := make(map[string]string)
 		if err := compose(options...)(ctx, envs); err != nil {
@@ -63,7 +67,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			k8s.EventListenerFromContext(ctx),
 			t,
 			name,
-			environment.FromContext(ctx).Namespace(),
+			namespace,
 		)
 
 		// Install ServiceAccount, Role, RoleBinding
@@ -79,10 +83,23 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		}
 
 		k8s.WaitForPodRunningOrFail(ctx, t, name)
+		if err := k8s.WaitForReadyOrDone(ctx, t, podReference(namespace, name)); err != nil {
+			t.Fatal(err)
+		}
 
 		// If the eventhubs starts an event receiver, we need to wait for the service endpoint to be synced
 		if strings.Contains(envs["EVENT_GENERATORS"], "receiver") {
 			k8s.WaitForServiceEndpointsOrFail(ctx, t, name, 1)
 		}
 	}
+}
+
+func podReference(namespace string, name string) corev1.ObjectReference {
+	ref := &tracker.Reference{
+		Kind:       "Pod",
+		Name:       name,
+		Namespace:  namespace,
+		APIVersion: "v1",
+	}
+	return ref.ObjectReference()
 }
