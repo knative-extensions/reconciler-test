@@ -23,9 +23,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
-
-	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/test/example/config/echo"
@@ -40,10 +37,7 @@ func EchoFeature() *feature.Feature {
 	f.Setup("install echo", echo.Install(name, msg))
 
 	f.Requirement("echo job is finished", func(ctx context.Context, t feature.T) {
-		env := environment.FromContext(ctx)
-		client := kubeclient.Get(ctx)
-
-		if err := k8s.WaitUntilJobDone(ctx, t, client, env.Namespace(), name); err != nil {
+		if err := k8s.WaitUntilJobDone(ctx, name); err != nil {
 			t.Errorf("failed to wait for job to finish, %s", err)
 		}
 	})
@@ -51,11 +45,8 @@ func EchoFeature() *feature.Feature {
 	f.Alpha("pull logs off a pod").
 		Must("the echo pod must echo our message",
 			func(ctx context.Context, t feature.T) {
-				env := environment.FromContext(ctx)
-				client := kubeclient.Get(ctx)
-
 				// The usage of WaitForJobTerminationMessage here explicitly sets the poll timings.
-				log, err := k8s.WaitForJobTerminationMessage(ctx, t, client, env.Namespace(), name, time.Second, 30*time.Second)
+				log, err := k8s.WaitForJobTerminationMessage(ctx, name, time.Second, 30*time.Second)
 				if err != nil {
 					t.Error("failed to get termination message from pod, ", err)
 				}

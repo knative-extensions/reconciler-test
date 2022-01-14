@@ -152,12 +152,12 @@ func precacheSenderImage(ctx context.Context, t feature.T) {
 			},
 		},
 	}
-	_, err := daemonSets.Create(ctx, ds, metav1.CreateOptions{})
+	created, err := daemonSets.Create(ctx, ds, metav1.CreateOptions{})
 	checkError(t.Fatal, err)
 	defer func() {
 		checkError(t.Fatal, daemonSets.Delete(ctx, name, metav1.DeleteOptions{}))
 	}()
-	env.Reference(kmeta.ObjectReference(ds))
+	env.Reference(kmeta.ObjectReference(created))
 	checkError(t.Error, waitForDaemonSetReady(ctx, t, ds))
 }
 

@@ -63,12 +63,8 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		envs[ConfigTracingEnv] = knative.TracingConfigFromContext(ctx)
 
 		// Register the event info store to assert later the events published by the eventshub
-		registerEventsHubStore(
-			k8s.EventListenerFromContext(ctx),
-			t,
-			name,
-			namespace,
-		)
+		eventListener := k8s.EventListenerFromContext(ctx)
+		registerEventsHubStore(eventListener, t, name, namespace)
 
 		// Install ServiceAccount, Role, RoleBinding
 		eventshubrbac.Install()(ctx, t)
@@ -83,13 +79,15 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		}
 
 		k8s.WaitForPodRunningOrFail(ctx, t, name)
-		if err := k8s.WaitForReadyOrDone(ctx, t, podReference(namespace, name)); err != nil {
+		ref := podReference(namespace, name)
+		if err := k8s.WaitForReadyOrDone(ctx, t, ref); err != nil {
 			t.Fatal(err)
 		}
 
 		// If the eventhubs starts an event receiver, we need to wait for the service endpoint to be synced
 		if strings.Contains(envs["EVENT_GENERATORS"], "receiver") {
 			k8s.WaitForServiceEndpointsOrFail(ctx, t, name, 1)
+			k8s.WaitForServiceReadyOrFail(ctx, t, name, "/health/ready")
 		}
 	}
 }
