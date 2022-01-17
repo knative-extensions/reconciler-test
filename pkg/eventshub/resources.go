@@ -21,8 +21,6 @@ import (
 	"embed"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/tracker"
 	"knative.dev/reconciler-test/pkg/environment"
 	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -79,10 +77,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		}
 
 		k8s.WaitForPodRunningOrFail(ctx, t, name)
-		ref := podReference(namespace, name)
-		if err := k8s.WaitForReadyOrDone(ctx, t, ref); err != nil {
-			t.Fatal(err)
-		}
+		k8s.WaitForReadyOrDoneOrFail(ctx, t, k8s.PodReference(namespace, name))
 
 		// If the eventhubs starts an event receiver, we need to wait for the service endpoint to be synced
 		if strings.Contains(envs["EVENT_GENERATORS"], "receiver") {
@@ -90,14 +85,4 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			k8s.WaitForServiceReadyOrFail(ctx, t, name, "/health/ready")
 		}
 	}
-}
-
-func podReference(namespace string, name string) corev1.ObjectReference {
-	ref := &tracker.Reference{
-		Kind:       "Pod",
-		Name:       name,
-		Namespace:  namespace,
-		APIVersion: "v1",
-	}
-	return ref.ObjectReference()
 }

@@ -94,6 +94,13 @@ func WaitForReadyOrDone(ctx context.Context, t feature.T, ref corev1.ObjectRefer
 	return nil
 }
 
+// WaitForReadyOrDoneOrFail will call WaitForReadyOrDone and fail if the resource is not ready.
+func WaitForReadyOrDoneOrFail(ctx context.Context, t feature.T, ref corev1.ObjectReference, timing ...time.Duration) {
+	if err := WaitForReadyOrDone(ctx, t, ref); err != nil {
+		t.Fatal(errors.WithStack(err))
+	}
+}
+
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
 // Timing is optional but if provided is [interval, timeout].
 func WaitForResourceReady(ctx context.Context, t feature.T, namespace, name string, gvr schema.GroupVersionResource, timing ...time.Duration) error {
@@ -267,14 +274,14 @@ func WaitForServiceEndpoints(ctx context.Context, name string, numberOfExpectedE
 // every interval until number of service endpoints >= numOfEndpoints.
 func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, name string, numberOfExpectedEndpoints int) {
 	if err := WaitForServiceEndpoints(ctx, name, numberOfExpectedEndpoints); err != nil {
-		t.Fatalf("Failed while %+v", err)
+		t.Fatalf("Failed while %+v", errors.WithStack(err))
 	}
 }
 
 // WaitForServiceReadyOrFail will call WaitForServiceReady and fail if error is returned.
 func WaitForServiceReadyOrFail(ctx context.Context, t feature.T, name string, readinessPath string) {
 	if err := WaitForServiceReady(ctx, name, readinessPath); err != nil {
-		t.Fatalf("Failed while %+v", err)
+		t.Fatalf("Failed while %+v", errors.WithStack(err))
 	}
 }
 
