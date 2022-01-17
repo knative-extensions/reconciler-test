@@ -20,14 +20,16 @@ limitations under the License.
 package example
 
 import (
+	"flag"
 	"os"
 	"testing"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"knative.dev/pkg/injection"
 	_ "knative.dev/pkg/system/testing"
-	"knative.dev/reconciler-test"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/logging"
 )
 
 // global is the singleton instance of GlobalEnvironment. It is used to parse
@@ -35,9 +37,28 @@ import (
 // config as well as the parsing level and state flags.
 var global environment.GlobalEnvironment
 
+func init() {
+	// environment.InitFlags registers state, level and feature filter flags.
+	environment.InitFlags(flag.CommandLine)
+}
+
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
-	global = reconciler_test.NewEnvironment()
+	// We get a chance to parse flags to include the framework flags for the
+	// framework as well as any additional flags included in the integration.
+	flag.Parse()
+
+	// EnableInjectionOrDie will enable client injection, this is used by the
+	// testing framework for namespace management, and could be leveraged by
+	// features to pull Kubernetes clients or the test environment out of the
+	// context passed in the features.
+	ctx, startInformers := injection.EnableInjectionOrDie(
+		logging.WithTestLogger(nil), nil) // nolint
+	startInformers()
+
+	// global is used to make instances of Environments, NewGlobalEnvironment
+	// is passing and saving the client injection enabled context for use later.
+	global = environment.NewGlobalEnvironment(ctx)
 
 	// Run the tests.
 	os.Exit(m.Run())

@@ -33,9 +33,9 @@ func WithTestLogger(ctx context.Context) context.Context {
 }
 
 func logger() *zap.SugaredLogger {
-	if logger, err := zap.NewDevelopment(); err != nil {
+	if log, err := zap.NewDevelopment(); err != nil {
 		panic(err)
 	} else {
-		return logger.Named("test").Sugar()
+		return log.Named("test").Sugar()
 	}
 }
