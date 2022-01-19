@@ -82,7 +82,7 @@ func WaitForJobTerminationMessage(ctx context.Context, name string, timing ...ti
 		pod, err := GetJobPodByJobName(ctx, name)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Debug(namespace, name, err)
+				log.Debugf("%s/%s job termination %+v", namespace, name, err)
 				// keep polling
 				return false, nil
 			}
