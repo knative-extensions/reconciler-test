@@ -73,7 +73,7 @@ func PodReference(namespace string, name string) corev1.ObjectReference {
 	}
 	if !(len(kinds) > 0) {
 		log.Fatal("unexpected error: ",
-			errors.WithStack(fmt.Errorf("want len(kinds) > 0")))
+			errors.New("want len(kinds) > 0"))
 	}
 	kind := kinds[0]
 	pod.APIVersion, pod.Kind = kind.ToAPIVersionAndKind()
