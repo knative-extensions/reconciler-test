@@ -43,7 +43,7 @@ func IsReady(gvr schema.GroupVersionResource, name string, timing ...time.Durati
 	return func(ctx context.Context, t feature.T) {
 		interval, timeout := PollTimings(ctx, timing)
 		env := environment.FromContext(ctx)
-		if err := WaitForResourceReadyOrCompleted(ctx, t, env.Namespace(), name, gvr, interval, timeout); err != nil {
+		if err := WaitForResourceReady(ctx, t, env.Namespace(), name, gvr, interval, timeout); err != nil {
 			t.Error(gvr, "did not become ready,", err)
 		}
 	}

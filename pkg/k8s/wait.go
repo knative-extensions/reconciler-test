@@ -89,7 +89,7 @@ func WaitForReadyOrDone(ctx context.Context, t feature.T, ref corev1.ObjectRefer
 		return nil
 
 	default:
-		err := WaitForResourceReadyOrCompleted(ctx, t, ref.Namespace, ref.Name, gvr, interval, timeout)
+		err := WaitForResourceReady(ctx, t, ref.Namespace, ref.Name, gvr, interval, timeout)
 		if err != nil {
 			return err
 		}
@@ -105,10 +105,10 @@ func WaitForReadyOrDoneOrFail(ctx context.Context, t feature.T, ref corev1.Objec
 	}
 }
 
-// WaitForResourceReadyOrCompleted waits until the specified resource in the
-// given namespace are ready or completed successfully.
+// WaitForResourceReady waits until the specified resource in the given
+// namespace are ready or completed successfully.
 // Timing is optional but if provided is [interval, timeout].
-func WaitForResourceReadyOrCompleted(ctx context.Context, t feature.T, namespace, name string, gvr schema.GroupVersionResource, timing ...time.Duration) error {
+func WaitForResourceReady(ctx context.Context, t feature.T, namespace, name string, gvr schema.GroupVersionResource, timing ...time.Duration) error {
 	return WaitForResourceCondition(ctx, t, namespace, name, gvr, isReadyOrCompleted(t, name), timing...)
 }
 
