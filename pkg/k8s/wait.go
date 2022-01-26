@@ -43,6 +43,10 @@ import (
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
+// PodCompletedReason is present in ready condition, when the pod completed
+// successfully.
+const PodCompletedReason = "PodCompleted"
+
 // PollTimings will find the correct timings based on priority:
 // - passed timing slice [interval, timeout].
 // - values from from context.
@@ -85,7 +89,7 @@ func WaitForReadyOrDone(ctx context.Context, t feature.T, ref corev1.ObjectRefer
 		return nil
 
 	default:
-		err := WaitForResourceReady(ctx, t, ref.Namespace, ref.Name, gvr, interval, timeout)
+		err := WaitForResourceReadyOrCompleted(ctx, t, ref.Namespace, ref.Name, gvr, interval, timeout)
 		if err != nil {
 			return err
 		}
@@ -101,10 +105,11 @@ func WaitForReadyOrDoneOrFail(ctx context.Context, t feature.T, ref corev1.Objec
 	}
 }
 
-// WaitForResourceReady waits until the specified resource in the given namespace are ready.
+// WaitForResourceReadyOrCompleted waits until the specified resource in the
+// given namespace are ready or completed successfully.
 // Timing is optional but if provided is [interval, timeout].
-func WaitForResourceReady(ctx context.Context, t feature.T, namespace, name string, gvr schema.GroupVersionResource, timing ...time.Duration) error {
-	return WaitForResourceCondition(ctx, t, namespace, name, gvr, isReady(t, name), timing...)
+func WaitForResourceReadyOrCompleted(ctx context.Context, t feature.T, namespace, name string, gvr schema.GroupVersionResource, timing ...time.Duration) error {
+	return WaitForResourceCondition(ctx, t, namespace, name, gvr, isReadyOrCompleted(t, name), timing...)
 }
 
 // WaitForResourceNotReady waits until the specified resource in the given namespace is not ready.
@@ -153,42 +158,49 @@ func WaitForResourceCondition(ctx context.Context, t feature.T, namespace, name 
 	})
 }
 
-func isReady(t feature.T, name string) ConditionFunc {
+func isReadyOrCompleted(t feature.T, name string) ConditionFunc {
 	lastMsg := ""
 	return func(obj duckv1.KResource) bool {
 		if obj.Generation != obj.GetStatus().ObservedGeneration {
 			return false
 		}
+		ns := obj.GetNamespace()
 		ready := readyCondition(obj)
 		if ready != nil {
 			if !ready.IsTrue() {
-				msg := fmt.Sprintf("%s is not %s\n\nResource: %s\n", name, ready.Type, resource(obj))
+				msg := fmt.Sprintf("%s/%s is not %s\n\nResource: %s\n", ns, name, ready.Type, status(obj))
 				if msg != lastMsg {
 					t.Log(msg)
 					lastMsg = msg
 				}
 			}
 
-			t.Logf("%s is %s, %s: %s\n", name, ready.Type, ready.Reason, ready.Message)
-			return ready.IsTrue()
+			logCondition(ready, t, ns, name)
+			return isReadyOrCompletedCondition(*ready)
 		}
 
 		// Last resort, look at all conditions.
 		// As a side-effect of this test,
 		//   if a resource has no conditions, then it is ready.
-		allReady := true
 		for _, c := range obj.Status.Conditions {
-			if !c.IsTrue() {
-				msg := fmt.Sprintf("%s is not %s, %s: %s\n\nResource: %s\n", name, c.Type, c.Reason, c.Message, resource(obj))
-				if msg != lastMsg {
-					t.Log(msg)
-					lastMsg = msg
-				}
-				allReady = false
-				break
+			if !isReadyOrCompletedCondition(c) {
+				logCondition(&c, t, ns, name)
+				return false
 			}
 		}
-		return allReady
+		return true
+	}
+}
+
+func isReadyOrCompletedCondition(condition apis.Condition) bool {
+	return condition.IsTrue() || condition.GetReason() == PodCompletedReason
+}
+
+func logCondition(condition *apis.Condition, t feature.T, ns string, name string) {
+	if bytes, err := json.Marshal(condition); err == nil {
+		t.Logf("%s/%s condition is %s\n", ns, name, bytes)
+	} else {
+		t.Fatal(err)
 	}
 }
 
@@ -197,35 +209,35 @@ func isNotReady(t feature.T, name string) ConditionFunc {
 	return func(obj duckv1.KResource) bool {
 		ready := readyCondition(obj)
 		if ready == nil {
-			msg := fmt.Sprintf("%s hasn't any of %s or %s conditions\n\nResource: %s\n", name, apis.ConditionReady, apis.ConditionSucceeded, resource(obj))
+			msg := fmt.Sprintf("%s hasn't any of %s or %s conditions\n\nResource: %s\n", name, apis.ConditionReady, apis.ConditionSucceeded, status(obj))
 			if msg != lastMsg {
 				t.Log(msg)
 				lastMsg = msg
 			}
 			return false
 		}
-		t.Logf("%s is %s, %s: %s\n\nResource: %s\n", name, ready.Type, ready.Reason, ready.Message, resource(obj))
+		t.Logf("%s is %s, %s: %s\n\nResource: %s\n", name, ready.Type, ready.Reason, ready.Message, status(obj))
 		return ready.IsFalse()
 	}
 }
 
-func resource(obj duckv1.KResource) string {
-	resource, err := json.MarshalIndent(obj, " ", " ")
+func status(obj duckv1.KResource) string {
+	st, err := json.MarshalIndent(obj.Status, " ", " ")
 	if err != nil {
-		resource = []byte(err.Error())
+		st = []byte(err.Error())
 	}
-	return string(resource)
+	return string(st)
 }
 
 // readyCondition returns Ready or Succeeded condition.
 func readyCondition(obj duckv1.KResource) *apis.Condition {
-	// Ready type.
-	ready := obj.Status.GetCondition(apis.ConditionReady)
-	if ready != nil {
-		return ready
+	// Succeeded type first.
+	succeeded := obj.Status.GetCondition(apis.ConditionSucceeded)
+	if succeeded != nil {
+		return succeeded
 	}
-	// Succeeded type.
-	return obj.Status.GetCondition(apis.ConditionSucceeded)
+	// Ready type.
+	return obj.Status.GetCondition(apis.ConditionReady)
 }
 
 // ErrWaitingForServiceEndpoints if waiting for service endpoints failed.

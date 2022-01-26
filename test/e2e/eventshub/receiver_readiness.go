@@ -34,6 +34,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/pkg/apis"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/reconciler-test/pkg/environment"
@@ -68,12 +69,15 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 		kube := kubeclient.Get(ctx)
 		env := environment.FromContext(ctx)
 		ns := env.Namespace()
-		sinkURI := fmt.Sprintf("http://%s.%s.svc.cluster.local", sinkName, ns)
+		sinkURI := apis.HTTP(fmt.Sprintf("%s.%s.svc", sinkName, ns))
 		bytes, err := json.Marshal(ev)
 		kevent := base64.StdEncoding.EncodeToString(bytes)
 		checkError(t.Fatal, err)
 		pods := kube.CoreV1().Pods(ns)
 		name := feature.MakeRandomK8sName("sender")
+		cmd := fmt.Sprintf("echo $K_EVENT | base64 -d "+
+			"| curl --max-time 30 --trace-ascii %% --trace-time -d @- "+
+			"-H \"content-type: application/cloudevents+json\" %s", sinkURI)
 		pod := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -88,10 +92,7 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 					Name:    name,
 					Image:   ubi8Image,
 					Command: []string{"/bin/sh"},
-					Args: []string{"-c", "echo $K_EVENT | base64 -d " +
-						"| curl --max-time 30 --trace-ascii % --trace-time -d @- " +
-						"-H \"content-type: application/cloudevents+json\" " +
-						sinkURI},
+					Args:    []string{"-c", cmd},
 					Env: []corev1.EnvVar{{
 						Name:  "K_EVENT",
 						Value: kevent,
