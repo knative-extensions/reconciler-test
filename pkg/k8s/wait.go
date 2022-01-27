@@ -250,11 +250,20 @@ func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 		isRunning := podRunning(p)
 
 		if !isRunning {
-			t.Log("Pod %s/%s is not running, dumping the pod object we got:", ns, podName)
+			t.Logf("Pod %s/%s is not running, dumping the pod object we got:", ns, podName)
 			b, _ := json.MarshalIndent(p, "", " ")
 			t.Log(string(b))
-		}
 
+			logs, err := podClient.
+				GetLogs(p.GetName(), &corev1.PodLogOptions{}).
+				Do(ctx).
+				Raw()
+			if err != nil {
+				t.Logf("failed to get pod logs: %w", err)
+			} else {
+				t.Logf("Pod %s/%s logs: %s", string(logs))
+			}
+		}
 		return isRunning, nil
 	})
 	if err != nil {
