@@ -37,8 +37,6 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/pkg/kmeta"
-	"knative.dev/pkg/logging"
-
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 )
@@ -82,7 +80,7 @@ func WaitForReadyOrDone(ctx context.Context, t feature.T, ref corev1.ObjectRefer
 
 	switch gvr.Resource {
 	case "jobs":
-		err := WaitUntilJobDone(ctx, ref.Name, interval, timeout)
+		err := WaitUntilJobDone(ctx, t, ref.Name, interval, timeout)
 		if err != nil {
 			return err
 		}
@@ -100,7 +98,7 @@ func WaitForReadyOrDone(ctx context.Context, t feature.T, ref corev1.ObjectRefer
 
 // WaitForReadyOrDoneOrFail will call WaitForReadyOrDone and fail if the resource is not ready.
 func WaitForReadyOrDoneOrFail(ctx context.Context, t feature.T, ref corev1.ObjectReference, timing ...time.Duration) {
-	if err := WaitForReadyOrDone(ctx, t, ref); err != nil {
+	if err := WaitForReadyOrDone(ctx, t, ref, timing...); err != nil {
 		t.Fatal(errors.WithStack(err))
 	}
 }
@@ -245,8 +243,7 @@ var ErrWaitingForServiceEndpoints = errors.New("waiting for service endpoints")
 
 // WaitForServiceEndpoints polls the status of the specified Service
 // every interval until number of service endpoints >= numOfEndpoints.
-func WaitForServiceEndpoints(ctx context.Context, name string, numberOfExpectedEndpoints int) error {
-	log := logging.FromContext(ctx)
+func WaitForServiceEndpoints(ctx context.Context, t feature.T, name string, numberOfExpectedEndpoints int) error {
 	ns := environment.FromContext(ctx).Namespace()
 	interval, timeout := PollTimings(ctx, nil)
 	endpoints := kubeclient.Get(ctx).CoreV1().Endpoints(ns)
@@ -257,7 +254,7 @@ func WaitForServiceEndpoints(ctx context.Context, name string, numberOfExpectedE
 			return false, err
 		}
 		ip := svc.Spec.ClusterIP
-		log.Debugf("Service %s/%s, ip: %s", ns, name, ip)
+		t.Logf("Service %s/%s, ip: %s", ns, name, ip)
 
 		return ip != "", nil
 	}); err != nil {
@@ -271,7 +268,7 @@ func WaitForServiceEndpoints(ctx context.Context, name string, numberOfExpectedE
 			return false, err
 		}
 		num := countEndpointsNum(endpoint)
-		log.Debugf("Endpoints for service %s/%s, got %d, want >= %d",
+		t.Logf("Endpoints for service %s/%s, got %d, want >= %d",
 			ns, name, num, numberOfExpectedEndpoints)
 		return num >= numberOfExpectedEndpoints, nil
 	}); err != nil {
@@ -285,14 +282,14 @@ func WaitForServiceEndpoints(ctx context.Context, name string, numberOfExpectedE
 // WaitForServiceEndpointsOrFail polls the status of the specified Service
 // every interval until number of service endpoints >= numOfEndpoints.
 func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, name string, numberOfExpectedEndpoints int) {
-	if err := WaitForServiceEndpoints(ctx, name, numberOfExpectedEndpoints); err != nil {
+	if err := WaitForServiceEndpoints(ctx, t, name, numberOfExpectedEndpoints); err != nil {
 		t.Fatalf("Failed while %+v", errors.WithStack(err))
 	}
 }
 
 // WaitForServiceReadyOrFail will call WaitForServiceReady and fail if error is returned.
 func WaitForServiceReadyOrFail(ctx context.Context, t feature.T, name string, readinessPath string) {
-	if err := WaitForServiceReady(ctx, name, readinessPath); err != nil {
+	if err := WaitForServiceReady(ctx, t, name, readinessPath); err != nil {
 		t.Fatalf("Failed while %+v", errors.WithStack(err))
 	}
 }
@@ -306,7 +303,7 @@ var ErrWaitingForServiceReady = errors.New("waiting for service ready")
 // service using readiness path. This makes sure the service is ready to serve
 // traffic, from other components.
 // See: https://stackoverflow.com/a/59713538/844449
-func WaitForServiceReady(ctx context.Context, name string, readinessPath string) error {
+func WaitForServiceReady(ctx context.Context, t feature.T, name string, readinessPath string) error {
 	env := environment.FromContext(ctx)
 	ns := env.Namespace()
 	jobs := kubeclient.Get(ctx).BatchV1().Jobs(ns)
@@ -340,7 +337,7 @@ func WaitForServiceReady(ctx context.Context, name string, readinessPath string)
 		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
 	}
 	env.Reference(kmeta.ObjectReference(created))
-	if err = WaitUntilJobDone(ctx, jobName); err != nil {
+	if err = WaitUntilJobDone(ctx, t, jobName); err != nil {
 		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
 	}
 	job, err = jobs.Get(ctx, jobName, metav1.GetOptions{})

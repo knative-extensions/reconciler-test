@@ -37,7 +37,7 @@ func EchoFeature() *feature.Feature {
 	f.Setup("install echo", echo.Install(name, msg))
 
 	f.Requirement("echo job is finished", func(ctx context.Context, t feature.T) {
-		if err := k8s.WaitUntilJobDone(ctx, name); err != nil {
+		if err := k8s.WaitUntilJobDone(ctx, t, name); err != nil {
 			t.Errorf("failed to wait for job to finish, %s", err)
 		}
 	})
@@ -46,7 +46,7 @@ func EchoFeature() *feature.Feature {
 		Must("the echo pod must echo our message",
 			func(ctx context.Context, t feature.T) {
 				// The usage of WaitForJobTerminationMessage here explicitly sets the poll timings.
-				log, err := k8s.WaitForJobTerminationMessage(ctx, name, time.Second, 30*time.Second)
+				log, err := k8s.WaitForJobTerminationMessage(ctx, t, name, time.Second, 30*time.Second)
 				if err != nil {
 					t.Error("failed to get termination message from pod, ", err)
 				}

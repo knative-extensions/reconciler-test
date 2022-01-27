@@ -32,22 +32,22 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/feature"
 )
 
 // WaitUntilJobDone waits until a job has finished.
 // Timing is optional but if provided is [interval, timeout].
-func WaitUntilJobDone(ctx context.Context, name string, timing ...time.Duration) error {
+func WaitUntilJobDone(ctx context.Context, t feature.T, name string, timing ...time.Duration) error {
 	interval, timeout := PollTimings(ctx, timing)
 	namespace := environment.FromContext(ctx).Namespace()
 	kube := kubeclient.Get(ctx)
 	jobs := kube.BatchV1().Jobs(namespace)
-	log := logging.FromContext(ctx)
 
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		job, err := jobs.Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Debugf("%s/%s job %+v", namespace, name, err)
+				t.Logf("%s/%s job %+v", namespace, name, err)
 				// keep polling
 				return false, nil
 			}
@@ -59,7 +59,7 @@ func WaitUntilJobDone(ctx context.Context, name string, timing ...time.Duration)
 			if err != nil {
 				return false, err
 			}
-			log.Debugf("%s/%s job status %s", namespace, name, status)
+			t.Logf("%s/%s job status %s", namespace, name, status)
 		}
 		return complete, nil
 	})
@@ -72,17 +72,16 @@ func WaitUntilJobDone(ctx context.Context, name string, timing ...time.Duration)
 
 // WaitForJobTerminationMessage waits for a job to end and then collects the termination message.
 // Timing is optional but if provided is [interval, timeout].
-func WaitForJobTerminationMessage(ctx context.Context, name string, timing ...time.Duration) (string, error) {
+func WaitForJobTerminationMessage(ctx context.Context, t feature.T, name string, timing ...time.Duration) (string, error) {
 	interval, timeout := PollTimings(ctx, timing)
 	namespace := environment.FromContext(ctx).Namespace()
-	log := logging.FromContext(ctx)
 
 	// poll until the pod is terminated.
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		pod, err := GetJobPodByJobName(ctx, name)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Debugf("%s/%s job termination %+v", namespace, name, err)
+				t.Logf("%s/%s job termination %+v", namespace, name, err)
 				// keep polling
 				return false, nil
 			}
