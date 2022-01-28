@@ -20,7 +20,7 @@ import (
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
-// loggingSteps returns a number of steps that logs ma
+// loggingSteps returns a number of steps that logs environment-managed resources.
 func (mr *MagicEnvironment) loggingSteps() []feature.Step {
 	return []feature.Step{{
 		Name: "Log references",
