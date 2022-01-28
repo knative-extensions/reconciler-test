@@ -22,13 +22,11 @@ import (
 
 // loggingSteps returns a number of steps that logs ma
 func (mr *MagicEnvironment) loggingSteps() []feature.Step {
-	return []feature.Step{
-		{
-			Name: "Log references",
-			S:    feature.Any,
-			L:    feature.Must,
-			T:    feature.Teardown,
-			Fn:   feature.LogReferences(mr.refs...),
-		},
-	}
+	return []feature.Step{{
+		Name: "Log references",
+		S:    feature.Any,
+		L:    feature.Must,
+		T:    feature.Teardown,
+		Fn:   feature.LogReferences(mr.refs...),
+	}}
 }
