@@ -2,7 +2,7 @@
 // +build e2e
 
 /*
-Copyright 2020 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,17 +17,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package eventshub_test
 
 import (
 	"flag"
 	"os"
 	"testing"
 
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	// See: https://github.com/kubernetes/client-go/issues/242
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"knative.dev/pkg/injection"
-	_ "knative.dev/pkg/system/testing"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/logging"
 )
@@ -35,15 +34,14 @@ import (
 // global is the singleton instance of GlobalEnvironment. It is used to parse
 // the testing config for the test run. The config will specify the cluster
 // config as well as the parsing level and state flags.
+//goland:noinspection GoUnusedGlobalVariable
 var global environment.GlobalEnvironment
-
-func init() {
-	// environment.InitFlags registers state, level and feature filter flags.
-	environment.InitFlags(flag.CommandLine)
-}
 
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
+	// environment.InitFlags registers state, level and feature filter flags.
+	environment.InitFlags(flag.CommandLine)
+
 	// We get a chance to parse flags to include the framework flags for the
 	// framework as well as any additional flags included in the integration.
 	flag.Parse()

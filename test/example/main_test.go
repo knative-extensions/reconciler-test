@@ -26,11 +26,10 @@ import (
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	"knative.dev/pkg/injection"
 	_ "knative.dev/pkg/system/testing"
-
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/logging"
 )
 
 // global is the singleton instance of GlobalEnvironment. It is used to parse
@@ -39,7 +38,7 @@ import (
 var global environment.GlobalEnvironment
 
 func init() {
-	// environment.InitFlags registers state and level filter flags.
+	// environment.InitFlags registers state, level and feature filter flags.
 	environment.InitFlags(flag.CommandLine)
 }
 
@@ -53,7 +52,8 @@ func TestMain(m *testing.M) {
 	// testing framework for namespace management, and could be leveraged by
 	// features to pull Kubernetes clients or the test environment out of the
 	// context passed in the features.
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
+	ctx, startInformers := injection.EnableInjectionOrDie(
+		logging.WithTestLogger(nil), nil) // nolint
 	startInformers()
 
 	// global is used to make instances of Environments, NewGlobalEnvironment
