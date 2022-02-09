@@ -139,7 +139,8 @@ func (f *Feature) References() []corev1.ObjectReference {
 // Use References to get the undeleted resources.
 //
 // Expected to be used as a StepFn.
-func (f *Feature) DeleteResources(ctx context.Context, t T) {
+func DeleteResources(ctx context.Context, t T) {
+	f := FromContext(ctx)
 	dc := dynamicclient.Get(ctx)
 	for _, ref := range f.References() {
 
@@ -204,7 +205,7 @@ func (f *Feature) DeleteResources(ctx context.Context, t T) {
 
 var (
 	// Expected to be used as a StepFn.
-	_ StepFn = (&Feature{}).DeleteResources
+	_ StepFn = DeleteResources
 )
 
 // Setup adds a step function to the feature set at the Setup timing phase.
