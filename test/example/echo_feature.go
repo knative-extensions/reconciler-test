@@ -75,7 +75,7 @@ func EchoFeature() *feature.Feature {
 			t.Log("ran inside of a SHOULD")
 		})
 
-	f.Teardown("cleanup", feature.DeleteResources)
+	f.Teardown("cleanup", f.DeleteResources)
 
 	return f
 }
@@ -84,10 +84,10 @@ func EchoFeature() *feature.Feature {
 func EchoFeatureSet() *feature.FeatureSet {
 	fs := &feature.FeatureSet{
 		Name: "Echo Feature Wrapper (3x)",
-		Features: []feature.Feature{
-			*EchoFeature(),
-			*EchoFeature(),
-			*EchoFeature(),
+		Features: []*feature.Feature{
+			EchoFeature(),
+			EchoFeature(),
+			EchoFeature(),
 		},
 	}
 	return fs

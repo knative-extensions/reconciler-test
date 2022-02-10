@@ -93,7 +93,7 @@ func NewFeature() *Feature {
 // FeatureSet is a list of features and feature set name.
 type FeatureSet struct {
 	Name     string
-	Features []Feature
+	Features []*Feature
 }
 
 // StepFn is the function signature for steps.
@@ -139,8 +139,7 @@ func (f *Feature) References() []corev1.ObjectReference {
 // Use References to get the undeleted resources.
 //
 // Expected to be used as a StepFn.
-func DeleteResources(ctx context.Context, t T) {
-	f := FromContext(ctx)
+func (f *Feature) DeleteResources(ctx context.Context, t T) {
 	dc := dynamicclient.Get(ctx)
 	for _, ref := range f.References() {
 
@@ -205,7 +204,7 @@ func DeleteResources(ctx context.Context, t T) {
 
 var (
 	// Expected to be used as a StepFn.
-	_ StepFn = DeleteResources
+	_ StepFn = (&Feature{}).DeleteResources
 )
 
 // Setup adds a step function to the feature set at the Setup timing phase.
