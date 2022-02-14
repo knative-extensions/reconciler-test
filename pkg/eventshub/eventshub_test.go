@@ -34,9 +34,10 @@ func Example() {
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
 	}
 	cfg := map[string]interface{}{
-		"name":      "hubhub",
-		"namespace": "example",
-		"image":     "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"name":          "hubhub",
+		"namespace":     "example",
+		"image":         "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"withReadiness": true,
 		"envs": map[string]string{
 			"foo": "bar",
 			"baz": "boof",
@@ -81,6 +82,71 @@ func Example() {
 	//         httpGet:
 	//           port: 8080
 	//           path: /health/ready
+	//       env:
+	//         - name: "SYSTEM_NAMESPACE"
+	//           valueFrom:
+	//             fieldRef:
+	//               fieldPath: "metadata.namespace"
+	//         - name: "POD_NAME"
+	//           valueFrom:
+	//             fieldRef:
+	//               fieldPath: "metadata.name"
+	//         - name: "EVENT_LOGS"
+	//           value: "recorder,logger"
+	//         - name: "baz"
+	//           value: "boof"
+	//         - name: "foo"
+	//           value: "bar"
+}
+
+func ExampleNoReadiness() {
+	images := map[string]string{
+		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
+	}
+	cfg := map[string]interface{}{
+		"name":      "hubhub",
+		"namespace": "example",
+		"image":     "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"envs": map[string]string{
+			"foo": "bar",
+			"baz": "boof",
+		},
+	}
+
+	files, err := manifest.ExecuteYAML(templates, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: v1
+	// kind: Service
+	// metadata:
+	//   name: hubhub
+	//   namespace: example
+	// spec:
+	//   selector:
+	//     app: eventshub-hubhub
+	//   ports:
+	//     - protocol: TCP
+	//       port: 80
+	//       targetPort: 8080
+	// ---
+	// apiVersion: v1
+	// kind: Pod
+	// metadata:
+	//   name: hubhub
+	//   namespace: example
+	//   labels:
+	//     app: eventshub-hubhub
+	// spec:
+	//   serviceAccountName: "example"
+	//   restartPolicy: "Never"
+	//   containers:
+	//     - name: eventshub
+	//       image: uri://a-real-container
+	//       imagePullPolicy: "IfNotPresent"
 	//       env:
 	//         - name: "SYSTEM_NAMESPACE"
 	//           valueFrom:
