@@ -76,8 +76,8 @@ func logReference(ref corev1.ObjectReference) StepFn {
 			logReference(corev1.ObjectReference{
 				Kind:       or.Kind,
 				Namespace:  r.GetNamespace(),
-				Name:       r.GetName(),
-				APIVersion: r.GetAPIVersion(),
+				Name:       or.Name,
+				APIVersion: or.APIVersion,
 			})
 		}
 	}

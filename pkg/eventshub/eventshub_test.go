@@ -77,6 +77,10 @@ func Example() {
 	//     - name: eventshub
 	//       image: uri://a-real-container
 	//       imagePullPolicy: "IfNotPresent"
+	//       readinessProbe:
+	//         httpGet:
+	//           port: 8080
+	//           path: /health/ready
 	//       env:
 	//         - name: "SYSTEM_NAMESPACE"
 	//           valueFrom:
