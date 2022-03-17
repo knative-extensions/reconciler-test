@@ -152,7 +152,9 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 		}
 	}
 
-	httpClient := &nethttp.Client{}
+	httpClient := &nethttp.Client{
+		Timeout: time.Second * 30,
+	}
 	if env.AddTracing {
 		httpClient.Transport = &ochttp.Transport{
 			Base:        nethttp.DefaultTransport,
@@ -176,8 +178,11 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 		if err != nil {
 			return err
 		}
-
 		res, err := httpClient.Do(req)
+		if err != nil || res.StatusCode >= 300 {
+			return fmt.Errorf("http error occurred. err: %w, status code: %d", err, res.StatusCode)
+		}
+
 		// Publish sent event info
 		if err := logs.Vent(env.sentInfo(event, req, err)); err != nil {
 			return fmt.Errorf("cannot forward event info: %w", err)
