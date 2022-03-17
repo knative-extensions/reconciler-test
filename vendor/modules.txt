@@ -136,7 +136,7 @@ github.com/openzipkin/zipkin-go/reporter/http
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.11.0
+# github.com/prometheus/client_golang v1.11.1
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
@@ -733,10 +733,10 @@ k8s.io/kube-openapi/pkg/validation/spec
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/trace
-# knative.dev/hack v0.0.0-20220224013837-e1785985d364
+# knative.dev/hack v0.0.0-20220314052818-c9c3ea17a2e9
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20220310195447-38af013b30ff
+# knative.dev/pkg v0.0.0-20220316002959-3a4cc56708b9
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
