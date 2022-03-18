@@ -180,7 +180,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs) error {
 		}
 		res, err := httpClient.Do(req)
 		if err != nil || res.StatusCode >= 300 {
-			return fmt.Errorf("http error occurred. err: %w, status code: %d", err, res.StatusCode)
+			logging.FromContext(ctx).Errorf("http error occurred. err: %w, status code: %d", err, res.StatusCode)
 		}
 
 		// Publish sent event info
