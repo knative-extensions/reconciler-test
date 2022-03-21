@@ -15,11 +15,11 @@ require (
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	k8s.io/api v0.22.5
-	k8s.io/apimachinery v0.22.5
-	k8s.io/client-go v0.22.5
+	k8s.io/api v0.23.4
+	k8s.io/apimachinery v0.23.4
+	k8s.io/client-go v0.23.4
 	k8s.io/klog v1.0.0
-	knative.dev/hack v0.0.0-20220314052818-c9c3ea17a2e9
-	knative.dev/pkg v0.0.0-20220316002959-3a4cc56708b9
+	knative.dev/hack v0.0.0-20220318020218-14f832e506f8
+	knative.dev/pkg v0.0.0-20220318185521-e6e3cf03d765
 	sigs.k8s.io/yaml v1.3.0
 )
