@@ -268,8 +268,8 @@ func init() {
 }
 ```
 
-This can be discovered dynamically by the helper function to scan embedded filesystem YAML
-files for `ko://` images, `manifest.ImagesFromFS(fs)`
+This can be discovered dynamically by the helper function to scan embedded
+filesystem YAML files for `ko://` images, `manifest.ImagesFromFS(fs)`
 
 ```go
 import (
@@ -284,8 +284,8 @@ func init() {
 }
 ```
 
-Images registered with the environment package will be produced on the first call
-to `environment.ProduceImages()`, which happens as a byproduct of calling
+Images registered with the environment package will be produced on the first
+call to `environment.ProduceImages()`, which happens as a byproduct of calling
 `global.Environment()`. These images replace the `ko://` tags in YAML files that
 are applied to the cluster with `manifest.InstallYamlFS`.
 
