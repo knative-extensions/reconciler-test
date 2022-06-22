@@ -75,6 +75,10 @@ func (l Levels) String() string {
 	return b.String()
 }
 
+func (l Levels) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%q", l.String())), nil
+}
+
 // Valid checks if given level is valid (not empty combination of Levels values).
 func (l Levels) Valid() bool {
 	val := uint8(l)

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,36 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package feature
+package k8s_test
 
 import (
 	"fmt"
+
+	"knative.dev/reconciler-test/pkg/k8s"
+	"sigs.k8s.io/yaml"
 )
 
-type Timing uint8
-
-const (
-	Setup Timing = iota
-	Requirement
-	Assert
-	Teardown
-)
-
-func (t Timing) String() string {
-	return timingMapping[t]
-}
-
-func (t Timing) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%q", t.String())), nil
-}
-
-func Timings() []Timing {
-	return []Timing{Setup, Requirement, Assert, Teardown}
-}
-
-var timingMapping = map[Timing]string{
-	Setup:       "Setup",
-	Requirement: "Requirement",
-	Assert:      "Assert",
-	Teardown:    "Teardown",
+func ExamplePodReference() {
+	ref := k8s.PodReference("bar", "foo")
+	bytes, err := yaml.Marshal(ref)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(bytes))
+	// Output:
+	// apiVersion: v1
+	// kind: Pod
+	// name: foo
+	// namespace: bar
 }

@@ -14,36 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package feature
+package logging
 
 import (
-	"fmt"
+	"context"
+
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
 )
 
-type Timing uint8
-
-const (
-	Setup Timing = iota
-	Requirement
-	Assert
-	Teardown
-)
-
-func (t Timing) String() string {
-	return timingMapping[t]
+// WithTestLogger returns a context with test logger configured.
+func WithTestLogger(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = signals.NewContext()
+	}
+	return logging.WithLogger(ctx, logger())
 }
 
-func (t Timing) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%q", t.String())), nil
-}
-
-func Timings() []Timing {
-	return []Timing{Setup, Requirement, Assert, Teardown}
-}
-
-var timingMapping = map[Timing]string{
-	Setup:       "Setup",
-	Requirement: "Requirement",
-	Assert:      "Assert",
-	Teardown:    "Teardown",
+func logger() *zap.SugaredLogger {
+	if log, err := zap.NewDevelopment(); err != nil {
+		panic(err)
+	} else {
+		return log.Named("test").Sugar()
+	}
 }

@@ -64,6 +64,10 @@ func (s States) String() string {
 	return b.String()
 }
 
+func (s States) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%q", s.String())), nil
+}
+
 func (s States) Valid() bool {
 	val := uint8(s)
 	if val == 0 {
