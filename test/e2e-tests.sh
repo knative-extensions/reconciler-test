@@ -29,6 +29,6 @@ initialize "$@"
 
 set -Eeuo pipefail
 
-go_test_e2e ./test/...
+go_test_e2e -timeout 10m ./test/...
 
 success

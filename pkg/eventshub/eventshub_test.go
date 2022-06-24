@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
+	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
@@ -30,6 +31,7 @@ import (
 var templates embed.FS
 
 func Example() {
+	ctx := testlog.NewContext()
 	images := map[string]string{
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
 	}
@@ -44,7 +46,7 @@ func Example() {
 		},
 	}
 
-	files, err := manifest.ExecuteYAML(templates, images, cfg)
+	files, err := manifest.ExecuteYAML(ctx, templates, images, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -100,6 +102,7 @@ func Example() {
 }
 
 func ExampleNoReadiness() {
+	ctx := testlog.NewContext()
 	images := map[string]string{
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
 	}
@@ -113,7 +116,7 @@ func ExampleNoReadiness() {
 		},
 	}
 
-	files, err := manifest.ExecuteYAML(templates, images, cfg)
+	files, err := manifest.ExecuteYAML(ctx, templates, images, cfg)
 	if err != nil {
 		panic(err)
 	}

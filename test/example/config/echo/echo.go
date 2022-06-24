@@ -28,10 +28,6 @@ import (
 //go:embed *.yaml
 var templates embed.FS
 
-func init() {
-	environment.RegisterPackage(manifest.ImagesFromFS(templates)...)
-}
-
 // Output is the base output we can expect from a echo job.
 type Output struct {
 	Success bool   `json:"success"`
@@ -40,6 +36,7 @@ type Output struct {
 
 func Install(name, message string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
+		environment.RegisterPackage(manifest.ImagesFromFS(ctx, templates)...)
 		if _, err := manifest.InstallYamlFS(ctx, templates, map[string]interface{}{
 			"name":    name,
 			"message": message,

@@ -19,7 +19,6 @@ package environment
 import (
 	"context"
 	"errors"
-	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -35,7 +34,8 @@ import (
 )
 
 func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
-	fmt.Printf("level %s, state %s, feature %s\n\n", l, s, *f)
+	log := logging.FromContext(ctx)
+	log.Infof("Global environment settings: level %s, state %s, feature %#v", l, s, *f)
 
 	return &MagicGlobalEnvironment{
 		c:                ctx,
@@ -63,10 +63,11 @@ type MagicEnvironment struct {
 	s            feature.States
 	featureMatch *regexp.Regexp
 
-	images           map[string]string
 	namespace        string
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
+
+	imageStore
 
 	// milestones sends milestone events, if configured.
 	milestones milestone.Emitter
@@ -106,22 +107,19 @@ func WithPollTimings(interval, timeout time.Duration) EnvOpts {
 
 // Managed enables auto-lifecycle management of the environment. Including:
 //  - registers a t.Cleanup callback on env.Finish().
+// It also configures the testing.T bound zap.Logger associating it with
+// context.Context.
 func Managed(t feature.T) EnvOpts {
 	return func(ctx context.Context, env Environment) (context.Context, error) {
 		if e, ok := env.(*MagicEnvironment); ok {
 			e.managedT = t
 		}
 		t.Cleanup(env.Finish)
-		return ctx, nil
+		return WithTestLogger(t)(ctx, env)
 	}
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
-	images, err := ProduceImages()
-	if err != nil {
-		panic(err)
-	}
-
 	namespace := feature.MakeK8sNamePrefix(feature.AppendRandomString("test"))
 
 	env := &MagicEnvironment{
@@ -130,17 +128,19 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		s:            mr.FeatureState,
 		featureMatch: mr.FeatureMatch,
 
-		images:    images,
-		namespace: namespace,
+		imageStore: imageStore{},
+		namespace:  namespace,
 	}
 
 	ctx := ContextWith(mr.c, env)
 
 	for _, opt := range opts {
+		var err error
 		if ctx, err = opt(ctx, env); err != nil {
-			panic(err)
+			logging.FromContext(ctx).Fatal(err)
 		}
 	}
+	env.c = ctx
 
 	// It is possible to have milestones set in the options, check for nil in
 	// env first before attempting to pull one from the os environment.
@@ -148,14 +148,14 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		eventEmitter, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, namespace)
 		if err != nil {
 			// This is just an FYI error, don't block the test run.
-			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
+			logging.FromContext(ctx).Error("failed to create the milestone event sender", zap.Error(err))
 		}
-		logEmitter := milestone.NewLogEmitter(ctx, namespace, env.managedT)
+		logEmitter := milestone.NewLogEmitter(ctx, namespace)
 		env.milestones = milestone.Compose(eventEmitter, logEmitter)
 	}
 
 	if err := env.CreateNamespaceIfNeeded(); err != nil {
-		panic(err)
+		logging.FromContext(ctx).Fatal(err)
 	}
 
 	env.milestones.Environment(map[string]string{
@@ -169,7 +169,12 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 }
 
 func (mr *MagicEnvironment) Images() map[string]string {
-	return mr.images
+	if refs, err := mr.imageStore.Get(mr.c); err != nil {
+		logging.FromContext(mr.c).Fatal(err)
+		return nil
+	} else {
+		return refs
+	}
 }
 
 func (mr *MagicEnvironment) TemplateConfig(base map[string]interface{}) map[string]interface{} {
@@ -224,11 +229,12 @@ func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *f
 func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *feature.Feature) {
 	originalT.Helper() // Helper marks the calling function as a test helper function.
 
-	f.DumpWith(originalT.Log)
-	defer f.DumpWith(originalT.Log) // Log feature state at the end of the run
+	log := logging.FromContext(ctx)
+	f.DumpWith(log.Debug)
+	defer f.DumpWith(log.Debug) // Log feature state at the end of the run
 
 	if !mr.featureMatch.MatchString(f.Name) {
-		originalT.Logf("Skipping feature '%s' assertions because --feature=%s  doesn't match", f.Name, mr.featureMatch.String())
+		log.Warnf("Skipping feature '%s' assertions because --feature=%s  doesn't match", f.Name, mr.featureMatch.String())
 		return
 	}
 

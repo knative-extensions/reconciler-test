@@ -20,6 +20,7 @@ import (
 	"embed"
 	"os"
 
+	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
@@ -27,7 +28,8 @@ import (
 var templates embed.FS
 
 func Example() {
-	files, err := manifest.ExecuteYAML(templates, nil,
+	ctx := testlog.NewContext()
+	files, err := manifest.ExecuteYAML(ctx, templates, nil,
 		map[string]interface{}{
 			"namespace": "example",
 		})

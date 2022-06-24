@@ -17,16 +17,16 @@ limitations under the License.
 package environment
 
 import (
-	"fmt"
+	"context"
 	"strings"
 	"sync"
 
-	"knative.dev/reconciler-test/pkg/images"
+	"knative.dev/pkg/logging"
+	"knative.dev/reconciler-test/pkg/images/ko"
 )
 
 var packages = []string(nil)
-var packageToImageConfig = map[string]string{}
-var packaged sync.Once
+var images = make(map[string]string)
 
 // RegisterPackage registers an interest in producing an image based on the
 // provide package.
@@ -53,26 +53,34 @@ func RegisterPackage(pack ...string) {
 // init() method. An images value should be a container registry image. The
 // images map is presented to the templates on the field `images`, and used
 // like `image: <key>` inside test yaml.
-func WithImages(images map[string]string) {
-	packaged.Do(func() {
-		packageToImageConfig = images
-	})
+func WithImages(given map[string]string) {
+	images = given
 }
 
 // ProduceImages returns back the packages that have been added.
 // Will produce images once, can be called many times.
-func ProduceImages() (map[string]string, error) {
-	var propErr error
-	packaged.Do(func() {
-		for _, pack := range packages {
-			image, err := images.KoPublish(pack)
-			if err != nil {
-				fmt.Printf("error attempting to ko publish: %s\n", err)
-				propErr = err
-				return
-			}
-			packageToImageConfig["ko://"+pack] = strings.TrimSpace(image)
+func ProduceImages(ctx context.Context) (map[string]string, error) {
+	for _, pack := range packages {
+		image, err := ko.Publish(ctx, pack)
+		if err != nil {
+			log := logging.FromContext(ctx)
+			log.Error("error attempting to ko publish: ", err)
+			return nil, err
 		}
+		images["ko://"+pack] = strings.TrimSpace(image)
+	}
+	return images, nil
+}
+
+type imageStore struct {
+	refs map[string]string
+	err  error
+	once sync.Once
+}
+
+func (i *imageStore) Get(ctx context.Context) (map[string]string, error) {
+	i.once.Do(func() {
+		i.refs, i.err = ProduceImages(ctx)
 	})
-	return packageToImageConfig, propErr
+	return i.refs, i.err
 }

@@ -20,6 +20,7 @@ limitations under the License.
 package example
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -27,6 +28,7 @@ import (
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	testlog "knative.dev/reconciler-test/pkg/logging"
 
 	_ "knative.dev/pkg/system/testing"
 	"knative.dev/reconciler-test/pkg/environment"
@@ -34,7 +36,8 @@ import (
 
 // This test is more for debugging the ko publish process.
 func TestKoPublish(t *testing.T) {
-	ic, err := environment.ProduceImages()
+	ctx := testlog.NewContext(context.TODO())
+	ic, err := environment.ProduceImages(ctx)
 	if err != nil {
 		panic(fmt.Errorf("failed to produce images, %s", err))
 	}
