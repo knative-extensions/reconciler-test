@@ -51,24 +51,24 @@ func (l logEmitter) Environment(env map[string]string) {
 		l.log().Fatal(err)
 		return
 	}
-	l.log().Debug("Environment", string(bytes))
+	l.log().Debug("Environment ", string(bytes))
 }
 
 func (l logEmitter) NamespaceCreated(namespace string) {
-	l.log().Debug("Namespace created", namespace)
+	l.log().Debug("Namespace created ", namespace)
 }
 
 func (l logEmitter) NamespaceDeleted(namespace string) {
-	l.log().Debug("Namespace deleted", namespace)
+	l.log().Debug("Namespace deleted ", namespace)
 }
 
 func (l logEmitter) TestStarted(feature string, t feature.T) {
 	l.ctx = testlog.WithTestLogger(l.ctx, t)
-	l.log().Debug(feature, "Test started")
+	l.log().Debug(feature, " Test started")
 }
 
 func (l logEmitter) TestFinished(feature string, t feature.T) {
-	l.log().Debug(feature, "Test Finished")
+	l.log().Debug(feature, " Test Finished")
 }
 
 func (l logEmitter) StepsPlanned(feature string, steps map[feature.Timing][]feature.Step, t feature.T) {
@@ -77,7 +77,7 @@ func (l logEmitter) StepsPlanned(feature string, steps map[feature.Timing][]feat
 		l.log().Fatal(err)
 		return
 	}
-	l.log().Debug(feature, "Steps Planned", string(bytes))
+	l.log().Debug(feature, " Steps Planned ", string(bytes))
 }
 
 func (l logEmitter) StepStarted(feature string, step *feature.Step, t feature.T) {
@@ -86,7 +86,7 @@ func (l logEmitter) StepStarted(feature string, step *feature.Step, t feature.T)
 		l.log().Fatal(err)
 		return
 	}
-	l.log().Debug(feature, "Step Started", string(bytes))
+	l.log().Debug(feature, " Step Started ", string(bytes))
 }
 
 func (l logEmitter) StepFinished(feature string, step *feature.Step, t feature.T) {
@@ -95,15 +95,15 @@ func (l logEmitter) StepFinished(feature string, step *feature.Step, t feature.T
 		l.log().Fatal(err)
 		return
 	}
-	l.log().Debug(feature, "Step Finished", "\n", string(bytes))
+	l.log().Debug(feature, " Step Finished ", string(bytes))
 }
 
 func (l logEmitter) TestSetStarted(featureSet string, t feature.T) {
-	l.log().Debug(featureSet, "FeatureSet Started")
+	l.log().Debug(featureSet, " FeatureSet Started")
 }
 
 func (l logEmitter) TestSetFinished(featureSet string, t feature.T) {
-	l.log().Debug(featureSet, "FeatureSet Finished")
+	l.log().Debug(featureSet, " FeatureSet Finished")
 }
 
 func (l logEmitter) Finished() {
@@ -112,7 +112,7 @@ func (l logEmitter) Finished() {
 }
 
 func (l logEmitter) Exception(reason, messageFormat string, messageA ...interface{}) {
-	l.log().Error("Exception", reason, fmt.Sprintf(messageFormat, messageA...))
+	l.log().Error("Exception ", reason, " ", fmt.Sprintf(messageFormat, messageA...))
 }
 
 func (l logEmitter) dumpEvents() {

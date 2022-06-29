@@ -50,7 +50,9 @@ func NewContext(parent ...context.Context) context.Context {
 func WithTestLogger(ctx context.Context, t zaptest.TestingT, opts ...zaptest.LoggerOption) context.Context {
 	opts = append([]zaptest.LoggerOption{
 		zaptest.Level(LevelFromEnvironment(ctx)),
-		zaptest.WrapOptions(zap.AddCaller()),
+		zaptest.WrapOptions(zap.AddCaller(), zap.Fields(
+			zap.String("test", t.Name()),
+		)),
 	}, opts...)
 	log := zaptest.NewLogger(t, opts...)
 	return logging.WithLogger(ctx, log.Sugar())

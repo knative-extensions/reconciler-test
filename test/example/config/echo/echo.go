@@ -34,9 +34,16 @@ type Output struct {
 	Message string `json:"msg"`
 }
 
+func Images() feature.Option {
+	return func(ctx context.Context) (context.Context, error) {
+		images := manifest.ImagesFromFS(ctx, templates)
+		opt := environment.RegisterPackage(images...)
+		return opt(ctx, environment.FromContext(ctx))
+	}
+}
+
 func Install(name, message string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		environment.RegisterPackage(manifest.ImagesFromFS(ctx, templates)...)
 		if _, err := manifest.InstallYamlFS(ctx, templates, map[string]interface{}{
 			"name":    name,
 			"message": message,

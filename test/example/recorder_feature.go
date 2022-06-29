@@ -35,6 +35,9 @@ import (
 func RecorderFeature() *feature.Feature {
 	f := &feature.Feature{Name: "Record"}
 
+	// Ensure the eventshub image is registered.
+	f.ConfigureEnvironment(eventshub.Images())
+
 	f.Setup("create an event", func(ctx context.Context, t feature.T) {
 		state.SetOrFail(ctx, t, "event", FullEvent())
 	})
@@ -72,6 +75,9 @@ func RecorderFeature() *feature.Feature {
 
 func RecorderFeatureYAML() *feature.Feature {
 	f := &feature.Feature{Name: "Record"}
+
+	// Ensure the eventshub image is registered.
+	f.ConfigureEnvironment(eventshub.Images())
 
 	f.Setup("install recorder", func(ctx context.Context, t feature.T) {
 		to := feature.MakeRandomK8sName("recorder")

@@ -19,7 +19,6 @@ package ko
 import (
 	"bufio"
 	"context"
-	"io"
 	"io/ioutil"
 	"os/exec"
 
@@ -28,7 +27,7 @@ import (
 
 // Helper functions to run shell commands.
 
-func cmd(ctx context.Context, cmds []string) (io.ReadCloser, error) {
+func cmd(ctx context.Context, cmds []string) ([]byte, error) {
 	log := logging.FromContext(ctx)
 	prog := cmds[0]
 	args := cmds[1:]
@@ -56,21 +55,23 @@ func cmd(ctx context.Context, cmds []string) (io.ReadCloser, error) {
 		log.Debug(msg) // write each line to your log, or anything you need
 	}
 	if err = in.Err(); err != nil {
-		log.Error(err)
+		return nil, err
 	}
 
-	return stdout, nil
+	bytes, err := ioutil.ReadAll(stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, c.Wait()
 }
 
 func runCmd(ctx context.Context, cmds []string) (string, error) {
+	logging.FromContext(ctx).Debugf("Running command: %#v", cmds)
 	stdout, err := cmd(ctx, cmds)
 	if err != nil {
 		return "", err
 	}
-	defer func() {
-		_ = stdout.Close()
-	}()
 
-	bytes, err := ioutil.ReadAll(stdout)
-	return string(bytes), err
+	return string(stdout), err
 }

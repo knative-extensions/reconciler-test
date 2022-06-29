@@ -48,11 +48,15 @@ func InstallYaml(ctx context.Context, dir string, base map[string]interface{}) (
 
 func InstallYamlFS(ctx context.Context, fsys fs.FS, base map[string]interface{}) (Manifest, error) {
 	env := environment.FromContext(ctx)
+	images, err := environment.ProduceImages(ctx)
+	if err != nil {
+		return nil, err
+	}
 	cfg := env.TemplateConfig(base)
 	f := feature.FromContext(ctx)
 	log := loggingFrom(ctx, "InstallYamlFS")
 
-	yamls, err := ParseTemplatesFS(ctx, fsys, env.Images(), cfg)
+	yamls, err := ParseTemplatesFS(ctx, fsys, images, cfg)
 	if err != nil {
 		return nil, err
 	}

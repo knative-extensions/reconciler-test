@@ -35,6 +35,9 @@ func ProberFeature() *feature.Feature {
 	// Configured the sender for how many events it will be sending.
 	prober.SenderFullEvents(1)
 
+	// Ensure the eventshub image is registered.
+	f.ConfigureEnvironment(eventshub.Images())
+
 	// Install the receiver, then the sender.
 	f.Setup("install recorder", prober.ReceiverInstall(to))
 
@@ -57,6 +60,9 @@ func ProberFeatureWithDrop() *feature.Feature {
 
 	from := "xxxfrom"
 	to := "xxxto"
+
+	// Ensure the eventshub image is registered.
+	f.ConfigureEnvironment(eventshub.Images())
 
 	prober := eventshub.NewProber()
 	prober.ReceiversRejectFirstN(5)
@@ -105,6 +111,9 @@ func ProberFeatureYAML() *feature.Feature {
 
 	from := "zzzfrom"
 	to := "zzzto"
+
+	// Ensure the eventshub image is registered.
+	f.ConfigureEnvironment(eventshub.Images())
 
 	prober := eventshub.NewProber()
 

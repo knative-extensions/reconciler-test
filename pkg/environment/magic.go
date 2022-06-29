@@ -67,8 +67,6 @@ type MagicEnvironment struct {
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
 
-	imageStore
-
 	// milestones sends milestone events, if configured.
 	milestones milestone.Emitter
 
@@ -110,6 +108,14 @@ func WithPollTimings(interval, timeout time.Duration) EnvOpts {
 // It also configures the testing.T bound zap.Logger associating it with
 // context.Context.
 func Managed(t feature.T) EnvOpts {
+	cleanup := func(ctx context.Context, env Environment) (context.Context, error) {
+		if e, ok := env.(*MagicEnvironment); ok {
+			e.managedT = t
+		}
+		t.Cleanup(env.Finish)
+		return ctx, nil
+	}
+	return UnionOpts(cleanup, WithTestLogger(t))
 	return func(ctx context.Context, env Environment) (context.Context, error) {
 		if e, ok := env.(*MagicEnvironment); ok {
 			e.managedT = t
@@ -128,12 +134,12 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		s:            mr.FeatureState,
 		featureMatch: mr.FeatureMatch,
 
-		imageStore: imageStore{},
-		namespace:  namespace,
+		namespace: namespace,
 	}
 
 	ctx := ContextWith(mr.c, env)
 
+	opts = append(opts, RegisterPackage( /* non, to initialize */ ))
 	for _, opt := range opts {
 		var err error
 		if ctx, err = opt(ctx, env); err != nil {
@@ -169,8 +175,9 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 }
 
 func (mr *MagicEnvironment) Images() map[string]string {
-	if refs, err := mr.imageStore.Get(mr.c); err != nil {
-		logging.FromContext(mr.c).Fatal(err)
+	ctx := mr.c
+	if refs, err := ProduceImages(ctx); err != nil {
+		logging.FromContext(ctx).Fatal(err)
 		return nil
 	} else {
 		return refs
@@ -246,6 +253,7 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	}
 	ctx = state.ContextWith(ctx, f.State)
 	ctx = feature.ContextWith(ctx, f)
+	ctx = configureContext(ctx, f)
 
 	steps := categorizeSteps(f.Steps)
 
@@ -315,6 +323,17 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	if skipReason != "" {
 		originalT.Skipf("Skipping feature '%s' assertions because %s", f.Name, skipReason)
 	}
+}
+
+func configureContext(ctx context.Context, f *feature.Feature) context.Context {
+	for _, opt := range f.Options {
+		var err error
+		ctx, err = opt(ctx)
+		if err != nil {
+			logging.FromContext(ctx).Fatal(err)
+		}
+	}
+	return ctx
 }
 
 // TODO: this logic is strange and hard to follow.

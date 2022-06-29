@@ -33,10 +33,6 @@ import (
 //go:embed *.yaml
 var templates embed.FS
 
-func init() {
-	environment.RegisterPackage(thisPackage)
-}
-
 // Install starts a new eventshub with the provided name
 // Note: this function expects that the Environment is configured with the
 // following options, otherwise it will panic:
@@ -49,7 +45,8 @@ func init() {
 //   )
 func Install(name string, options ...EventsHubOption) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		namespace := environment.FromContext(ctx).Namespace()
+		env := environment.FromContext(ctx)
+		namespace := env.Namespace()
 		log := logging.FromContext(ctx)
 
 		// Compute the user provided envs

@@ -31,18 +31,22 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/injection/clients/dynamicclient"
-
 	"knative.dev/reconciler-test/pkg/state"
 )
 
 // Feature is a list of steps and feature name.
 type Feature struct {
-	Name  string
-	Steps []Step
-	State state.Store
+	Name    string
+	Steps   []Step
+	Options []Option
+	State   state.Store
 	// Contains all the resources created as part of this Feature.
 	refs []corev1.ObjectReference
 }
+
+// Option is used to adjust the context or change how the Feature environment
+// is set up.
+type Option func(ctx context.Context) (context.Context, error)
 
 func (f Feature) MarshalJSON() ([]byte, error) {
 	in := struct {
@@ -206,6 +210,12 @@ var (
 	// Expected to be used as a StepFn.
 	_ StepFn = (&Feature{}).DeleteResources
 )
+
+// ConfigureEnvironment configures the environment required for the Feature
+// to work.
+func (f *Feature) ConfigureEnvironment(opt ...Option) {
+	f.Options = append(f.Options, opt...)
+}
 
 // Setup adds a step function to the feature set at the Setup timing phase.
 func (f *Feature) Setup(name string, fn StepFn) {
