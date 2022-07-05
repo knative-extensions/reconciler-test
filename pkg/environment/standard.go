@@ -61,11 +61,10 @@ func NewStandardGlobalEnvironment(opts ...ConfigurationOption) GlobalEnvironment
 	// context passed in the features.
 	var startInformers func()
 	ctx, startInformers = injection.EnableInjectionOrDie(ctx, config.Config)
-	startInformers()
 
 	// global is used to make instances of Environments, NewGlobalEnvironment
 	// is passing and saving the client injection enabled context for use later.
-	return NewGlobalEnvironment(ctx)
+	return NewGlobalEnvironment(ctx, startInformers)
 }
 
 func resolveConfiguration(opts []ConfigurationOption) Configuration {

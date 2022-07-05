@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,28 +34,28 @@ import (
 	"knative.dev/reconciler-test/pkg/state"
 )
 
-func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
-	log := logging.FromContext(ctx)
-	log.Infof("Global environment settings: level %s, state %s, feature %#v", l, s, *f)
-
+func NewGlobalEnvironment(ctx context.Context, starters ...func()) GlobalEnvironment {
 	return &MagicGlobalEnvironment{
-		c:                ctx,
-		instanceID:       uuid.New().String(),
 		RequirementLevel: *l,
 		FeatureState:     *s,
 		FeatureMatch:     regexp.MustCompile(*f),
+		c:                ctx,
+		instanceID:       uuid.New().String(),
+		starters:         starters,
 	}
 }
 
 type MagicGlobalEnvironment struct {
-	c context.Context
-	// instanceID represents this instance of the GlobalEnvironment. It is used
-	// to link runs together from a single global environment.
-	instanceID string
-
 	RequirementLevel feature.Levels
 	FeatureState     feature.States
 	FeatureMatch     *regexp.Regexp
+
+	c context.Context
+	// instanceID represents this instance of the GlobalEnvironment. It is used
+	// to link runs together from a single global environment.
+	instanceID   string
+	starters     []func()
+	startersOnce sync.Once
 }
 
 type MagicEnvironment struct {
@@ -144,6 +145,15 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		}
 	}
 	env.c = ctx
+
+	log := logging.FromContext(ctx)
+	log.Infof("Environment settings: level %s, state %s, feature %#v",
+		env.l, env.s, env.featureMatch)
+	mr.startersOnce.Do(func() {
+		for _, starter := range mr.starters {
+			starter()
+		}
+	})
 
 	// It is possible to have milestones set in the options, check for nil in
 	// env first before attempting to pull one from the os environment.

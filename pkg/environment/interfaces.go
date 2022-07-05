@@ -77,21 +77,6 @@ type Environment interface {
 	Finish()
 }
 
-type EnvironmentImages interface {
-	// Get returns the name to container image mapping to be used with
-	// yaml template parsing.
-	// The map will be in the form `key`: `image` and `key` and the intention
-	// usage is to use this key to string substitute for image in test yaml.
-	Get() map[string]string
-
-	// RegisterPackage registers an interest in producing an image based on the
-	// provided package or <ko://package> URI.
-	// Can be called multiple times with the same package.
-	// A package will be used to produce the image and used
-	// like `image: ko://<package>` inside test yaml.
-	RegisterPackage(pack ...string)
-}
-
 // UnionOpts joins the given opts into a single opts function.
 func UnionOpts(opts ...EnvOpts) EnvOpts {
 	return func(ctx context.Context, env Environment) (context.Context, error) {
