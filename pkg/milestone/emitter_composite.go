@@ -69,8 +69,8 @@ func (c compositeEmitter) TestSetFinished(featureSet string, t feature.T) {
 	c.foreach(func(emitter Emitter) { emitter.TestSetFinished(featureSet, t) })
 }
 
-func (c compositeEmitter) Finished() {
-	c.foreach(func(emitter Emitter) { emitter.Finished() })
+func (c compositeEmitter) Finished(failed bool) {
+	c.foreach(func(emitter Emitter) { emitter.Finished(failed) })
 }
 
 func (c compositeEmitter) Exception(reason, messageFormat string, messageA ...interface{}) {

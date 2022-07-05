@@ -35,17 +35,19 @@ import (
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
-type logEmitter struct {
-	ctx       context.Context
-	namespace string
+// LogEmitter is an Emitter that logs milestone events.
+type LogEmitter struct {
+	AlwaysDumpEvents bool
+	ctx              context.Context
+	namespace        string
 }
 
 // NewLogEmitter creates an Emitter that logs milestone events.
-func NewLogEmitter(ctx context.Context, namespace string) Emitter {
-	return &logEmitter{ctx: ctx, namespace: namespace}
+func NewLogEmitter(ctx context.Context, namespace string) *LogEmitter {
+	return &LogEmitter{ctx: ctx, namespace: namespace}
 }
 
-func (l logEmitter) Environment(env map[string]string) {
+func (l LogEmitter) Environment(env map[string]string) {
 	bytes, err := json.MarshalIndent(env, " ", " ")
 	if err != nil {
 		l.log().Fatal(err)
@@ -54,24 +56,24 @@ func (l logEmitter) Environment(env map[string]string) {
 	l.log().Debug("Environment ", string(bytes))
 }
 
-func (l logEmitter) NamespaceCreated(namespace string) {
+func (l LogEmitter) NamespaceCreated(namespace string) {
 	l.log().Debug("Namespace created ", namespace)
 }
 
-func (l logEmitter) NamespaceDeleted(namespace string) {
+func (l LogEmitter) NamespaceDeleted(namespace string) {
 	l.log().Debug("Namespace deleted ", namespace)
 }
 
-func (l logEmitter) TestStarted(feature string, t feature.T) {
+func (l LogEmitter) TestStarted(feature string, t feature.T) {
 	l.ctx = testlog.WithTestLogger(l.ctx, t)
 	l.log().Debug(feature, " Test started")
 }
 
-func (l logEmitter) TestFinished(feature string, t feature.T) {
+func (l LogEmitter) TestFinished(feature string, t feature.T) {
 	l.log().Debug(feature, " Test Finished")
 }
 
-func (l logEmitter) StepsPlanned(feature string, steps map[feature.Timing][]feature.Step, t feature.T) {
+func (l LogEmitter) StepsPlanned(feature string, steps map[feature.Timing][]feature.Step, t feature.T) {
 	bytes, err := json.MarshalIndent(steps, " ", " ")
 	if err != nil {
 		l.log().Fatal(err)
@@ -80,7 +82,7 @@ func (l logEmitter) StepsPlanned(feature string, steps map[feature.Timing][]feat
 	l.log().Debug(feature, " Steps Planned ", string(bytes))
 }
 
-func (l logEmitter) StepStarted(feature string, step *feature.Step, t feature.T) {
+func (l LogEmitter) StepStarted(feature string, step *feature.Step, t feature.T) {
 	bytes, err := json.MarshalIndent(step, " ", " ")
 	if err != nil {
 		l.log().Fatal(err)
@@ -89,7 +91,7 @@ func (l logEmitter) StepStarted(feature string, step *feature.Step, t feature.T)
 	l.log().Debug(feature, " Step Started ", string(bytes))
 }
 
-func (l logEmitter) StepFinished(feature string, step *feature.Step, t feature.T) {
+func (l LogEmitter) StepFinished(feature string, step *feature.Step, t feature.T) {
 	bytes, err := json.MarshalIndent(step, " ", " ")
 	if err != nil {
 		l.log().Fatal(err)
@@ -98,24 +100,30 @@ func (l logEmitter) StepFinished(feature string, step *feature.Step, t feature.T
 	l.log().Debug(feature, " Step Finished ", string(bytes))
 }
 
-func (l logEmitter) TestSetStarted(featureSet string, t feature.T) {
+func (l LogEmitter) TestSetStarted(featureSet string, t feature.T) {
 	l.log().Debug(featureSet, " FeatureSet Started")
 }
 
-func (l logEmitter) TestSetFinished(featureSet string, t feature.T) {
+func (l LogEmitter) TestSetFinished(featureSet string, t feature.T) {
 	l.log().Debug(featureSet, " FeatureSet Finished")
 }
 
-func (l logEmitter) Finished() {
-	l.log().Debug("Finished")
-	l.dumpEvents()
+func (l LogEmitter) Finished(failed bool) {
+	status := "Success"
+	if failed {
+		status = "Failed"
+	}
+	l.log().Debug("Finished: ", status)
+	if l.AlwaysDumpEvents || failed {
+		l.dumpEvents()
+	}
 }
 
-func (l logEmitter) Exception(reason, messageFormat string, messageA ...interface{}) {
+func (l LogEmitter) Exception(reason, messageFormat string, messageA ...interface{}) {
 	l.log().Error("Exception ", reason, " ", fmt.Sprintf(messageFormat, messageA...))
 }
 
-func (l logEmitter) dumpEvents() {
+func (l LogEmitter) dumpEvents() {
 	events, err := kubeclient.Get(l.ctx).CoreV1().Events(l.namespace).List(l.ctx, metav1.ListOptions{})
 	if err != nil {
 		l.log().Warn("failed to list events ", err)
@@ -141,7 +149,7 @@ func (l logEmitter) dumpEvents() {
 		len(events.Items), dump.Name())
 }
 
-func (l logEmitter) newDumpFile() *os.File {
+func (l LogEmitter) newDumpFile() *os.File {
 	artifacts := os.Getenv("ARTIFACTS")
 	f, err := ioutil.TempFile(artifacts, "events-dump.*.json")
 	if err != nil {
@@ -166,6 +174,6 @@ func eventTime(e corev1.Event) time.Time {
 	return e.LastTimestamp.Time
 }
 
-func (l logEmitter) log() *zap.SugaredLogger {
+func (l LogEmitter) log() *zap.SugaredLogger {
 	return logging.FromContext(l.ctx).With("namespace", l.namespace)
 }

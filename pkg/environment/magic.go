@@ -89,7 +89,11 @@ func (mr *MagicEnvironment) References() []corev1.ObjectReference {
 func (mr *MagicEnvironment) Finish() {
 	// Delete the namespace after sending the Finished milestone event
 	// since emitters might use the namespace.
-	mr.milestones.Finished()
+	failed := false
+	if mr.managedT != nil {
+		failed = mr.managedT.Failed()
+	}
+	mr.milestones.Finished(failed)
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
 		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
 		panic(err)
@@ -116,13 +120,6 @@ func Managed(t feature.T) EnvOpts {
 		return ctx, nil
 	}
 	return UnionOpts(cleanup, WithTestLogger(t))
-	return func(ctx context.Context, env Environment) (context.Context, error) {
-		if e, ok := env.(*MagicEnvironment); ok {
-			e.managedT = t
-		}
-		t.Cleanup(env.Finish)
-		return WithTestLogger(t)(ctx, env)
-	}
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {

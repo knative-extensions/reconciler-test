@@ -54,7 +54,7 @@ type Emitter interface {
 	StepFinished(feature string, step *feature.Step, t feature.T)
 	TestSetStarted(featureSet string, t feature.T)
 	TestSetFinished(featureSet string, t feature.T)
-	Finished()
+	Finished(failed bool)
 	Exception(reason, messageFormat string, messageA ...interface{})
 }
 
@@ -181,7 +181,7 @@ func (n *NilSafeClient) TestSetFinished(featureSet string, t feature.T) {
 	n.Event(context.Background(), n.Factory.TestSetFinished(featureSet, t.Name(), t.Skipped(), t.Failed()))
 }
 
-func (n *NilSafeClient) Finished() {
+func (n *NilSafeClient) Finished(failed bool) {
 	if n == nil || n.Client == nil {
 		return
 	}
