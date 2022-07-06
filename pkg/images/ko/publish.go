@@ -18,9 +18,13 @@ package ko
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 )
+
+// ErrKoPublishFailed is returned when the ko publish command fails.
+var ErrKoPublishFailed = errors.New("ko publish failed")
 
 // Publish uses ko to publish the image.
 func Publish(ctx context.Context, path string) (string, error) {
@@ -39,7 +43,8 @@ func Publish(ctx context.Context, path string) (string, error) {
 	args = append(args, "-B", path)
 	out, err := runCmd(ctx, args)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w: %v -- command: %q",
+			ErrKoPublishFailed, err, args)
 	}
 	return out, nil
 }

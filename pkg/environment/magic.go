@@ -94,9 +94,14 @@ func (mr *MagicEnvironment) Finish() {
 	if mr.managedT != nil {
 		failed = mr.managedT.Failed()
 	}
-	mr.milestones.Finished(failed)
+	if mr.milestones != nil {
+		mr.milestones.Finished(failed)
+	}
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
-		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
+		if mr.milestones != nil {
+			mr.milestones.Exception(NamespaceDeleteErrorReason,
+				"failed to delete namespace %q, %v", mr.namespace, err)
+		}
 		panic(err)
 	}
 }
@@ -139,15 +144,16 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 
 	opts = append(opts, RegisterPackage( /* non, to initialize */ ))
 	for _, opt := range opts {
-		var err error
-		if ctx, err = opt(ctx, env); err != nil {
+		if nctx, err := opt(ctx, env); err != nil {
 			logging.FromContext(ctx).Fatal(err)
+		} else {
+			ctx = nctx
 		}
 	}
 	env.c = ctx
 
 	log := logging.FromContext(ctx)
-	log.Infof("Environment settings: level %s, state %s, feature %#v",
+	log.Infof("Environment settings: level %s, state %s, feature %q",
 		env.l, env.s, env.featureMatch)
 	mr.startersOnce.Do(func() {
 		for _, starter := range mr.starters {
