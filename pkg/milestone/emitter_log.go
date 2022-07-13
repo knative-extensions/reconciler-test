@@ -108,13 +108,13 @@ func (l LogEmitter) TestSetFinished(featureSet string, t feature.T) {
 	l.log().Debug(featureSet, " FeatureSet Finished")
 }
 
-func (l LogEmitter) Finished(failed bool) {
+func (l LogEmitter) Finished(result Result) {
 	status := "Success"
-	if failed {
+	if result.Failed() {
 		status = "Failed"
 	}
 	l.log().Debug("Finished: ", status)
-	if l.AlwaysDumpEvents || failed {
+	if l.AlwaysDumpEvents || result.Failed() {
 		l.dumpEvents()
 	}
 }

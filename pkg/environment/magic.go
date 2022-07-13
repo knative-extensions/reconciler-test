@@ -93,12 +93,12 @@ func (mr *MagicEnvironment) References() []corev1.ObjectReference {
 func (mr *MagicEnvironment) Finish() {
 	// Delete the namespace after sending the Finished milestone event
 	// since emitters might use the namespace.
-	failed := false
+	var result milestone.Result = unknownResult{}
 	if mr.managedT != nil {
-		failed = mr.managedT.Failed()
+		result = mr.managedT
 	}
 	if mr.milestones != nil {
-		mr.milestones.Finished(failed)
+		mr.milestones.Finished(result)
 	}
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
 		if mr.milestones != nil {
@@ -355,6 +355,12 @@ func configureContext(ctx context.Context, f *feature.Feature) context.Context {
 		}
 	}
 	return ctx
+}
+
+type unknownResult struct{}
+
+func (u unknownResult) Failed() bool {
+	return false
 }
 
 // TODO: this logic is strange and hard to follow.
