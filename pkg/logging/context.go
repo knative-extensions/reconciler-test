@@ -39,7 +39,7 @@ func NewContext(parent ...context.Context) context.Context {
 		ctx = parent[0]
 	}
 	level := LevelFromEnvironment(ctx)
-	log := interimLogger(level)
+	log := defaultLogger(level)
 	if len(parent) == 0 {
 		log.Warn("Using context.TODO() as no real context was provided")
 	}
@@ -58,7 +58,7 @@ func WithTestLogger(ctx context.Context, t zaptest.TestingT, opts ...zaptest.Log
 	return logging.WithLogger(ctx, log.Sugar())
 }
 
-func interimLogger(level zapcore.Level) *zap.SugaredLogger {
+func defaultLogger(level zapcore.Level) *zap.SugaredLogger {
 	config := zap.NewDevelopmentConfig()
 	config.Level = zap.NewAtomicLevelAt(level)
 	if log, err := config.Build(); err != nil {
