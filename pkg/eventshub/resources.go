@@ -45,6 +45,9 @@ var templates embed.FS
 //   )
 func Install(name string, options ...EventsHubOption) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
+		if err := registerImage(ctx); err != nil {
+			t.Fatalf("Failed to install eventshub image: %v", err)
+		}
 		env := environment.FromContext(ctx)
 		namespace := env.Namespace()
 		log := logging.FromContext(ctx)

@@ -22,19 +22,9 @@ import (
 	"reflect"
 
 	"knative.dev/reconciler-test/pkg/environment"
-	"knative.dev/reconciler-test/pkg/feature"
 )
 
 type eventshubImageKey struct{}
-
-// Images creates a environment setup function that will install the eventshub image.
-func Images() feature.Option {
-	return func(ctx context.Context) (context.Context, error) {
-		im := ImageFromContext(ctx)
-		reg := environment.RegisterPackage(im)
-		return reg(ctx, environment.FromContext(ctx))
-	}
-}
 
 // ImageFromContext gets the eventshub image from context
 func ImageFromContext(ctx context.Context) string {
@@ -49,6 +39,13 @@ func WithCustomImage(image string) environment.EnvOpts {
 	return func(ctx context.Context, env environment.Environment) (context.Context, error) {
 		return context.WithValue(ctx, eventshubImageKey{}, image), nil
 	}
+}
+
+func registerImage(ctx context.Context) error {
+	im := ImageFromContext(ctx)
+	reg := environment.RegisterPackage(im)
+	_, err := reg(ctx, environment.FromContext(ctx))
+	return err
 }
 
 func cmdPackage() string {

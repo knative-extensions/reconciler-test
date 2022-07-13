@@ -274,7 +274,6 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	}
 	ctx = state.ContextWith(ctx, f.State)
 	ctx = feature.ContextWith(ctx, f)
-	ctx = configureContext(ctx, f)
 
 	steps := categorizeSteps(f.Steps)
 
@@ -344,17 +343,6 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	if skipReason != "" {
 		originalT.Skipf("Skipping feature '%s' assertions because %s", f.Name, skipReason)
 	}
-}
-
-func configureContext(ctx context.Context, f *feature.Feature) context.Context {
-	for _, opt := range f.Options {
-		var err error
-		ctx, err = opt(ctx)
-		if err != nil {
-			logging.FromContext(ctx).Fatal(err)
-		}
-	}
-	return ctx
 }
 
 type unknownResult struct{}

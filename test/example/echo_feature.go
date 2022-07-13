@@ -31,8 +31,6 @@ import (
 func EchoFeature() *feature.Feature {
 	f := &feature.Feature{Name: "EchoFeature"}
 
-	f.ConfigureEnvironment(echo.Images())
-
 	msg := fmt.Sprintf("hello %s", uuid.New())
 	name := "echo" + uuid.New().String()
 

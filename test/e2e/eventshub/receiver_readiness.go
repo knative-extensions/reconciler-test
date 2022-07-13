@@ -51,9 +51,6 @@ const ubi8Image = "registry.access.redhat.com/ubi8/ubi"
 func ReceiverReadiness() *feature.Feature {
 	f := feature.NewFeature()
 
-	// Ensure the eventshub image is registered.
-	f.ConfigureEnvironment(eventshub.Images())
-
 	sinkName := feature.MakeRandomK8sName("sink")
 	ev := cetest.FullEvent()
 	ev.SetID(feature.MakeRandomK8sName("test-event"))

@@ -41,7 +41,9 @@ type ImageProducer func(ctx context.Context, pack string) (string, error)
 func RegisterPackage(pack ...string) EnvOpts {
 	ri := func(ctx context.Context, env Environment) (context.Context, error) {
 		rk := registeredPackagesKey{}
-		return rk.register(ctx, pack), nil
+		rk.register(ctx, pack)
+		store := rk.get(ctx)
+		return context.WithValue(ctx, rk, store), nil
 	}
 	return UnionOpts(ri, WithImages(map[string]string{}))
 }
@@ -56,7 +58,7 @@ func WithImages(given map[string]string) EnvOpts {
 		ik := imageStoreKey{}
 		store := ik.get(ctx)
 		store.withImages(given)
-		return context.WithValue(ctx, imageStoreKey{}, store), nil
+		return context.WithValue(ctx, ik, store), nil
 	}
 }
 
@@ -82,14 +84,22 @@ func ProduceImages(ctx context.Context) (map[string]string, error) {
 
 type registeredPackagesKey struct{}
 
-func (k registeredPackagesKey) packages(ctx context.Context) []string {
-	if registered, ok := ctx.Value(k).([]string); ok {
-		return registered
-	}
-	return []string{}
+type packagesStore struct {
+	refs []string
 }
 
-func (k registeredPackagesKey) register(ctx context.Context, packs []string) context.Context {
+func (k registeredPackagesKey) get(ctx context.Context) *packagesStore {
+	if registered, ok := ctx.Value(k).(*packagesStore); ok {
+		return registered
+	}
+	return &packagesStore{}
+}
+
+func (k registeredPackagesKey) packages(ctx context.Context) []string {
+	return k.get(ctx).refs
+}
+
+func (k registeredPackagesKey) register(ctx context.Context, packs []string) {
 	toRegister := make([]string, 0, len(packs))
 	toRegister = append(toRegister, k.packages(ctx)...)
 	for _, pack := range packs {
@@ -98,7 +108,8 @@ func (k registeredPackagesKey) register(ctx context.Context, packs []string) con
 			toRegister = append(toRegister, pack)
 		}
 	}
-	return context.WithValue(ctx, k, toRegister)
+	store := k.get(ctx)
+	store.refs = toRegister
 }
 
 func (k registeredPackagesKey) contains(packs []string, pack string) bool {
