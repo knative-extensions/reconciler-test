@@ -37,7 +37,7 @@ var global environment.GlobalEnvironment
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
 	// global is used to make instances of Environments, NewStandardGlobalEnvironment
-	// is passing and saving the client injection enabled context for use later.
+	// is initializing the client injection enabled context for use later.
 	global = environment.NewStandardGlobalEnvironment()
 
 	// Run the tests.

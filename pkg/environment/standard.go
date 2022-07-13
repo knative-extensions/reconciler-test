@@ -41,7 +41,9 @@ type Configuration struct {
 // modified configuration.
 type ConfigurationOption func(Configuration) Configuration
 
-// NewStandardGlobalEnvironment will create a new standard global environment.
+// NewStandardGlobalEnvironment will create a new global environment in a
+// standard way. The Kube client will be initialized within the
+// context.Context for later use.
 func NewStandardGlobalEnvironment(opts ...ConfigurationOption) GlobalEnvironment {
 	config := resolveConfiguration(opts)
 	ctx := testlog.NewContext(config.Context)
