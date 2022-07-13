@@ -116,19 +116,24 @@ func WithPollTimings(interval, timeout time.Duration) EnvOpts {
 	}
 }
 
-// Managed enables auto-lifecycle management of the environment. Including:
-//  - registers a t.Cleanup callback on env.Finish().
-// It also configures the testing.T bound zap.Logger associating it with
-// context.Context.
+// Managed enables auto-lifecycle management of the environment. Including
+// registration of following opts:
+//  - Cleanup,
+//  - WithTestLogger.
 func Managed(t feature.T) EnvOpts {
-	cleanup := func(ctx context.Context, env Environment) (context.Context, error) {
+	return UnionOpts(Cleanup(t), WithTestLogger(t))
+}
+
+// Cleanup is an environment option to register a cleanup that will call
+// Environment.Finish function at test end automatically.
+func Cleanup(t feature.T) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
 		if e, ok := env.(*MagicEnvironment); ok {
 			e.managedT = t
 		}
 		t.Cleanup(env.Finish)
 		return ctx, nil
 	}
-	return UnionOpts(cleanup, WithTestLogger(t))
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
