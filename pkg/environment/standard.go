@@ -26,7 +26,13 @@ import (
 
 // Flags is used to pass flags implementation.
 type Flags interface {
-	Set(ctx context.Context) *flag.FlagSet
+	// Get returns the flag set object on which specific flags are registered.
+	// After registration is complete, the Parse method should be called.
+	Get(ctx context.Context) *flag.FlagSet
+
+	// Parse invokes the processing of underlying inputs that will update the
+	// previously returned flag.FlagSet object. Thi method should be called after
+	// the specific flags has been defined on object returned from the Get method.
 	Parse(ctx context.Context) error
 }
 
@@ -49,7 +55,7 @@ func NewStandardGlobalEnvironment(opts ...ConfigurationOption) GlobalEnvironment
 	ctx := testlog.NewContext(config.Context)
 
 	// environment.InitFlags registers state, level and feature filter flags.
-	InitFlags(config.Flags.Set(ctx))
+	InitFlags(config.Flags.Get(ctx))
 
 	// We get a chance to parse flags to include the framework flags for the
 	// framework as well as any additional flags included in the integration.
@@ -83,7 +89,7 @@ func resolveConfiguration(opts []ConfigurationOption) Configuration {
 
 type commandlineFlags struct{}
 
-func (c commandlineFlags) Set(ctx context.Context) *flag.FlagSet {
+func (c commandlineFlags) Get(ctx context.Context) *flag.FlagSet {
 	return flag.CommandLine
 }
 
