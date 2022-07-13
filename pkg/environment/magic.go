@@ -34,14 +34,17 @@ import (
 	"knative.dev/reconciler-test/pkg/state"
 )
 
-func NewGlobalEnvironment(ctx context.Context, starters ...func()) GlobalEnvironment {
+// NewGlobalEnvironment creates a new global environment based on a
+// context.Context, and optional initializers slice. The provided context is
+// expected to contain the configured Kube client already.
+func NewGlobalEnvironment(ctx context.Context, initializers ...func()) GlobalEnvironment {
 	return &MagicGlobalEnvironment{
 		RequirementLevel: *l,
 		FeatureState:     *s,
 		FeatureMatch:     regexp.MustCompile(*f),
 		c:                ctx,
 		instanceID:       uuid.New().String(),
-		starters:         starters,
+		initializers:     initializers,
 	}
 }
 
@@ -53,9 +56,9 @@ type MagicGlobalEnvironment struct {
 	c context.Context
 	// instanceID represents this instance of the GlobalEnvironment. It is used
 	// to link runs together from a single global environment.
-	instanceID   string
-	starters     []func()
-	startersOnce sync.Once
+	instanceID       string
+	initializers     []func()
+	initializersOnce sync.Once
 }
 
 type MagicEnvironment struct {
@@ -155,9 +158,9 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	log := logging.FromContext(ctx)
 	log.Infof("Environment settings: level %s, state %s, feature %q",
 		env.l, env.s, env.featureMatch)
-	mr.startersOnce.Do(func() {
-		for _, starter := range mr.starters {
-			starter()
+	mr.initializersOnce.Do(func() {
+		for _, initializer := range mr.initializers {
+			initializer()
 		}
 	})
 
