@@ -42,7 +42,7 @@ func NewGlobalEnvironment(ctx context.Context, initializers ...func()) GlobalEnv
 		RequirementLevel: *l,
 		FeatureState:     *s,
 		FeatureMatch:     regexp.MustCompile(*f),
-		c:                ctx,
+		c:                initializeImageStores(ctx),
 		instanceID:       uuid.New().String(),
 		initializers:     initializers,
 	}
@@ -150,7 +150,6 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 
 	ctx := ContextWith(mr.c, env)
 
-	opts = append(opts, RegisterPackage( /* non, to initialize */ ))
 	for _, opt := range opts {
 		if nctx, err := opt(ctx, env); err != nil {
 			logging.FromContext(ctx).Fatal(err)

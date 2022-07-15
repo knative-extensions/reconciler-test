@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
+	"knative.dev/pkg/logging"
 	"knative.dev/reconciler-test/pkg/images/ko"
 )
 
@@ -28,6 +30,8 @@ var (
 	// CurrentImageProducer is the function that will be used to produce the
 	// container images. By default, it is ko.Publish, but can be overridden.
 	CurrentImageProducer = ImageProducer(ko.Publish)
+
+	publishLock = sync.Mutex{}
 )
 
 // ImageProducer is a function that will be used to produce the container images.
@@ -39,13 +43,12 @@ type ImageProducer func(ctx context.Context, pack string) (string, error)
 // A package will be used to produce the image and used
 // like `image: ko://<package>` inside test yaml.
 func RegisterPackage(pack ...string) EnvOpts {
-	ri := func(ctx context.Context, env Environment) (context.Context, error) {
+	return func(ctx context.Context, _ Environment) (context.Context, error) {
 		rk := registeredPackagesKey{}
 		rk.register(ctx, pack)
 		store := rk.get(ctx)
 		return context.WithValue(ctx, rk, store), nil
 	}
-	return UnionOpts(ri, WithImages(map[string]string{}))
 }
 
 // WithImages will bypass ProduceImages() and use the provided image set
@@ -54,7 +57,7 @@ func RegisterPackage(pack ...string) EnvOpts {
 // images map is presented to the templates on the field `images`, and used
 // like `image: <key>` inside test yaml.
 func WithImages(given map[string]string) EnvOpts {
-	return func(ctx context.Context, env Environment) (context.Context, error) {
+	return func(ctx context.Context, _ Environment) (context.Context, error) {
 		ik := imageStoreKey{}
 		store := ik.get(ctx)
 		store.withImages(given)
@@ -65,6 +68,8 @@ func WithImages(given map[string]string) EnvOpts {
 // ProduceImages returns back the packages that have been added.
 // Will produce images once, can be called many times.
 func ProduceImages(ctx context.Context) (map[string]string, error) {
+	publishLock.Lock()
+	defer publishLock.Unlock()
 	rk := registeredPackagesKey{}
 	ik := imageStoreKey{}
 	store := ik.get(ctx)
@@ -80,6 +85,20 @@ func ProduceImages(ctx context.Context) (map[string]string, error) {
 		store.refs[koPack] = strings.TrimSpace(image)
 	}
 	return store.refs, nil
+}
+
+func initializeImageStores(ctx context.Context) context.Context {
+	var emptyPkgs []string
+	emptyImgs := make(map[string]string)
+	mctx, err := UnionOpts(
+		RegisterPackage(emptyPkgs...),
+		WithImages(emptyImgs),
+	)(ctx, nil)
+	if err != nil {
+		logging.FromContext(ctx).
+			Fatal("Failed to initialize image stores: ", err)
+	}
+	return mctx
 }
 
 type registeredPackagesKey struct{}
