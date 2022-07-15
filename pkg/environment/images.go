@@ -31,8 +31,14 @@ var (
 	// container images. By default, it is ko.Publish, but can be overridden.
 	CurrentImageProducer = ImageProducer(ko.Publish)
 
-	publishLock = sync.Mutex{}
+	// produceImagesLock is used to ensure that ProduceImages is only called
+	// once at the time.
+	produceImagesLock = sync.Mutex{}
 )
+
+// parallelQueueSize is the max number of packages at one time in queue to be
+// consumed by image producer.
+const parallelQueueSize = 1_000
 
 // ImageProducer is a function that will be used to produce the container images.
 type ImageProducer func(ctx context.Context, pack string) (string, error)
@@ -68,8 +74,8 @@ func WithImages(given map[string]string) EnvOpts {
 // ProduceImages returns back the packages that have been added.
 // Will produce images once, can be called many times.
 func ProduceImages(ctx context.Context) (map[string]string, error) {
-	publishLock.Lock()
-	defer publishLock.Unlock()
+	produceImagesLock.Lock()
+	defer produceImagesLock.Unlock()
 	rk := registeredPackagesKey{}
 	ik := imageStoreKey{}
 	store := ik.get(ctx)
@@ -104,40 +110,37 @@ func initializeImageStores(ctx context.Context) context.Context {
 type registeredPackagesKey struct{}
 
 type packagesStore struct {
-	refs []string
+	refs chan string
 }
 
 func (k registeredPackagesKey) get(ctx context.Context) *packagesStore {
 	if registered, ok := ctx.Value(k).(*packagesStore); ok {
 		return registered
 	}
-	return &packagesStore{}
+	return &packagesStore{
+		refs: make(chan string, parallelQueueSize),
+	}
 }
 
 func (k registeredPackagesKey) packages(ctx context.Context) []string {
-	return k.get(ctx).refs
+	store := k.get(ctx)
+	refs := make([]string, 0)
+	for {
+		select {
+		case ref := <-store.refs:
+			refs = append(refs, ref)
+		default:
+			return refs
+		}
+	}
 }
 
 func (k registeredPackagesKey) register(ctx context.Context, packs []string) {
-	toRegister := make([]string, 0, len(packs))
-	toRegister = append(toRegister, k.packages(ctx)...)
+	store := k.get(ctx)
 	for _, pack := range packs {
 		pack = strings.TrimPrefix(pack, "ko://")
-		if !k.contains(toRegister, pack) {
-			toRegister = append(toRegister, pack)
-		}
+		store.refs <- pack
 	}
-	store := k.get(ctx)
-	store.refs = toRegister
-}
-
-func (k registeredPackagesKey) contains(packs []string, pack string) bool {
-	for _, i := range packs {
-		if i == pack {
-			return true
-		}
-	}
-	return false
 }
 
 type imageStoreKey struct{}
