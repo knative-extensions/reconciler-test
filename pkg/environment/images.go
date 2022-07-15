@@ -65,8 +65,8 @@ func RegisterPackage(pack ...string) EnvOpts {
 func WithImages(given map[string]string) EnvOpts {
 	return func(ctx context.Context, _ Environment) (context.Context, error) {
 		ik := imageStoreKey{}
-		store := ik.get(ctx)
-		store.withImages(given)
+		store := ik.new()
+		store.refs = given
 		return context.WithValue(ctx, ik, store), nil
 	}
 }
@@ -145,24 +145,19 @@ func (k registeredPackagesKey) register(ctx context.Context, packs []string) {
 
 type imageStoreKey struct{}
 
-func (k imageStoreKey) get(ctx context.Context) *imageStore {
-	if i, ok := ctx.Value(k).(*imageStore); ok {
-		return i
-	}
+func (k imageStoreKey) new() *imageStore {
 	return &imageStore{
 		refs: make(map[string]string),
 	}
 }
 
-type imageStore struct {
-	refs map[string]string
+func (k imageStoreKey) get(ctx context.Context) *imageStore {
+	if i, ok := ctx.Value(k).(*imageStore); ok {
+		return i
+	}
+	return k.new()
 }
 
-func (i *imageStore) withImages(given map[string]string) {
-	if i.refs == nil {
-		i.refs = make(map[string]string, len(given))
-	}
-	for k, v := range given {
-		i.refs[k] = v
-	}
+type imageStore struct {
+	refs map[string]string
 }
