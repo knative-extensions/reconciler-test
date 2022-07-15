@@ -67,7 +67,7 @@ func cmd(ctx context.Context, cmds []string) ([]byte, error) {
 }
 
 func runCmd(ctx context.Context, cmds []string) (string, error) {
-	logging.FromContext(ctx).Debugf("Running command: %#v", cmds)
+	logging.FromContext(ctx).Debugf("google/ko publish: %q", cmds)
 	stdout, err := cmd(ctx, cmds)
 	if err != nil {
 		return "", err
