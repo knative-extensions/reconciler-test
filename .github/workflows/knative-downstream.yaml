@@ -38,6 +38,8 @@ jobs:
             org: knative-sandbox
           - repo: eventing-kafka-broker
             org: knative-sandbox
+          - repo: kn-plugin-event
+            org: knative-sandbox
 
     runs-on: ubuntu-latest
     env:
