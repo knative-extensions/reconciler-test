@@ -20,15 +20,12 @@ limitations under the License.
 package eventshub_test
 
 import (
-	"flag"
 	"os"
 	"testing"
 
 	// See: https://github.com/kubernetes/client-go/issues/242
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"knative.dev/pkg/injection"
 	"knative.dev/reconciler-test/pkg/environment"
-	"knative.dev/reconciler-test/pkg/logging"
 )
 
 // global is the singleton instance of GlobalEnvironment. It is used to parse
@@ -39,24 +36,9 @@ var global environment.GlobalEnvironment
 
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
-	// environment.InitFlags registers state, level and feature filter flags.
-	environment.InitFlags(flag.CommandLine)
-
-	// We get a chance to parse flags to include the framework flags for the
-	// framework as well as any additional flags included in the integration.
-	flag.Parse()
-
-	// EnableInjectionOrDie will enable client injection, this is used by the
-	// testing framework for namespace management, and could be leveraged by
-	// features to pull Kubernetes clients or the test environment out of the
-	// context passed in the features.
-	ctx, startInformers := injection.EnableInjectionOrDie(
-		logging.WithTestLogger(nil), nil) // nolint
-	startInformers()
-
-	// global is used to make instances of Environments, NewGlobalEnvironment
-	// is passing and saving the client injection enabled context for use later.
-	global = environment.NewGlobalEnvironment(ctx)
+	// global is used to make instances of Environments, NewStandardGlobalEnvironment
+	// is initializing the client injection enabled context for use later.
+	global = environment.NewStandardGlobalEnvironment()
 
 	// Run the tests.
 	os.Exit(m.Run())

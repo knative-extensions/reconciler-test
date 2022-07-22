@@ -20,20 +20,48 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/signals"
 )
 
-// WithTestLogger returns a context with test logger configured.
-func WithTestLogger(ctx context.Context) context.Context {
-	if ctx == nil {
-		ctx = signals.NewContext()
+// NewContext returns a context with test logger configured. This is interim
+// logger, that should be replaced by testing.T bound test logger using
+// environment.WithTestLogger func.
+func NewContext(parent ...context.Context) context.Context {
+	if len(parent) > 1 {
+		panic("pass 0 or 1 context.Context while creating context")
 	}
-	return logging.WithLogger(ctx, logger())
+	var ctx context.Context
+	if len(parent) == 0 {
+		ctx = context.TODO()
+	} else {
+		ctx = parent[0]
+	}
+	level := LevelFromEnvironment(ctx)
+	log := defaultLogger(level)
+	if len(parent) == 0 {
+		log.Warn("Using context.TODO() as no real context was provided")
+	}
+	return logging.WithLogger(ctx, log)
 }
 
-func logger() *zap.SugaredLogger {
-	if log, err := zap.NewDevelopment(); err != nil {
+// WithTestLogger returns a context with test logger configured.
+func WithTestLogger(ctx context.Context, t zaptest.TestingT, opts ...zaptest.LoggerOption) context.Context {
+	opts = append([]zaptest.LoggerOption{
+		zaptest.Level(LevelFromEnvironment(ctx)),
+		zaptest.WrapOptions(zap.AddCaller(), zap.Fields(
+			zap.String("test", t.Name()),
+		)),
+	}, opts...)
+	log := zaptest.NewLogger(t, opts...)
+	return logging.WithLogger(ctx, log.Sugar())
+}
+
+func defaultLogger(level zapcore.Level) *zap.SugaredLogger {
+	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevelAt(level)
+	if log, err := config.Build(); err != nil {
 		panic(err)
 	} else {
 		return log.Named("test").Sugar()

@@ -24,7 +24,10 @@ import (
 )
 
 func ExamplePodReference() {
-	ref := k8s.PodReference("bar", "foo")
+	ref, err := k8s.PodReference("bar", "foo")
+	if err != nil {
+		panic(err)
+	}
 	bytes, err := yaml.Marshal(ref)
 	if err != nil {
 		panic(err)

@@ -17,9 +17,11 @@ limitations under the License.
 package echo_test
 
 import (
+	"context"
 	"embed"
 	"os"
 
+	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
@@ -27,6 +29,7 @@ import (
 var templates embed.FS
 
 func Example() {
+	ctx := testlog.NewContext(context.TODO())
 	images := map[string]string{
 		"ko://knative.dev/reconciler-test/test/example/cmd/echo": "uri://a-real-container",
 	}
@@ -36,7 +39,7 @@ func Example() {
 		"message":   "Hello, World!",
 	}
 
-	files, err := manifest.ExecuteYAML(templates, images, cfg)
+	files, err := manifest.ExecuteYAML(ctx, templates, images, cfg)
 	if err != nil {
 		panic(err)
 	}
