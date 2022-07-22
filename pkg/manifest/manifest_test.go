@@ -21,7 +21,8 @@ import (
 	"fmt"
 	"testing"
 
-	"gotest.tools/v3/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
@@ -34,10 +35,10 @@ func TestNewYamlManifest(t *testing.T) {
 	}
 	images := map[string]string{}
 	yamlsDir, err := manifest.ParseTemplatesFS(ctx, templates, images, data)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	m, err := manifest.NewYamlManifest(ctx, yamlsDir, false, nil)
-	assert.NilError(t, err)
-	assert.DeepEqual(t, m.ResourceNames(), []string{
+	require.NoError(t, err)
+	assert.Equal(t, m.ResourceNames(), []string{
 		fmt.Sprintf("/%s (/v1, Kind=Namespace)", ns),
 		fmt.Sprintf("%s/example (/v1, Kind=Pod)", ns),
 	})

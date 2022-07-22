@@ -24,7 +24,8 @@ import (
 	"os"
 	"testing"
 
-	"gotest.tools/v3/assert"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
@@ -40,12 +41,12 @@ func TestParseTemplatesFS(t *testing.T) {
 	}
 	images := map[string]string{}
 	yamlsDir, err := manifest.ParseTemplatesFS(ctx, templates, images, data)
-	assert.NilError(t, err)
+	require.NoError(t, err)
 	fileInfo, err := os.Stat(yamlsDir)
-	assert.NilError(t, err)
-	assert.Assert(t, fileInfo.IsDir())
+	require.NoError(t, err)
+	assert.True(t, fileInfo.IsDir())
 	err = os.RemoveAll(yamlsDir)
-	assert.NilError(t, err)
+	assert.NoError(t, err)
 }
 
 func randomString(t fatalt, length int) string {
