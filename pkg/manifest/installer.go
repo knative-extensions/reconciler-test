@@ -56,14 +56,14 @@ func InstallYamlFS(ctx context.Context, fsys fs.FS, base map[string]interface{})
 	f := feature.FromContext(ctx)
 	log := loggingFrom(ctx, "InstallYamlFS")
 
-	yamls, err := ParseTemplatesFS(ctx, fsys, images, cfg)
+	yamlsDir, err := ParseTemplatesFS(ctx, fsys, images, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	dynamicClient := dynamicclient.Get(ctx)
 
-	manifest, err := NewYamlManifest(ctx, yamls, false, dynamicClient)
+	manifest, err := NewYamlManifest(ctx, yamlsDir, false, dynamicClient)
 	if err != nil {
 		return nil, err
 	}
