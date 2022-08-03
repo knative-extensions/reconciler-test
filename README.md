@@ -396,6 +396,62 @@ for running later via `env.Test` or `env.TestSet`. With state, we are attempting
 to make it less difficult to communicate between `Setup` and `Assert` phases of
 testing.
 
+### Inspecting Zipkin traces for failed tests
+
+When the [eventshub](./pkg/eventshub) component is used for sending events then Zipkin traces
+can be collected on test exit. Traces for each test namespace are stored in a separate
+file under `$ARTIFACTS/traces/<namespace>.json` and will be collected only for
+failed tests.
+
+To enable collecting traces from Zipkin, set up the test environment as follows:
+```go
+
+import (
+    "knative.dev/reconciler-test/pkg/environment"
+    "knative.dev/reconciler-test/pkg/knative"
+    "knative.dev/reconciler-test/pkg/tracing"
+)
+
+ctx, env := global.Environment(
+    // Will call env.Finish() when the test exits.
+    environment.Managed(t),
+    // Set the knative namespace which holds the tracing config map.
+    knative.WithKnativeNamespace(system.Namespace()),
+    // Configure tracing for the eventshub component.
+    knative.WithTracingConfig,
+    // Configure logging for the eventshub component.
+    knative.WithLoggingConfig,
+    // Register the tracing listener which will gather event traces on env.Finish().
+    tracing.WithGatherer(t),
+)
+```
+
+The TestMain function should include the cleanup code for Zipkin:
+```go
+func TestMain(m *testing.M) {
+    os.Exit(func() int {
+        // Any tests may set up Zipkin tracing via tracing.WithGatherer, it will only actually be done once.
+        // This should be the ONLY place that cleans it up. If an individual test calls this instead, then
+        // it will break other tests that need the tracing in place.
+        defer tracing.Cleanup()
+        return m.Run()
+    }())
+}
+```
+
+Traces can be viewed as follows:
+- Start a Zipkin container on localhost:
+   ```
+   $ docker run -d -p 9411:9411 ghcr.io/openzipkin/zipkin:2
+   ```
+- Send traces to the Zipkin endpoint:
+   ```
+   $ curl -v localhost:9411/api/v2/spans \
+     -H 'Content-Type: application/json' \
+     -d @$ARTIFACTS/traces/<namespace>.json
+   ```
+- View traces in Zipkin UI at `http://localhost:9411/zipkin`
+
 ### Running Tests
 
 Running tests is nothing more than using `go test`.
