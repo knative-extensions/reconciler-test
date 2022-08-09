@@ -179,7 +179,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...Option)
 			return err
 		}
 
-		eventString := ""
+		eventString := "unknown"
 		if event != nil {
 			eventString = event.String()
 		}
