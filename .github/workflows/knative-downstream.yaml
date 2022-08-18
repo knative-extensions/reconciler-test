@@ -28,8 +28,6 @@ jobs:
         include:
           - repo: eventing
             org: knative
-          - repo: discovery
-            org: knative-sandbox
           - repo: eventing-rabbitmq
             org: knative-sandbox
           - repo: eventing-natss
