@@ -28,7 +28,7 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
-const testPullSecretName = "kn-eventing-test-pull-secret"
+const testPullSecretName = "kn-test-image-pull-secret"
 
 // CreateNamespaceIfNeeded creates a new namespace if it does not exist.
 func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
