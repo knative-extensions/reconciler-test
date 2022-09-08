@@ -508,3 +508,8 @@ Run all instances of Noop feature, including instances in a Feature Set
 ```shell
 go test -v -count=1 -tags=e2e ./test/... --feature=Noop
 ```
+
+#### Using Private Registries
+
+If a private registry is to be used with authentication, a Secret needs to be created in the `default` namespace called `kn-test-image-pull-secret` with the credentials.
+The testing framework will copy this secret into any new namespaces created and will update the default ServiceAccount's imagePullSecret.
