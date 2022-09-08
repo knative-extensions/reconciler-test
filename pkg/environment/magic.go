@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/logging"
+
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/milestone"
 	"knative.dev/reconciler-test/pkg/state"
@@ -295,74 +296,51 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	ctx = state.ContextWith(ctx, f.State)
 	ctx = feature.ContextWith(ctx, f)
 
-	steps := categorizeSteps(f.Steps)
+	stepsMap, sortedSteps := categorizeSteps(f.Steps)
 
-	skipAssertions := false
-	skipRequirements := false
-	skipReason := ""
+	mr.milestones.StepsPlanned(f.Name, stepsMap, originalT)
 
-	mr.milestones.StepsPlanned(f.Name, steps, originalT)
+	skipOnError := false // setup timing is always executed
 
-	for _, s := range steps[feature.Setup] {
-		s := s
+	originalT.Run(f.Name, func(t *testing.T) {
 
-		// Setup are executed always, no matter their level and state
-		internalT := mr.executeWithoutWrappingT(ctx, originalT, f, &s)
+		for _, steps := range sortedSteps {
+			// Prepend logging steps to the teardown phase when a previous timing failed.
+			if skipOnError && steps.Timing == feature.Teardown {
+				steps.Steps = append(mr.loggingSteps(), steps.Steps...)
+			}
 
-		// Failed setup fails everything, so just run the teardown
-		if internalT.Failed() {
-			skipAssertions = true
-			skipRequirements = true // No need to test other requirements
-			break                   // No need to continue the setup
+			// Teardown are executed always, no matter their level and state
+			if steps.Timing == feature.Teardown {
+				skipOnError = false
+			}
+
+			originalT.Logf("Running %d steps for timing %s\n\n", len(steps.Steps), steps.Timing.String())
+
+			t.Run(steps.Timing.String(), func(t *testing.T) {
+				// no parallel, various timing steps run in order: setup, requirement, assert, teardown
+
+				if skipOnError {
+					t.Skipf("Skipping steps for timing %s due to failed previous timing\n", steps.Timing.String())
+					return
+				}
+
+				for _, s := range steps.Steps {
+					s := s
+					if mr.shouldFail(&s) {
+						mr.execute(ctx, t, f, &s)
+					} else {
+						mr.executeOptional(ctx, t, f, &s)
+					}
+				}
+			})
+
+			if t.Failed() {
+				// skip the following timing since curring timing failed
+				skipOnError = true
+			}
 		}
-	}
-
-	for _, s := range steps[feature.Requirement] {
-		s := s
-
-		if skipRequirements {
-			break
-		}
-
-		internalT := mr.executeWithoutWrappingT(ctx, originalT, f, &s)
-
-		if internalT.Failed() {
-			skipAssertions = true
-			skipRequirements = true // No need to test other requirements
-		}
-	}
-
-	for _, s := range steps[feature.Assert] {
-		s := s
-
-		if skipAssertions {
-			break
-		}
-
-		if mr.shouldFail(&s) {
-			mr.executeWithoutWrappingT(ctx, originalT, f, &s)
-		} else {
-			mr.executeWithSkippingT(ctx, originalT, f, &s)
-		}
-
-		// TODO implement fail fast feature to avoid proceeding with testing if an "expected level" assert fails here
-	}
-
-	if originalT.Failed() {
-		// Prepend logging steps to the teardown phase.
-		steps[feature.Teardown] = append(mr.loggingSteps(), steps[feature.Teardown]...)
-	}
-
-	for _, s := range steps[feature.Teardown] {
-		s := s
-
-		// Teardown are executed always, no matter their level and state
-		mr.executeWithoutWrappingT(ctx, originalT, f, &s)
-	}
-
-	if skipReason != "" {
-		originalT.Skipf("Skipping feature '%s' assertions because %s", f.Name, skipReason)
-	}
+	})
 }
 
 type unknownResult struct{}
@@ -373,6 +351,7 @@ func (u unknownResult) Failed() bool {
 
 // TODO: this logic is strange and hard to follow.
 func (mr *MagicEnvironment) shouldFail(s *feature.Step) bool {
+	// if it's _not_ alpha nor must
 	return !(mr.s&s.S == 0 || mr.l&s.L == 0)
 }
 
