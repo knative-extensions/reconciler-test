@@ -28,12 +28,10 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
-const testPullSecretName = "kn-test-image-pull-secret"
-
 // CreateNamespaceIfNeeded creates a new namespace if it does not exist.
 func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 	c := kubeclient.Get(mr.c)
-	nsSpec, err := c.CoreV1().Namespaces().Get(context.Background(), mr.namespace, metav1.GetOptions{})
+	_, err := c.CoreV1().Namespaces().Get(context.Background(), mr.namespace, metav1.GetOptions{})
 
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -42,7 +40,7 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 
 		// Namespace was not found, try to create it.
 
-		nsSpec = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: mr.namespace}}
+		nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: mr.namespace}}
 		_, err = c.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
 
 		if err != nil {
@@ -66,13 +64,13 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 			return fmt.Errorf("the default ServiceAccount was not created for the Namespace: %s", mr.namespace)
 		}
 
-		srcSecret, err := c.CoreV1().Secrets("default").Get(context.Background(), testPullSecretName, metav1.GetOptions{})
+		srcSecret, err := c.CoreV1().Secrets(mr.imagePullSecretNamespace).Get(context.Background(), mr.imagePullSecretName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				// Image pull secret doesn't exist, so no need to continue
 				return nil
 			}
-			return fmt.Errorf("error retrieving secret %s from default namespace: %s", testPullSecretName, err)
+			return fmt.Errorf("error retrieving %s/%s secret: %s", mr.imagePullSecretNamespace, mr.imagePullSecretName, err)
 		}
 
 		// If image pull secret exists in the default namespace, copy it over to the new namespace
@@ -80,7 +78,7 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 			context.Background(),
 			&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: testPullSecretName,
+					Name: mr.imagePullSecretName,
 				},
 				Data: srcSecret.Data,
 				Type: srcSecret.Type,
@@ -92,7 +90,7 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 		}
 
 		_, err = c.CoreV1().ServiceAccounts(mr.namespace).Patch(context.Background(), sa.Name, types.StrategicMergePatchType,
-			[]byte(`{"imagePullSecrets":[{"name":"`+testPullSecretName+`"}]}`), metav1.PatchOptions{})
+			[]byte(`{"imagePullSecrets":[{"name":"`+mr.imagePullSecretName+`"}]}`), metav1.PatchOptions{})
 		if err != nil {
 			return fmt.Errorf("patch failed on NS/SA (%s/%s): %s", mr.namespace, sa.Name, err)
 		}
