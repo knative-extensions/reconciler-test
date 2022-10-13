@@ -1,8 +1,14 @@
+/*
+ Copyright 2021 The CloudEvents Authors
+ SPDX-License-Identifier: Apache-2.0
+*/
+
 package client
 
 import (
 	"context"
 	"fmt"
+
 	"github.com/cloudevents/sdk-go/v2/binding"
 )
 
@@ -104,6 +110,18 @@ func WithInboundContextDecorator(dec func(context.Context, binding.Message) cont
 	return func(i interface{}) error {
 		if c, ok := i.(*ceClient); ok {
 			c.inboundContextDecorators = append(c.inboundContextDecorators, dec)
+		}
+		return nil
+	}
+}
+
+// WithBlockingCallback makes the callback passed into StartReceiver is executed as a blocking call,
+// i.e. in each poll go routine, the next event will not be received until the callback on current event completes.
+// To make event processing serialized (no concurrency), use this option along with WithPollGoroutines(1)
+func WithBlockingCallback() Option {
+	return func(i interface{}) error {
+		if c, ok := i.(*ceClient); ok {
+			c.blockingCallback = true
 		}
 		return nil
 	}

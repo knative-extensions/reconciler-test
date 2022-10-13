@@ -1,3 +1,8 @@
+/*
+ Copyright 2021 The CloudEvents Authors
+ SPDX-License-Identifier: Apache-2.0
+*/
+
 package client
 
 import (
@@ -92,6 +97,7 @@ type ceClient struct {
 	receiverMu                sync.Mutex
 	eventDefaulterFns         []EventDefaulter
 	pollGoroutines            int
+	blockingCallback          bool
 }
 
 func (c *ceClient) applyOptions(opts ...Option) error {
@@ -123,11 +129,10 @@ func (c *ceClient) Send(ctx context.Context, e event.Event) protocol.Result {
 		return err
 	}
 
-	// Event has been defaulted and validated, record we are going to preform send.
+	// Event has been defaulted and validated, record we are going to perform send.
 	ctx, cb := c.observabilityService.RecordSendingEvent(ctx, e)
-	defer cb(err)
-
 	err = c.sender.Send(ctx, (*binding.EventMessage)(&e))
+	defer cb(err)
 	return err
 }
 
@@ -155,7 +160,6 @@ func (c *ceClient) Request(ctx context.Context, e event.Event) (*event.Event, pr
 
 	// Event has been defaulted and validated, record we are going to perform request.
 	ctx, cb := c.observabilityService.RecordRequestEvent(ctx, e)
-	defer cb(err, resp)
 
 	// If provided a requester, use it to do request/response.
 	var msg binding.Message
@@ -181,7 +185,7 @@ func (c *ceClient) Request(ctx context.Context, e event.Event) (*event.Event, pr
 	} else {
 		resp = rs
 	}
-
+	defer cb(err, resp)
 	return resp, err
 }
 
@@ -245,14 +249,22 @@ func (c *ceClient) StartReceiver(ctx context.Context, fn interface{}) error {
 					continue
 				}
 
-				// Do not block on the invoker.
-				wg.Add(1)
-				go func() {
+				callback := func() {
 					if err := c.invoker.Invoke(ctx, msg, respFn); err != nil {
 						cecontext.LoggerFrom(ctx).Warn("Error while handling a message: ", err)
 					}
-					wg.Done()
-				}()
+				}
+
+				if c.blockingCallback {
+					callback()
+				} else {
+					// Do not block on the invoker.
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						callback()
+					}()
+				}
 			}
 		}()
 	}
