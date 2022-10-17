@@ -1,12 +1,19 @@
+/*
+ Copyright 2021 The CloudEvents Authors
+ SPDX-License-Identifier: Apache-2.0
+*/
+
 package http
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -80,6 +87,7 @@ type Protocol struct {
 	server            *http.Server
 	handlerRegistered bool
 	middleware        []Middleware
+	limiter           RateLimiter
 
 	isRetriableFunc IsRetriable
 }
@@ -109,6 +117,10 @@ func New(opts ...Option) (*Protocol, error) {
 		p.isRetriableFunc = defaultIsRetriableFunc
 	}
 
+	if p.limiter == nil {
+		p.limiter = noOpLimiter{}
+	}
+
 	return p, nil
 }
 
@@ -134,7 +146,28 @@ func (p *Protocol) Send(ctx context.Context, m binding.Message, transformers ...
 		return fmt.Errorf("nil Message")
 	}
 
-	_, err := p.Request(ctx, m, transformers...)
+	msg, err := p.Request(ctx, m, transformers...)
+	if msg != nil {
+		defer func() { _ = msg.Finish(err) }()
+	}
+	if err != nil && !protocol.IsACK(err) {
+		var res *Result
+		if protocol.ResultAs(err, &res) {
+			if message, ok := msg.(*Message); ok {
+				buf := new(bytes.Buffer)
+				buf.ReadFrom(message.BodyReader)
+				errorStr := buf.String()
+				// If the error is not wrapped, then append the original error string.
+				if og, ok := err.(*Result); ok {
+					og.Format = og.Format + "%s"
+					og.Args = append(og.Args, errorStr)
+					err = og
+				} else {
+					err = NewResult(res.StatusCode, "%w: %s", err, errorStr)
+				}
+			}
+		}
+	}
 	return err
 }
 
@@ -257,6 +290,20 @@ func (p *Protocol) Respond(ctx context.Context) (binding.Message, protocol.Respo
 // ServeHTTP implements http.Handler.
 // Blocks until ResponseFn is invoked.
 func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// always apply limiter first using req context
+	ok, reset, err := p.limiter.Allow(req.Context(), req)
+	if err != nil {
+		p.incoming <- msgErr{msg: nil, err: fmt.Errorf("unable to acquire rate limit token: %w", err)}
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if !ok {
+		rw.Header().Add("Retry-After", strconv.Itoa(int(reset)))
+		http.Error(rw, "limit exceeded", 429)
+		return
+	}
+
 	// Filter the GET style methods:
 	switch req.Method {
 	case http.MethodOptions:
@@ -312,6 +359,7 @@ func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		status := http.StatusOK
+		var errMsg string
 		if res != nil {
 			var result *Result
 			switch {
@@ -319,7 +367,7 @@ func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				if result.StatusCode > 100 && result.StatusCode < 600 {
 					status = result.StatusCode
 				}
-
+				errMsg = fmt.Errorf(result.Format, result.Args...).Error()
 			case !protocol.IsACK(res):
 				// Map client errors to http status code
 				validationError := event.ValidationError{}
@@ -343,6 +391,9 @@ func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		rw.WriteHeader(status)
+		if _, err := rw.Write([]byte(errMsg)); err != nil {
+			return err
+		}
 		return nil
 	}
 

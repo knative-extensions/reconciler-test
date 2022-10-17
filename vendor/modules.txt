@@ -47,8 +47,8 @@ github.com/cespare/xxhash/v2
 ## explicit; go 1.14
 github.com/cloudevents/conformance/pkg/event
 github.com/cloudevents/conformance/pkg/http
-# github.com/cloudevents/sdk-go/v2 v2.4.1
-## explicit; go 1.14
+# github.com/cloudevents/sdk-go/v2 v2.12.0
+## explicit; go 1.17
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
 github.com/cloudevents/sdk-go/v2/binding/format
@@ -277,7 +277,7 @@ github.com/prometheus/statsd_exporter/pkg/mapper/fsm
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.7.0
+# github.com/stretchr/testify v1.8.0
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
