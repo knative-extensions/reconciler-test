@@ -21,7 +21,9 @@ import (
 	"embed"
 	"strings"
 
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
+	pkgsecurity "knative.dev/pkg/test/security"
 	"knative.dev/reconciler-test/pkg/environment"
 	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -71,13 +73,23 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 
 		isReceiver := strings.Contains(envs["EVENT_GENERATORS"], "receiver")
 
-		// Deploy
-		if _, err := manifest.InstallYamlFS(ctx, templates, map[string]interface{}{
+		cfg := map[string]interface{}{
 			"name":          name,
 			"envs":          envs,
 			"image":         ImageFromContext(ctx),
 			"withReadiness": isReceiver,
-		}); err != nil {
+		}
+
+		restrictedMode, err := pkgsecurity.IsRestrictedPodSecurityEnforced(ctx, kubeclient.Get(ctx), namespace)
+		if err != nil {
+			log.Fatalf("Error while checking restricted pod security mode for namespace %s", namespace)
+		}
+		if restrictedMode {
+			WithDefaultSecurityContext(cfg)
+		}
+
+		// Deploy
+		if _, err := manifest.InstallYamlFS(ctx, templates, cfg); err != nil {
 			log.Fatal(err)
 		}
 
@@ -92,6 +104,38 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		if isReceiver {
 			k8s.WaitForServiceEndpointsOrFail(ctx, t, name, 1)
 			k8s.WaitForServiceReadyOrFail(ctx, t, name, "/health/ready")
+		}
+	}
+}
+
+func WithDefaultSecurityContext(cfg map[string]interface{}) {
+	if _, set := cfg["podSecurityContext"]; !set {
+		cfg["podSecurityContext"] = map[string]interface{}{}
+	}
+	podSecurityContext := cfg["podSecurityContext"].(map[string]interface{})
+	podSecurityContext["runAsNonRoot"] = pkgsecurity.DefaultPodSecurityContext.RunAsNonRoot
+	podSecurityContext["seccompProfile"] = map[string]interface{}{}
+	seccompProfile := podSecurityContext["seccompProfile"].(map[string]interface{})
+	seccompProfile["type"] = pkgsecurity.DefaultPodSecurityContext.SeccompProfile.Type
+
+	if _, set := cfg["containerSecurityContext"]; !set {
+		cfg["containerSecurityContext"] = map[string]interface{}{}
+	}
+	containerSecurityContext := cfg["containerSecurityContext"].(map[string]interface{})
+	containerSecurityContext["allowPrivilegeEscalation"] =
+		pkgsecurity.DefaultContainerSecurityContext.AllowPrivilegeEscalation
+	containerSecurityContext["capabilities"] = map[string]interface{}{}
+	capabilities := containerSecurityContext["capabilities"].(map[string]interface{})
+	if len(pkgsecurity.DefaultContainerSecurityContext.Capabilities.Drop) != 0 {
+		capabilities["drop"] = []string{}
+		for _, drop := range pkgsecurity.DefaultContainerSecurityContext.Capabilities.Drop {
+			capabilities["drop"] = append(capabilities["drop"].([]string), string(drop))
+		}
+	}
+	if len(pkgsecurity.DefaultContainerSecurityContext.Capabilities.Add) != 0 {
+		capabilities["add"] = []string{}
+		for _, drop := range pkgsecurity.DefaultContainerSecurityContext.Capabilities.Drop {
+			capabilities["add"] = append(capabilities["add"].([]string), string(drop))
 		}
 	}
 }
