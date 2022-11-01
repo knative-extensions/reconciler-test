@@ -56,5 +56,5 @@ jobs:
     - name: Test Downstream
       uses: knative/actions/go/downstream-test@main
       with:
-        upstream-path: knative.dev/${{ github.event.repository.name }}
-        downstream-path: knative.dev/${{ matrix.repo }}
+        upstream-path: upstream
+        downstream-path: downstream
