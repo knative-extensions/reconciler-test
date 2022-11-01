@@ -25,19 +25,12 @@ jobs:
     strategy:
       fail-fast: false # Keep running if one leg fails.
       matrix:
-        include:
-          - repo: eventing
-            org: knative
-          - repo: eventing-rabbitmq
-            org: knative-sandbox
-          - repo: eventing-natss
-            org: knative-sandbox
-          - repo: eventing-kafka
-            org: knative-sandbox
-          - repo: eventing-kafka-broker
-            org: knative-sandbox
-          - repo: kn-plugin-event
-            org: knative-sandbox
+        - repo: knative/eventing
+        - repo: knative-sandbox/eventing-rabbitmq
+        - repo: knative-sandbox/eventing-natss
+        - repo: knative-sandbox/eventing-kafka
+        - repo: knative-sandbox/eventing-kafka-broker
+        - repo: knative-sandbox/kn-plugin-event
 
     runs-on: ubuntu-latest
     env:
@@ -51,16 +44,16 @@ jobs:
       run: |
         go install github.com/google/go-licenses@latest
     - name: Checkout Upstream
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
+        path: upstream
     - name: Checkout Downstream
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
-        repository: ${{ matrix.org }}/${{ matrix.repo }}
-        path: ./src/knative.dev/${{ matrix.repo }}
+        repository: ${{ matrix.repo }}
+        path: downstream
     - name: Test Downstream
       uses: knative/actions/go/downstream-test@main
       with:
-        upstream-module: knative.dev/${{ github.event.repository.name }}
-        downstream-module: knative.dev/${{ matrix.repo }}
+        upstream-path: knative.dev/${{ github.event.repository.name }}
+        downstream-path: knative.dev/${{ matrix.repo }}
