@@ -31,6 +31,7 @@ import (
 // global is the singleton instance of GlobalEnvironment. It is used to parse
 // the testing config for the test run. The config will specify the cluster
 // config as well as the parsing level and state flags.
+//
 //goland:noinspection GoUnusedGlobalVariable
 var global environment.GlobalEnvironment
 
