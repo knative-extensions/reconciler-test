@@ -41,9 +41,7 @@ func ProberFeature() *feature.Feature {
 	prober.AsKReference(to)
 	_ = prober.SetTargetKRef(prober.AsKReference(to))
 
-	f.Setup("install sender", prober.SenderInstall(from))
-	f.Requirement("sender is done", prober.SenderDone(from))
-	f.Requirement("receiver is done", prober.ReceiverDone(from, to))
+	f.Requirement("install sender", prober.SenderInstall(from))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", prober.AssertSentAll(from)).
@@ -71,9 +69,7 @@ func ProberFeatureWithDrop() *feature.Feature {
 	prober.AsKReference(to)
 	_ = prober.SetTargetKRef(prober.AsKReference(to))
 
-	f.Setup("install sender", prober.SenderInstall(from))
-	f.Requirement("sender is done", prober.SenderDone(from))
-	f.Requirement("receiver is done", prober.ReceiverDone(from, to))
+	f.Requirement("install sender", prober.SenderInstall(from))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", func(ctx context.Context, t feature.T) {
@@ -119,10 +115,7 @@ func ProberFeatureYAML() *feature.Feature {
 	// Configured the Sender to send the same events.
 	prober.SenderEventsFromURI("https://raw.githubusercontent.com/cloudevents/conformance/v0.2.0/yaml/v1.0/v1_minimum.yaml")
 
-	f.Setup("install sender with yaml events", prober.SenderInstall(from))
-
-	f.Requirement("sender is done", prober.SenderDone(from))
-	f.Requirement("receiver is done", prober.ReceiverDone(from, to))
+	f.Requirement("install sender with yaml events", prober.SenderInstall(from))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", prober.AssertSentAll(from)).
