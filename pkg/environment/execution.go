@@ -7,19 +7,14 @@ import (
 	"knative.dev/reconciler-test/pkg/feature"
 )
 
-type CategorizedSteps struct {
-	Timing feature.Timing `json:"timing"`
-	Steps  []feature.Step `json:"steps"`
-}
-
-func categorizeSteps(steps []feature.Step) (map[feature.Timing][]feature.Step, []CategorizedSteps) {
+func categorizeSteps(steps []feature.Step) map[feature.Timing][]feature.Step {
 	stepsByTiming := make(map[feature.Timing][]feature.Step, 4)
 
 	for _, timing := range feature.Timings() {
 		stepsByTiming[timing] = filterStepTimings(steps, timing)
 	}
 
-	return stepsByTiming, stepsSorter(stepsByTiming).byTiming()
+	return stepsByTiming
 }
 
 func filterStepTimings(steps []feature.Step, timing feature.Timing) []feature.Step {
@@ -70,14 +65,4 @@ func (mr *MagicEnvironment) executeStep(ctx context.Context, t *testing.T, f *fe
 		// Perform step.
 		s.Fn(internalCtx, ft)
 	})
-}
-
-type stepsSorter map[feature.Timing][]feature.Step
-
-func (ss stepsSorter) byTiming() []CategorizedSteps {
-	cs := make([]CategorizedSteps, len(feature.Timings()))
-	for timing, steps := range ss {
-		cs[timing] = CategorizedSteps{Timing: timing, Steps: steps}
-	}
-	return cs
 }

@@ -296,36 +296,43 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	ctx = state.ContextWith(ctx, f.State)
 	ctx = feature.ContextWith(ctx, f)
 
-	stepsMap, sortedSteps := categorizeSteps(f.Steps)
+	stepsByTiming := categorizeSteps(f.Steps)
 
-	mr.milestones.StepsPlanned(f.Name, stepsMap, originalT)
+	mr.milestones.StepsPlanned(f.Name, stepsByTiming, originalT)
 
-	skipOnError := false // setup timing is always executed
+	// skip is flag that signals whether the steps for the subsequent timings should
+	// be skipped because a step in a previous timing failed.
+	//
+	// Setup and Teardown steps are executed always
+	skip := false
 
 	originalT.Run(f.Name, func(t *testing.T) {
 
-		for _, steps := range sortedSteps {
-			// Prepend logging steps to the teardown phase when a previous timing failed.
-			if skipOnError && steps.Timing == feature.Teardown {
-				steps.Steps = append(mr.loggingSteps(), steps.Steps...)
+		for _, timing := range feature.Timings() {
+			steps := feature.Steps(stepsByTiming[timing])
+
+			// Special case for teardown timing
+			if timing == feature.Teardown {
+				// Prepend logging steps to the teardown phase when a previous timing failed.
+				if skip {
+					steps = append(mr.loggingSteps(), steps...)
+				}
+
+				// Teardown steps are executed always, no matter their level and state
+				skip = false
 			}
 
-			// Teardown are executed always, no matter their level and state
-			if steps.Timing == feature.Teardown {
-				skipOnError = false
-			}
+			originalT.Logf("Running %d steps for timing:\n%s\n\n", len(steps), steps.String())
 
-			originalT.Logf("Running %d steps for timing %s\n\n", len(steps.Steps), steps.Timing.String())
-
-			t.Run(steps.Timing.String(), func(t *testing.T) {
+			t.Run(timing.String(), func(t *testing.T) {
 				// no parallel, various timing steps run in order: setup, requirement, assert, teardown
 
-				if skipOnError {
-					t.Skipf("Skipping steps for timing %s due to failed previous timing\n", steps.Timing.String())
+				if skip {
+					t.Skipf("Skipping steps for timing %s due to failed previous timing\n", timing.String())
 					return
 				}
 
-				for _, s := range steps.Steps {
+				for _, s := range steps {
 					s := s
 					if mr.shouldFail(&s) {
 						mr.execute(ctx, t, f, &s)
@@ -336,8 +343,8 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 			})
 
 			if t.Failed() {
-				// skip the following timing since curring timing failed
-				skipOnError = true
+				// skip the following timings since curring timing failed
+				skip = true
 			}
 		}
 	})
