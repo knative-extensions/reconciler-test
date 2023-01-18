@@ -216,7 +216,9 @@ func (mr *MagicEnvironment) TemplateConfig(base map[string]interface{}) map[stri
 	for k, v := range base {
 		cfg[k] = v
 	}
-	cfg["namespace"] = mr.namespace
+	if _, ok := cfg["namespace"]; !ok {
+		cfg["namespace"] = mr.namespace
+	}
 	return cfg
 }
 
