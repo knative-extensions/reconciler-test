@@ -59,14 +59,11 @@ func ProberFeatureWithDrop() *feature.Feature {
 	prober := eventshub.NewProber()
 	prober.ReceiversRejectFirstN(5)
 	prober.ReceiversRejectResponseCode(429)
-
-	// Configured the sender for how many events it will be sending.
 	prober.SenderFullEvents(6)
 
 	// Install the receiver, then the sender.
 	f.Setup("install recorder", prober.ReceiverInstall(to))
 
-	prober.AsKReference(to)
 	_ = prober.SetTargetKRef(prober.AsKReference(to))
 
 	f.Requirement("install sender", prober.SenderInstall(from))
@@ -89,6 +86,10 @@ func ProberFeatureWithDrop() *feature.Feature {
 						t.Errorf("For %s, expected 2xx response, got %d", event.Sent.SentId, event.Response.StatusCode)
 					}
 				}
+			}
+
+			if t.Failed() {
+				prober.DumpState(ctx, t)
 			}
 		}).
 		Must("the recorder received all sent events", prober.AssertReceivedOrRejectedAll(from, to))
