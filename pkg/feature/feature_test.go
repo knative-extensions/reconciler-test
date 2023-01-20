@@ -19,7 +19,7 @@ func TestNewFeature(t *testing.T) {
 func ExampleNewFeature() {
 	f := NewFeature()
 	f.State = &state.KVStore{}
-	f.refs = append(f.refs, corev1.ObjectReference{
+	f.Reference(corev1.ObjectReference{
 		Kind:       "Pod",
 		Namespace:  "ns",
 		Name:       "name",
