@@ -50,10 +50,15 @@ spec:
       image: {{ .image }}
       imagePullPolicy: "IfNotPresent"
       {{ if .withReadiness }}
+      ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
       readinessProbe:
         httpGet:
           port: 8080
           path: /health/ready
+        initialDelaySeconds: 5
       {{ end }}
       env:
         - name: "SYSTEM_NAMESPACE"
