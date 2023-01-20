@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -36,7 +35,6 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
-	"knative.dev/pkg/kmeta"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -291,84 +289,6 @@ func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, name string
 	if err := WaitForServiceEndpoints(ctx, t, name, numberOfExpectedEndpoints); err != nil {
 		t.Fatalf("Failed while %+v", errors.WithStack(err))
 	}
-}
-
-// WaitForServiceReadyOrFail will call WaitForServiceReady and fail if error is returned.
-func WaitForServiceReadyOrFail(ctx context.Context, t feature.T, name string, readinessPath string) {
-	if err := WaitForServiceReady(ctx, t, name, readinessPath); err != nil {
-		t.Fatalf("Failed while %+v", errors.WithStack(err))
-	}
-}
-
-const ubi8Image = "registry.access.redhat.com/ubi8/ubi"
-
-// ErrWaitingForServiceReady if waiting for service ready failed.
-var ErrWaitingForServiceReady = errors.New("waiting for service ready")
-
-// WaitForServiceReady will deploy a job that will try to invoke a
-// service using readiness path. This makes sure the service is ready to serve
-// traffic, from other components.
-// See: https://stackoverflow.com/a/59713538/844449
-func WaitForServiceReady(ctx context.Context, t feature.T, name string, readinessPath string) error {
-	env := environment.FromContext(ctx)
-	ns := env.Namespace()
-	jobs := kubeclient.Get(ctx).BatchV1().Jobs(ns)
-	label := "readiness-check"
-	jobName := feature.MakeRandomK8sName(name + "-" + label)
-	sinkURI := apis.HTTP(fmt.Sprintf("%s.%s.svc", name, ns))
-	sinkURI.Path = readinessPath
-	curl := fmt.Sprintf("curl --max-time 2 "+
-		"--trace-ascii %% --trace-time "+
-		"--retry 6 --retry-connrefused %s", sinkURI)
-	var one int32 = 1
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{Name: jobName, Namespace: ns},
-		Spec: batchv1.JobSpec{
-			Completions: &one,
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyOnFailure,
-					Containers: []corev1.Container{{
-						Name:    jobName,
-						Image:   ubi8Image,
-						Command: []string{"/bin/sh"},
-						Args:    []string{"-c", curl},
-					}},
-				},
-			},
-		},
-	}
-	created, err := jobs.Create(ctx, job, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-	}
-	env.Reference(kmeta.ObjectReference(created))
-	if err = WaitUntilJobDone(ctx, t, jobName); err != nil {
-		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-	}
-	job, err = jobs.Get(ctx, jobName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-	}
-	if !IsJobSucceeded(job) {
-		var pod *corev1.Pod
-		pod, err = GetJobPodByJobName(ctx, jobName)
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-		}
-		logs, err := PodLogs(ctx, pod.Name, jobName, ns)
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-		}
-		status, err := json.MarshalIndent(job.Status, "", "  ")
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-		}
-		return fmt.Errorf("%w: job failed, status: \n%s\n---\nlogs:\n%s",
-			ErrWaitingForServiceReady, status, logs)
-	}
-
-	return nil
 }
 
 // WaitForPodRunningOrFail waits for the given pod to be in running state.

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"knative.dev/pkg/logging"
+
 	"knative.dev/reconciler-test/pkg/environment"
 	eventshubrbac "knative.dev/reconciler-test/pkg/eventshub/rbac"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -95,7 +96,6 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		// If the eventhubs starts an event receiver, we need to wait for the service endpoint to be synced
 		if isReceiver {
 			k8s.WaitForServiceEndpointsOrFail(ctx, t, name, 1)
-			k8s.WaitForServiceReadyOrFail(ctx, t, name, "/health/ready")
 		}
 	}
 }
