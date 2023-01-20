@@ -34,6 +34,7 @@ import (
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/resources/svc"
 )
 
@@ -146,6 +147,7 @@ func (p *EventProber) SenderInstall(prefix string, opts ...EventsHubOption) feat
 		if len(p.getTarget().uri) > 0 {
 			opts = append(opts, StartSenderURL(p.getTarget().uri))
 		} else if !p.getTarget().gvr.Empty() {
+			k8s.IsAddressable(p.getTarget().gvr, p.getTarget().name)(ctx, t)
 			opts = append(opts, StartSenderToResource(p.getTarget().gvr, p.getTarget().name))
 		} else {
 			t.Fatal("no target is configured for event loop")
