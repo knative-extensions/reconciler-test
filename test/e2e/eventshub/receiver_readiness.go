@@ -37,12 +37,13 @@ import (
 	"knative.dev/pkg/apis"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/kmeta"
+	"sigs.k8s.io/yaml"
+
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/eventshub/assert"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
-	"sigs.k8s.io/yaml"
 )
 
 const ubi8Image = "registry.access.redhat.com/ubi8/ubi"
@@ -115,7 +116,9 @@ func sendEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 			checkError(t.Fatal, err)
 			status, err = yaml.Marshal(pod.Status)
 			checkError(t.Fatal, err)
-			t.Fatalf("wanted pod to succeed, status:\n%s\n---\nLogs:\n-----\n%s", status, logs)
+			sinkLogs, err := k8s.PodLogs(ctx, sinkName, "eventshub", ns)
+			checkError(t.Fatal, err)
+			t.Fatalf("wanted pod to succeed, status:\n%s\n---\nLogs:\n-----\n%s\nsink logs:\n%s", status, logs, sinkLogs)
 		}
 	}
 }
