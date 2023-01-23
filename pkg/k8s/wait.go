@@ -398,6 +398,17 @@ func countEndpointsNum(e *corev1.Endpoints) int {
 
 // podRunning will check the status conditions of the pod and return true if it's Running.
 func podRunning(pod *corev1.Pod) bool {
+
+	if len(pod.Status.ContainerStatuses) == 0 {
+		return false
+	}
+
+	for _, c := range pod.Status.ContainerStatuses {
+		if !c.Ready {
+			return false
+		}
+	}
+
 	for _, c := range pod.Status.Conditions {
 		if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
 			return true
