@@ -33,78 +33,76 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 	c := kubeclient.Get(mr.c)
 	_, err := c.CoreV1().Namespaces().Get(context.Background(), mr.namespace, metav1.GetOptions{})
 
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	// Namespace was not found, try to create it.
+
+	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: mr.namespace}}
+	_, err = c.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
+
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
+		return fmt.Errorf("failed to create Namespace: %s; %v", mr.namespace, err)
+	}
+	mr.namespaceCreated = true
+	mr.milestones.NamespaceCreated(mr.namespace)
+
+	interval, timeout := PollTimingsFromContext(mr.c)
+
+	// https://github.com/kubernetes/kubernetes/issues/66689
+	// We can only start creating pods after the default ServiceAccount is created by the kube-controller-manager.
+	var sa *corev1.ServiceAccount
+	if err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+		sas := c.CoreV1().ServiceAccounts(mr.namespace)
+		if sa, err = sas.Get(context.Background(), "default", metav1.GetOptions{}); err == nil {
+			return true, nil
 		}
+		return false, nil
+	}); err != nil {
+		return fmt.Errorf("the default ServiceAccount was not created for the Namespace: %s", mr.namespace)
+	}
 
-		// Namespace was not found, try to create it.
-
-		nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: mr.namespace}}
-		_, err = c.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})
-
-		if err != nil {
-			return fmt.Errorf("failed to create Namespace: %s; %v", mr.namespace, err)
+	srcSecret, err := c.CoreV1().Secrets(mr.imagePullSecretNamespace).Get(context.Background(), mr.imagePullSecretName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// Image pull secret doesn't exist, so no need to continue
+			return nil
 		}
-		mr.namespaceCreated = true
-		mr.milestones.NamespaceCreated(mr.namespace)
+		return fmt.Errorf("error retrieving %s/%s secret: %s", mr.imagePullSecretNamespace, mr.imagePullSecretName, err)
+	}
 
-		interval, timeout := PollTimingsFromContext(mr.c)
-
-		// https://github.com/kubernetes/kubernetes/issues/66689
-		// We can only start creating pods after the default ServiceAccount is created by the kube-controller-manager.
-		var sa *corev1.ServiceAccount
-		if err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-			sas := c.CoreV1().ServiceAccounts(mr.namespace)
-			if sa, err = sas.Get(context.Background(), "default", metav1.GetOptions{}); err == nil {
-				return true, nil
-			}
-			return false, nil
-		}); err != nil {
-			return fmt.Errorf("the default ServiceAccount was not created for the Namespace: %s", mr.namespace)
-		}
-
-		srcSecret, err := c.CoreV1().Secrets(mr.imagePullSecretNamespace).Get(context.Background(), mr.imagePullSecretName, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				// Image pull secret doesn't exist, so no need to continue
-				return nil
-			}
-			return fmt.Errorf("error retrieving %s/%s secret: %s", mr.imagePullSecretNamespace, mr.imagePullSecretName, err)
-		}
-
-		// If image pull secret exists in the default namespace, copy it over to the new namespace
-		_, err = c.CoreV1().Secrets(mr.namespace).Create(
-			context.Background(),
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: mr.imagePullSecretName,
-				},
-				Data: srcSecret.Data,
-				Type: srcSecret.Type,
+	// If image pull secret exists in the default namespace, copy it over to the new namespace
+	_, err = c.CoreV1().Secrets(mr.namespace).Create(
+		context.Background(),
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: mr.imagePullSecretName,
 			},
-			metav1.CreateOptions{})
+			Data: srcSecret.Data,
+			Type: srcSecret.Type,
+		},
+		metav1.CreateOptions{})
 
-		if err != nil && !apierrors.IsAlreadyExists(err) {
-			return fmt.Errorf("error copying the image pull Secret: %s", err)
-		}
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("error copying the image pull Secret: %s", err)
+	}
 
-		svcAccount, err := c.CoreV1().ServiceAccounts(mr.namespace).Get(context.Background(), sa.Name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting service account %s", sa.Name)
-		}
+	svcAccount, err := c.CoreV1().ServiceAccounts(mr.namespace).Get(context.Background(), sa.Name, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("error getting service account %s", sa.Name)
+	}
 
-		// Prevent overwriting existing imagePullSecrets
-		patch := `[{"op":"add","path":"/imagePullSecrets/-","value":{"name":"` + mr.imagePullSecretName + `"}}]`
-		if len(svcAccount.ImagePullSecrets) == 0 {
-			patch = `[{"op":"add","path":"/imagePullSecrets","value":[{"name":"` + mr.imagePullSecretName + `"}]}]`
-		}
-		_, err = c.CoreV1().ServiceAccounts(mr.namespace).Patch(context.Background(), sa.Name, types.JSONPatchType,
-			[]byte(patch), metav1.PatchOptions{})
-		if err != nil {
-			return fmt.Errorf("patch failed on NS/SA (%s/%s): %s",
-				mr.namespace, sa.Name, err)
-		}
+	// Prevent overwriting existing imagePullSecrets
+	patch := `[{"op":"add","path":"/imagePullSecrets/-","value":{"name":"` + mr.imagePullSecretName + `"}}]`
+	if len(svcAccount.ImagePullSecrets) == 0 {
+		patch = `[{"op":"add","path":"/imagePullSecrets","value":[{"name":"` + mr.imagePullSecretName + `"}]}]`
+	}
+	_, err = c.CoreV1().ServiceAccounts(mr.namespace).Patch(context.Background(), sa.Name, types.JSONPatchType,
+		[]byte(patch), metav1.PatchOptions{})
+	if err != nil {
+		return fmt.Errorf("patch failed on NS/SA (%s/%s): %s",
+			mr.namespace, sa.Name, err)
 	}
 	return nil
 }
