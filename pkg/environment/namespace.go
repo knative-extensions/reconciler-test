@@ -89,10 +89,21 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 			return fmt.Errorf("error copying the image pull Secret: %s", err)
 		}
 
-		_, err = c.CoreV1().ServiceAccounts(mr.namespace).Patch(context.Background(), sa.Name, types.StrategicMergePatchType,
-			[]byte(`{"imagePullSecrets":[{"name":"`+mr.imagePullSecretName+`"}]}`), metav1.PatchOptions{})
+		svcAccount, err := c.CoreV1().ServiceAccounts(mr.namespace).Get(context.Background(), sa.Name, metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("patch failed on NS/SA (%s/%s): %s", mr.namespace, sa.Name, err)
+			return fmt.Errorf("error getting service account %s", sa.Name)
+		}
+
+		// Prevent overwriting existing imagePullSecrets
+		patch := `[{"op":"add","path":"/imagePullSecrets/-","value":{"name":"` + mr.imagePullSecretName + `"}}]`
+		if len(svcAccount.ImagePullSecrets) == 0 {
+			patch = `[{"op":"add","path":"/imagePullSecrets","value":[{"name":"` + mr.imagePullSecretName + `"}]}]`
+		}
+		_, err = c.CoreV1().ServiceAccounts(mr.namespace).Patch(context.Background(), sa.Name, types.JSONPatchType,
+			[]byte(patch), metav1.PatchOptions{})
+		if err != nil {
+			return fmt.Errorf("patch failed on NS/SA (%s/%s): %s",
+				mr.namespace, sa.Name, err)
 		}
 	}
 	return nil
