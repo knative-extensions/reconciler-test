@@ -51,3 +51,9 @@ func WithRestartPolicy(restartPolicy string) manifest.CfgFn {
 		cfg["restartPolicy"] = restartPolicy
 	}
 }
+
+func WithBackoffLimit(backoffLimit int) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["backoffLimit"] = backoffLimit
+	}
+}
