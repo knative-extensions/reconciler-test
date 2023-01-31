@@ -21,6 +21,7 @@ import (
 	"embed"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
@@ -34,8 +35,8 @@ func Install(name string, image string, options ...manifest.CfgFn) feature.StepF
 	cfg := map[string]interface{}{
 		"name":            name,
 		"image":           image,
-		"imagePullPolicy": "IfNotPresent",
-		"restartPolicy":   "Never",
+		"imagePullPolicy": corev1.PullIfNotPresent,
+		"restartPolicy":   corev1.RestartPolicyNever,
 	}
 
 	for _, fn := range options {
@@ -43,7 +44,7 @@ func Install(name string, image string, options ...manifest.CfgFn) feature.StepF
 	}
 
 	return func(ctx context.Context, t feature.T) {
-		if err := registerImage(ctx); err != nil {
+		if err := registerImage(ctx, image); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := manifest.InstallYamlFS(ctx, yaml, cfg); err != nil {
@@ -76,9 +77,8 @@ func IsFailed(name string, timing ...time.Duration) feature.StepFn {
 	}
 }
 
-func registerImage(ctx context.Context) error {
-	im := manifest.ImagesFromFS(ctx, yaml)
-	reg := environment.RegisterPackage(im...)
+func registerImage(ctx context.Context, image string) error {
+	reg := environment.RegisterPackage(image)
 	_, err := reg(ctx, environment.FromContext(ctx))
 	return err
 }
