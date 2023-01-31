@@ -16,7 +16,10 @@
 
 package job
 
-import "knative.dev/reconciler-test/pkg/manifest"
+import (
+	corev1 "k8s.io/api/core/v1"
+	"knative.dev/reconciler-test/pkg/manifest"
+)
 
 func WithImage(image string) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
@@ -40,13 +43,13 @@ func WithAnnotations(annotations map[string]interface{}) manifest.CfgFn {
 	}
 }
 
-func WithImagePullPolicy(ipp string) manifest.CfgFn {
+func WithImagePullPolicy(ipp corev1.PullPolicy) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		cfg["imagePullPolicy"] = ipp
 	}
 }
 
-func WithRestartPolicy(restartPolicy string) manifest.CfgFn {
+func WithRestartPolicy(restartPolicy corev1.RestartPolicy) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		cfg["restartPolicy"] = restartPolicy
 	}
