@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace }}
+  {{ if .annotations }}
+  annotations:
+  {{ range $key, $value := .annotations }}
+    {{ $key }}: "{{ $value }}"
+  {{ end }}
+  {{ end }}
+spec:
+  template:
+    spec:
+      containers:
+      - name: jobcontainer
+        image: "{{ .image }}"
+        imagePullPolicy: "{{ .imagePullPolicy }}"
+        restartPolicy: "{{ .restartPolicy }}"
+        env:
+          {{ range $key, $value := .envs }}
+          - name: {{printf "%q" $key}}
+            value: {{printf "%q" $value}}
+          {{ end }}
+        {{ end }}
+  backoffLimit: 4
