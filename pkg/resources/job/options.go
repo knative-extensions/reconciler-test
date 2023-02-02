@@ -21,12 +21,6 @@ import (
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func WithImage(image string) manifest.CfgFn {
-	return func(cfg map[string]interface{}) {
-		cfg["image"] = image
-	}
-}
-
 func WithEnvs(envs map[string]string) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		if envs != nil {
@@ -39,6 +33,14 @@ func WithAnnotations(annotations map[string]interface{}) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		if annotations != nil {
 			cfg["annotations"] = annotations
+		}
+	}
+}
+
+func WithLabels(labels map[string]string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		if labels != nil {
+			cfg["labels"] = labels
 		}
 	}
 }
@@ -58,5 +60,11 @@ func WithRestartPolicy(restartPolicy corev1.RestartPolicy) manifest.CfgFn {
 func WithBackoffLimit(backoffLimit int) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		cfg["backoffLimit"] = backoffLimit
+	}
+}
+
+func WithTTLSecondsAfterFinished(ttlSecondsAfterFinished int) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["ttlSecondsAfterFinished"] = ttlSecondsAfterFinished
 	}
 }

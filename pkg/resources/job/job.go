@@ -21,7 +21,6 @@ import (
 	"embed"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
@@ -33,10 +32,8 @@ var yaml embed.FS
 
 func Install(name string, image string, options ...manifest.CfgFn) feature.StepFn {
 	cfg := map[string]interface{}{
-		"name":            name,
-		"image":           image,
-		"imagePullPolicy": corev1.PullIfNotPresent,
-		"restartPolicy":   corev1.RestartPolicyNever,
+		"name":  name,
+		"image": image,
 	}
 
 	for _, fn := range options {
@@ -47,6 +44,7 @@ func Install(name string, image string, options ...manifest.CfgFn) feature.StepF
 		if err := registerImage(ctx, image); err != nil {
 			t.Fatal(err)
 		}
+		manifest.PodSecurityCfgFn(ctx, t)(cfg)
 		if _, err := manifest.InstallYamlFS(ctx, yaml, cfg); err != nil {
 			t.Fatal(err)
 		}

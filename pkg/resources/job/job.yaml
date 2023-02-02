@@ -5,25 +5,61 @@ metadata:
   namespace: {{ .namespace }}
   {{ if .annotations }}
   annotations:
-  {{ range $key, $value := .annotations }}
+    {{ range $key, $value := .annotations }}
     {{ $key }}: "{{ $value }}"
+    {{ end }}
   {{ end }}
+  {{ if .labels }}
+  labels:
+    {{ range $key, $value := .labels }}
+    {{ $key }}: {{ $value }}
+    {{ end }}
   {{ end }}
 spec:
   {{ if .backoffLimit }}
   backoffLimit: {{ .backoffLimit }}
   {{ end }}
+  {{ if .ttlSecondsAfterFinished }}
+  ttlSecondsAfterFinished: {{ .ttlSecondsAfterFinished }}
+  {{ end }}
   template:
     spec:
+      {{ if .podSecurityContext }}
+      securityContext:
+        runAsNonRoot: {{ .podSecurityContext.runAsNonRoot }}
+        seccompProfile:
+          type: {{ .podSecurityContext.seccompProfile.type }}
+      {{ end }}
+      {{ if .restartPolicy }}
+      restartPolicy: {{ .restartPolicy }}
+      {{ end }}
       containers:
-      - name: jobcontainer
-        image: "{{ .image }}"
-        imagePullPolicy: "{{ .imagePullPolicy }}"
+      - name: job-container
+        image: {{ .image }}
         {{ if .envs }}
         env:
-          {{ range $key, $value := .envs }}
-          - name: {{ printf "%q" $key }}
-            value: {{ printf "%q" $value }}
-          {{ end }}
+        {{ range $key, $value := .envs }}
+        - name: {{ printf "%q" $key }}
+          value: {{ printf "%q" $value }}
         {{ end }}
-      restartPolicy: "{{ .restartPolicy }}"
+        {{ end }}
+        {{ if .containerSecurityContext }}
+        securityContext:
+          capabilities:
+            {{ if .containerSecurityContext.capabilities.drop }}
+            drop:
+            {{ range $_, $value := .containerSecurityContext.capabilities.drop }}
+            - {{ $value }}
+            {{ end }}
+            {{ end }}
+            {{ if .containerSecurityContext.capabilities.add }}
+            add:
+            {{ range $_, $value := .containerSecurityContext.capabilities.add }}
+            - {{ $value }}
+            {{ end }}
+            {{ end }}
+          allowPrivilegeEscalation: {{ .containerSecurityContext.allowPrivilegeEscalation }}
+        {{ end }}
+        {{ if .imagePullPolicy }}
+        imagePullPolicy: {{ .imagePullPolicy }}
+        {{ end }}
