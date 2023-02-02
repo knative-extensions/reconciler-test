@@ -23,6 +23,21 @@ spec:
   ttlSecondsAfterFinished: {{ .ttlSecondsAfterFinished }}
   {{ end }}
   template:
+    {{ if or .podannotations .podlabels }}
+    metadata:
+      {{ if .podannotations }}
+      annotations:
+        {{ range $key, $value := .podannotations }}
+        {{ $key }}: "{{ $value }}"
+        {{ end }}
+      {{ end }}
+      {{ if .podlabels }}
+      labels:
+        {{ range $key, $value := .podlabels }}
+        {{ $key }}: {{ $value }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
     spec:
       {{ if .podSecurityContext }}
       securityContext:

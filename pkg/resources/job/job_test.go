@@ -75,6 +75,12 @@ func Example_full() {
 		job.WithAnnotations(map[string]interface{}{
 			"app.kubernetes.io/name": "app",
 		}),
+		job.WithPodLabels(map[string]string{
+			"app": "my-app",
+		}),
+		job.WithPodAnnotations(map[string]interface{}{
+			"pod-annotation": "foo",
+		}),
 		job.WithRestartPolicy(v1.RestartPolicyNever),
 		job.WithImagePullPolicy(v1.PullNever),
 		job.WithBackoffLimit(20),
@@ -108,6 +114,11 @@ func Example_full() {
 	//   backoffLimit: 20
 	//   ttlSecondsAfterFinished: 30
 	//   template:
+	//     metadata:
+	//       annotations:
+	//         pod-annotation: "foo"
+	//       labels:
+	//         app: my-app
 	//     spec:
 	//       restartPolicy: Never
 	//       containers:
@@ -191,6 +202,40 @@ func Example_WithAnnotations() {
 	//         image: baz
 }
 
+func Example_WithPodAnnotations() {
+	ctx := testlog.NewContext()
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
+		"image":     "baz",
+	}
+
+	job.WithPodAnnotations(map[string]interface{}{"app.kubernetes.io/name": "app1"})(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: batch/v1
+	// kind: Job
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	// spec:
+	//   template:
+	//     metadata:
+	//       annotations:
+	//         app.kubernetes.io/name: "app1"
+	//     spec:
+	//       containers:
+	//       - name: job-container
+	//         image: baz
+}
+
 func Example_WithLabels() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
@@ -222,6 +267,44 @@ func Example_WithLabels() {
 	//     version: 3
 	// spec:
 	//   template:
+	//     spec:
+	//       containers:
+	//       - name: job-container
+	//         image: baz
+}
+
+func Example_WithPodLabels() {
+	ctx := testlog.NewContext()
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
+		"image":     "baz",
+	}
+
+	job.WithPodLabels(map[string]string{
+		"color":   "blue",
+		"version": "3",
+	})(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: batch/v1
+	// kind: Job
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	// spec:
+	//   template:
+	//     metadata:
+	//       labels:
+	//         color: blue
+	//         version: 3
 	//     spec:
 	//       containers:
 	//       - name: job-container

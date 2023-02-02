@@ -45,6 +45,22 @@ func WithLabels(labels map[string]string) manifest.CfgFn {
 	}
 }
 
+func WithPodAnnotations(annotations map[string]interface{}) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		if annotations != nil {
+			cfg["podannotations"] = annotations
+		}
+	}
+}
+
+func WithPodLabels(labels map[string]string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		if labels != nil {
+			cfg["podlabels"] = labels
+		}
+	}
+}
+
 func WithImagePullPolicy(ipp corev1.PullPolicy) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		cfg["imagePullPolicy"] = ipp
