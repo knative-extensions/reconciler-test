@@ -169,39 +169,6 @@ func Example_WithEnvs() {
 	//           value: "VALUE2"
 }
 
-func Example_WithAnnotations() {
-	ctx := testlog.NewContext()
-	images := map[string]string{}
-	cfg := map[string]interface{}{
-		"name":      "foo",
-		"namespace": "bar",
-		"image":     "baz",
-	}
-
-	job.WithAnnotations(map[string]interface{}{"app.kubernetes.io/name": "app1"})(cfg)
-
-	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	manifest.OutputYAML(os.Stdout, files)
-	// Output:
-	// apiVersion: batch/v1
-	// kind: Job
-	// metadata:
-	//   name: foo
-	//   namespace: bar
-	//   annotations:
-	//     app.kubernetes.io/name: "app1"
-	// spec:
-	//   template:
-	//     spec:
-	//       containers:
-	//       - name: job-container
-	//         image: baz
-}
-
 func Example_WithPodAnnotations() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
@@ -230,43 +197,6 @@ func Example_WithPodAnnotations() {
 	//     metadata:
 	//       annotations:
 	//         app.kubernetes.io/name: "app1"
-	//     spec:
-	//       containers:
-	//       - name: job-container
-	//         image: baz
-}
-
-func Example_WithLabels() {
-	ctx := testlog.NewContext()
-	images := map[string]string{}
-	cfg := map[string]interface{}{
-		"name":      "foo",
-		"namespace": "bar",
-		"image":     "baz",
-	}
-
-	job.WithLabels(map[string]string{
-		"color":   "blue",
-		"version": "3",
-	})(cfg)
-
-	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	manifest.OutputYAML(os.Stdout, files)
-	// Output:
-	// apiVersion: batch/v1
-	// kind: Job
-	// metadata:
-	//   name: foo
-	//   namespace: bar
-	//   labels:
-	//     color: blue
-	//     version: 3
-	// spec:
-	//   template:
 	//     spec:
 	//       containers:
 	//       - name: job-container

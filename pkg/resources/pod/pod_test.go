@@ -65,15 +65,15 @@ func Example_full() {
 	}
 
 	opts := []manifest.CfgFn{
-		pod.WithNamespace("bar"),
-		pod.WithCommand([]string{"sh"}),
-		pod.WithArgs([]string{"-c", "echo \"Hello, Kubernetes!\""}),
 		pod.WithLabels(map[string]string{
 			"color": "green",
 		}),
 		pod.WithAnnotations(map[string]interface{}{
 			"app.kubernetes.io/name": "app",
 		}),
+		pod.WithNamespace("bar"),
+		pod.WithCommand([]string{"sh"}),
+		pod.WithArgs([]string{"-c", "echo \"Hello, Kubernetes!\""}),
 		pod.WithImagePullPolicy(v1.PullNever),
 		pod.WithEnvs(map[string]string{
 			"VAR": "VAL",
@@ -113,72 +113,6 @@ func Example_full() {
 	//     - name: "VAR"
 	//       value: "VAL"
 	//     imagePullPolicy: Never
-}
-
-func Example_withAnnotations() {
-	ctx := testlog.NewContext()
-	images := map[string]string{}
-	cfg := map[string]interface{}{
-		"name":      "foo",
-		"namespace": "bar",
-		"image":     "baz",
-	}
-
-	manifest.WithAnnotations(map[string]interface{}{"app.kubernetes.io/name": "app1"})(cfg)
-
-	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	manifest.OutputYAML(os.Stdout, files)
-	// Output:
-	// apiVersion: v1
-	// kind: Pod
-	// metadata:
-	//   name: foo
-	//   namespace: bar
-	//   annotations:
-	//     app.kubernetes.io/name: "app1"
-	// spec:
-	//   containers:
-	//   - name: user-container
-	//     image: baz
-}
-
-func Example_withLabels() {
-	ctx := testlog.NewContext()
-	images := map[string]string{}
-	cfg := map[string]interface{}{
-		"name":      "foo",
-		"namespace": "bar",
-		"image":     "baz",
-	}
-
-	pod.WithLabels(map[string]string{
-		"color":   "blue",
-		"version": "3",
-	})(cfg)
-
-	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	manifest.OutputYAML(os.Stdout, files)
-	// Output:
-	// apiVersion: v1
-	// kind: Pod
-	// metadata:
-	//   name: foo
-	//   namespace: bar
-	//   labels:
-	//     color: blue
-	//     version: 3
-	// spec:
-	//   containers:
-	//   - name: user-container
-	//     image: baz
 }
 
 func Example_withCommand() {
