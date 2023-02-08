@@ -67,10 +67,6 @@ func Example_full() {
 	cfg := map[string]interface{}{
 		"name":      "foo",
 		"namespace": "bar",
-		"ports": []corev1.ServicePort{{
-			Port:       1234,
-			TargetPort: intstr.FromInt(5678),
-		}},
 	}
 
 	opts := []manifest.CfgFn{
@@ -85,6 +81,10 @@ func Example_full() {
 			"app.kubernetes.io/name": "foobar",
 		}),
 		service.WithExternalName("my-external.name"),
+		service.WithPorts([]corev1.ServicePort{{
+			Port:       1234,
+			TargetPort: intstr.FromInt(5678),
+		}}),
 	}
 
 	for _, opt := range opts {
@@ -297,4 +297,36 @@ func Example_WithExternalName() {
 	//       port: 1234
 	//       targetPort: 5678
 	//   externalName: foo.bar
+}
+
+func Example_WithPorts() {
+	ctx := testlog.NewContext()
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
+	}
+
+	service.WithPorts([]corev1.ServicePort{{
+		Port:       1234,
+		TargetPort: intstr.FromInt(5678),
+	}})(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, templates, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: v1
+	// kind: Service
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	// spec:
+	//   ports:
+	//     - protocol: TCP
+	//       port: 1234
+	//       targetPort: 5678
 }

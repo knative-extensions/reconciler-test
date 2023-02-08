@@ -17,8 +17,6 @@ limitations under the License.
 package svc
 
 import (
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/resources/service"
 )
@@ -30,12 +28,7 @@ var GVR = service.GVR
 // selector for pods.
 // Deprecated: use knative.dev/reconciler-test/pkg/resources/service.Install
 func Install(name, selectorKey, selectorValue string) feature.StepFn {
-	ports := []v1.ServicePort{{
-		Port:       80,
-		TargetPort: intstr.FromInt(8080),
-	}}
-
-	return service.Install(name, ports, service.WithSelectors(map[string]string{
+	return service.Install(name, service.WithSelectors(map[string]string{
 		selectorKey: selectorValue,
 	}))
 }

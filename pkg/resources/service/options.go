@@ -45,6 +45,14 @@ func WithSelectors(selectors map[string]string) manifest.CfgFn {
 	}
 }
 
+func WithPorts(ports []corev1.ServicePort) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		if ports != nil {
+			cfg["ports"] = ports
+		}
+	}
+}
+
 func WithType(serviceType corev1.ServiceType) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		cfg["type"] = serviceType

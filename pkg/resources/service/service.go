@@ -22,6 +22,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/tracker"
@@ -38,16 +39,24 @@ func GVR() schema.GroupVersionResource {
 	return corev1.SchemeGroupVersion.WithResource("services")
 }
 
-// Install will create a Service resource mapping :80 to :8080 on the provided
-// selector for pods.
-func Install(name string, ports []corev1.ServicePort, opts ...manifest.CfgFn) feature.StepFn {
+// Install will create a Service resource. If no ports where defined via the
+// WithPorts option, a default mapping 80:8080 will be used.
+func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 	cfg := map[string]interface{}{
-		"name":  name,
-		"ports": ports,
+		"name": name,
 	}
 
 	for _, fn := range opts {
 		fn(cfg)
+	}
+
+	if _, ok := cfg["ports"]; !ok {
+		// no ports are provided, so use the default 80:8080 ones
+		// to be compatible with deprecated resources/svc package
+		cfg["ports"] = []corev1.ServicePort{{
+			Port:       80,
+			TargetPort: intstr.FromInt(8080),
+		}}
 	}
 
 	return func(ctx context.Context, t feature.T) {
