@@ -42,7 +42,7 @@ spec:
     - protocol: {{ .Protocol }}
       {{ else }}
     - protocol: TCP
-      {{ end }}    
+      {{ end }}
       port: {{ .Port }}
       targetPort: {{ .TargetPort }}
       {{ if .Name }}
