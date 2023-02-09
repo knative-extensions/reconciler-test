@@ -105,10 +105,10 @@ func Example_full() {
 	//   - name: user-container
 	//     image: baz
 	//     command:
-	//     - 'sh'
+	//     - "sh"
 	//     args:
-	//     - '-c'
-	//     - 'echo "Hello, Kubernetes!"'
+	//     - "-c"
+	//     - "echo \"Hello, Kubernetes!\""
 	//     env:
 	//     - name: "VAR"
 	//       value: "VAL"
@@ -143,9 +143,9 @@ func Example_withCommand() {
 	//   - name: user-container
 	//     image: baz
 	//     command:
-	//     - 'sh'
-	//     - '-c'
-	//     - 'echo "Hello, Kubernetes!"'
+	//     - "sh"
+	//     - "-c"
+	//     - "echo \"Hello, Kubernetes!\""
 }
 
 func Example_withArgs() {
@@ -176,8 +176,8 @@ func Example_withArgs() {
 	//   - name: user-container
 	//     image: baz
 	//     args:
-	//     - '-c'
-	//     - 'echo "Hello, Kubernetes!"'
+	//     - "-c"
+	//     - "echo \"Hello, Kubernetes!\""
 }
 
 func Example_withNamespace() {

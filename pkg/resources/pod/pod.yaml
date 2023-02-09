@@ -42,13 +42,13 @@ spec:
     {{ if .command }}
     command:
     {{ range .command }}
-    - '{{ . }}'
+    - {{ printf "%q" . }}
     {{ end }}
     {{ end }}
     {{ if .args }}
     args:
     {{ range .args }}
-    - '{{ . }}'
+    - {{ printf "%q" . }}
     {{ end }}
     {{ end }}
     {{ if .port }}
