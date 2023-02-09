@@ -53,7 +53,7 @@ spec:
     {{ end }}
     {{ if .port }}
     ports:
-      - containerPort: {{ .port }}
+    - containerPort: {{ .port }}
     {{ end }}
     {{ if .envs }}
     env:

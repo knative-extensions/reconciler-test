@@ -78,6 +78,7 @@ func Example_full() {
 		pod.WithEnvs(map[string]string{
 			"VAR": "VAL",
 		}),
+		pod.WithPort(8080),
 	}
 
 	for _, opt := range opts {
@@ -109,6 +110,8 @@ func Example_full() {
 	//     args:
 	//     - "-c"
 	//     - "echo \"Hello, Kubernetes!\""
+	//     ports:
+	//     - containerPort: 8080
 	//     env:
 	//     - name: "VAR"
 	//       value: "VAL"
@@ -178,6 +181,37 @@ func Example_withArgs() {
 	//     args:
 	//     - "-c"
 	//     - "echo \"Hello, Kubernetes!\""
+}
+
+func Example_withPort() {
+	ctx := testlog.NewContext()
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
+		"image":     "baz",
+	}
+
+	pod.WithPort(8888)(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: v1
+	// kind: Pod
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	// spec:
+	//   containers:
+	//   - name: user-container
+	//     image: baz
+	//     ports:
+	//     - containerPort: 8888
 }
 
 func Example_withNamespace() {

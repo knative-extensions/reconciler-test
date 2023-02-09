@@ -50,6 +50,12 @@ func WithImagePullPolicy(ipp corev1.PullPolicy) manifest.CfgFn {
 	}
 }
 
+func WithPort(port int) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["port"] = port
+	}
+}
+
 // WithOverriddenNamespace will modify the namespace of the pod from the specs to the provided one
 func WithNamespace(ns string) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
