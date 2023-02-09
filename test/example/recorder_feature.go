@@ -23,7 +23,7 @@ import (
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
-	"knative.dev/reconciler-test/resources/svc"
+	"knative.dev/reconciler-test/pkg/resources/service"
 
 	// Dot import the eventshub asserts and sdk-go test packages to include all the assert utilities
 	. "github.com/cloudevents/sdk-go/v2/test"
@@ -39,7 +39,7 @@ func RecorderFeature() *feature.Feature {
 	event := FullEvent()
 
 	f.Setup("install recorder", eventshub.Install(to, eventshub.StartReceiver))
-	f.Setup("recorder is addressable", k8s.IsAddressable(svc.GVR(), to, time.Second, 30*time.Second))
+	f.Setup("recorder is addressable", k8s.IsAddressable(service.GVR(), to, time.Second, 30*time.Second))
 
 	f.Requirement("install sender", eventshub.Install(from, eventshub.StartSender(to), eventshub.InputEvent(event)))
 
@@ -58,7 +58,7 @@ func RecorderFeatureYAML() *feature.Feature {
 	from := feature.MakeRandomK8sName("sender")
 
 	f.Setup("install recorder", eventshub.Install(to, eventshub.StartReceiver))
-	f.Setup("recorder is addressable", k8s.IsAddressable(svc.GVR(), to, time.Second, 30*time.Second))
+	f.Setup("recorder is addressable", k8s.IsAddressable(service.GVR(), to, time.Second, 30*time.Second))
 
 	f.Requirement("install sender with yaml events", eventshub.Install(from,
 		eventshub.StartSender(to),
