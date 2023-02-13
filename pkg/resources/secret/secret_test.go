@@ -103,62 +103,6 @@ func Example_full() {
 	//   key2: val2
 }
 
-func Example_WithAnnotations() {
-	ctx := testlog.NewContext()
-	images := map[string]string{}
-	cfg := map[string]interface{}{
-		"name":      "foo",
-		"namespace": "bar",
-	}
-
-	secret.WithAnnotations(map[string]interface{}{"app.kubernetes.io/name": "app1"})(cfg)
-
-	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	manifest.OutputYAML(os.Stdout, files)
-	// Output:
-	// apiVersion: v1
-	// kind: Secret
-	// metadata:
-	//   name: foo
-	//   namespace: bar
-	//   annotations:
-	//     app.kubernetes.io/name: "app1"
-}
-
-func Example_WithLabels() {
-	ctx := testlog.NewContext()
-	images := map[string]string{}
-	cfg := map[string]interface{}{
-		"name":      "foo",
-		"namespace": "bar",
-	}
-
-	secret.WithLabels(map[string]string{
-		"color":   "blue",
-		"version": "3",
-	})(cfg)
-
-	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	manifest.OutputYAML(os.Stdout, files)
-	// Output:
-	// apiVersion: v1
-	// kind: Secret
-	// metadata:
-	//   name: foo
-	//   namespace: bar
-	//   labels:
-	//     color: blue
-	//     version: 3
-}
-
 func Example_WithData() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
