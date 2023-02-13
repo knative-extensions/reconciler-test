@@ -509,6 +509,16 @@ Run all instances of Noop feature, including instances in a Feature Set
 go test -v -count=1 -tags=e2e ./test/... --feature=Noop
 ```
 
+### Enable Istio sidecar injection
+
+Istio requires annotations on namespaces or pods to inject its sidecar, to enable
+Istio injection for reconciler-test resources, you can add the `istio.enabled`
+command line flag:
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... --istio.enabled=true
+```
+
 #### Using Private Registries
 
 If a private registry is to be used with authentication, a Secret needs to be created in the `default` namespace called `kn-test-image-pull-secret` with the credentials.

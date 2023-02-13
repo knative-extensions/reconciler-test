@@ -21,6 +21,7 @@ import (
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
+
 	testlog "knative.dev/reconciler-test/pkg/logging"
 )
 
@@ -51,6 +52,7 @@ type ConfigurationOption func(Configuration) Configuration
 // standard way. The Kube client will be initialized within the
 // context.Context for later use.
 func NewStandardGlobalEnvironment(opts ...ConfigurationOption) GlobalEnvironment {
+	opts = append(opts, initIstioFlags())
 	config := resolveConfiguration(opts)
 	ctx := testlog.NewContext(config.Context)
 
