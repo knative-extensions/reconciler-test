@@ -513,3 +513,20 @@ go test -v -count=1 -tags=e2e ./test/... --feature=Noop
 
 If a private registry is to be used with authentication, a Secret needs to be created in the `default` namespace called `kn-test-image-pull-secret` with the credentials.
 The testing framework will copy this secret into any new namespaces created and will update the default ServiceAccount's imagePullSecret.
+
+### Using pre-built images
+
+By default, the framework builds images using `ko`, if test images are already built you can provide
+a file that maps Go main packages to your images:
+
+```yaml
+# images.yaml
+knative.dev/reconciler-test/cmd/eventshub: quay.io/myregistry/eventshub
+knative.dev/reconciler-test/cmd/eventshub2: quay.io/myregistry/eventshub2
+```
+
+and then, reference the file in the `go test` command invocation:
+
+```
+go test -v -count=1 -tags=e2e ./test/... --images.producer.file=images.yaml
+```
