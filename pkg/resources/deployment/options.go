@@ -24,6 +24,14 @@ import (
 var WithAnnotations = manifest.WithAnnotations
 var WithLabels = manifest.WithLabels
 
+func WithSelectors(selectors map[string]string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		if selectors != nil {
+			cfg["selectors"] = selectors
+		}
+	}
+}
+
 func WithEnvs(envs map[string]string) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		if envs != nil {

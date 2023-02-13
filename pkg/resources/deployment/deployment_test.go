@@ -73,10 +73,12 @@ func Example_full() {
 		"name":      "foo",
 		"namespace": "bar",
 		"image":     "baz",
-		"selectors": map[string]string{"app": "foo"},
 	}
 
 	opts := []manifest.CfgFn{
+		deployment.WithSelectors(map[string]string{
+			"app": "my-app",
+		}),
 		deployment.WithLabels(map[string]string{
 			"color": "green",
 		}),
@@ -121,13 +123,13 @@ func Example_full() {
 	//   replicas: 6
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: my-app
 	//   template:
 	//     metadata:
 	//       annotations:
 	//         pod-annotation: "foo"
 	//       labels:
-	//         app: foo
+	//         app: my-app
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -143,6 +145,49 @@ func Example_full() {
 	//         - name: "VAR"
 	//           value: "VAL"
 	//         imagePullPolicy: Never
+}
+
+func Example_withSelectors() {
+	ctx := testlog.NewContext()
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
+		"image":     "baz",
+	}
+
+	deployment.WithSelectors(map[string]string{
+		"sel1": "val1",
+		"sel2": "val2",
+	})(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
+
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: apps/v1
+	// kind: Deployment
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	// spec:
+	//   selector:
+	//     matchLabels:
+	//       sel1: val1
+	//       sel2: val2
+	//   template:
+	//     metadata:
+	//       labels:
+	//         sel1: val1
+	//         sel2: val2
+	//     spec:
+	//       containers:
+	//       - name: user-container
+	//         image: baz
 }
 
 func Example_withPodAnnotations() {
