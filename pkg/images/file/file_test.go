@@ -28,8 +28,9 @@ func TestImageProducer(t *testing.T) {
 	producer := ImageProducer("testdata/images.yaml")
 
 	tt := []struct {
-		key   string
-		value string
+		key     string
+		value   string
+		wantErr bool
 	}{
 		{
 			key:   "knative.dev/reconciler-test/cmd/eventshub",
@@ -37,17 +38,21 @@ func TestImageProducer(t *testing.T) {
 		},
 		{
 			key:   "knative.dev/reconciler-test/cmd/eventshub2",
-			value: "quay.io/myregistry/eventshub",
+			value: "quay.io/myregistry/eventshub2",
+		},
+		{
+			key:     "knative.dev/reconciler-test/cmd/eventshub3",
+			wantErr: true,
 		},
 	}
 
 	for _, tc := range tt {
 		got, err := producer(ctx, tc.key)
-		if err != nil {
-			t.Fatal(err)
+		if tc.wantErr != (err != nil) {
+			t.Fatal("want error", tc.wantErr, "error", err)
 		}
 
-		if got != tc.value {
+		if !tc.wantErr && got != tc.value {
 			t.Errorf("expected value %s, got %s", tc.value, got)
 		}
 	}
