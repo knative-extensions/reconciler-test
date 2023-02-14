@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"knative.dev/reconciler-test/pkg/images/file"
 )
 
 func TestProduceImages(t *testing.T) {
@@ -54,4 +56,37 @@ func TestProduceImages(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestWithImageProducer(t *testing.T) {
+
+	ctx := context.Background()
+
+	ctx, err := WithImageProducer(file.ImageProducer("testdata/images.yaml"))(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ip := GetImageProducer(ctx)
+
+	tt := []struct {
+		key   string
+		value string
+	}{
+		{
+			key:   "knative.dev/reconciler-test/cmd/eventshub",
+			value: "quay.io/myregistry/eventshub",
+		},
+	}
+
+	for _, tc := range tt {
+		got, err := ip(ctx, tc.key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got != tc.value {
+			t.Errorf("expected value %s, got %s", tc.value, got)
+		}
+	}
 }
