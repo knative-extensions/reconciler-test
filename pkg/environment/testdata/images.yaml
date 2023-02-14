@@ -1,0 +1,3 @@
+# Comment
+
+knative.dev/reconciler-test/cmd/eventshub: quay.io/myregistry/eventshub
