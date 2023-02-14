@@ -48,7 +48,7 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 		}
 
 		if cfg := GetIstioConfig(mr.c); cfg.Enabled {
-			withIstioNamespaceAnnotation(nsSpec)
+			withIstioNamespaceLabel(nsSpec)
 		}
 
 		_, err = c.CoreV1().Namespaces().Create(context.Background(), nsSpec, metav1.CreateOptions{})

@@ -43,11 +43,11 @@ func GetIstioConfig(ctx context.Context) *IstioConfig {
 	return config.(*IstioConfig)
 }
 
-func withIstioNamespaceAnnotation(ns *corev1.Namespace) {
-	if ns.Annotations == nil {
-		ns.Annotations = make(map[string]string, 1)
+func withIstioNamespaceLabel(ns *corev1.Namespace) {
+	if ns.Labels == nil {
+		ns.Labels = make(map[string]string, 1)
 	}
-	ns.Annotations["istio-injection"] = "enabled"
+	ns.Labels["istio-injection"] = "enabled"
 }
 
 func initIstioFlags() ConfigurationOption {
