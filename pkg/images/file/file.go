@@ -33,7 +33,7 @@ import (
 // knative.dev/reconciler-test/cmd/eventshub: quay.io/myregistry/eventshub
 // # ... other images ...
 func ImageProducer(filepath string) func(ctx context.Context, pack string) (string, error) {
-	images := make(map[string]string, 2 /* */)
+	images := make(map[string]string, 2)
 
 	bytes, err := os.ReadFile(filepath)
 	if err != nil {
