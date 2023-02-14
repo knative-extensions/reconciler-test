@@ -511,7 +511,7 @@ go test -v -count=1 -tags=e2e ./test/... --feature=Noop
 
 ### Enable Istio sidecar injection
 
-Istio requires annotations on namespaces or pods to inject its sidecar, to enable
+Istio requires annotations on pods and/or labels on namespaces to inject its sidecar, to enable
 Istio injection for reconciler-test resources, you can add the `istio.enabled`
 command line flag:
 
