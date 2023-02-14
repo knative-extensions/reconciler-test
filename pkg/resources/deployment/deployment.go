@@ -33,6 +33,7 @@ var yaml embed.FS
 func Install(name string, image string, options ...manifest.CfgFn) feature.StepFn {
 	cfg := map[string]interface{}{
 		"name":      name,
+		"image":     image,
 		"selectors": map[string]string{"app": name}, // default
 	}
 
