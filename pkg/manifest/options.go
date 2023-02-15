@@ -71,7 +71,6 @@ func appendToOriginal(original interface{}, additional map[string]interface{}) {
 			annotations[k] = v
 		}
 	}
-	return
 }
 
 // WithLabels returns a function for configuring labels of the resource
