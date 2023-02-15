@@ -101,6 +101,82 @@ func Example() {
 	//           value: "bar"
 }
 
+func ExampleIstioAnnotation() {
+	ctx := testlog.NewContext()
+	images := map[string]string{
+		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
+	}
+	cfg := map[string]interface{}{
+		"name":          "hubhub",
+		"namespace":     "example",
+		"image":         "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"withReadiness": true,
+		"envs": map[string]string{
+			"foo": "bar",
+			"baz": "boof",
+		},
+	}
+
+	manifest.WithIstioPodAnnotations(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, templates, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: v1
+	// kind: Service
+	// metadata:
+	//   name: hubhub
+	//   namespace: example
+	// spec:
+	//   selector:
+	//     app: eventshub-hubhub
+	//   ports:
+	//     - protocol: TCP
+	//       port: 80
+	//       targetPort: 8080
+	// ---
+	// apiVersion: v1
+	// kind: Pod
+	// metadata:
+	//   name: hubhub
+	//   namespace: example
+	//   labels:
+	//     app: eventshub-hubhub
+	//   annotations:
+	//       sidecar.istio.io/inject: "true"
+	//       sidecar.istio.io/rewriteAppHTTPProbers: "true"
+	// spec:
+	//   serviceAccountName: "example"
+	//   restartPolicy: "Never"
+	//   containers:
+	//     - name: eventshub
+	//       image: uri://a-real-container
+	//       imagePullPolicy: "IfNotPresent"
+	//       readinessProbe:
+	//         httpGet:
+	//           port: 8080
+	//           path: /health/ready
+	//       env:
+	//         - name: "SYSTEM_NAMESPACE"
+	//           valueFrom:
+	//             fieldRef:
+	//               fieldPath: "metadata.namespace"
+	//         - name: "POD_NAME"
+	//           valueFrom:
+	//             fieldRef:
+	//               fieldPath: "metadata.name"
+	//         - name: "EVENT_LOGS"
+	//           value: "recorder,logger"
+	//         - name: "baz"
+	//           value: "boof"
+	//         - name: "foo"
+	//           value: "bar"
+}
+
 func ExampleNoReadiness() {
 	ctx := testlog.NewContext()
 	images := map[string]string{
