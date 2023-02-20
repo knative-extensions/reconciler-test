@@ -53,3 +53,28 @@ func PollTimingsFromContext(ctx context.Context) (time.Duration, time.Duration) 
 	}
 	return DefaultPollInterval, DefaultPollTimeout
 }
+
+// PollTimings will find the correct timings based on priority:
+// - passed timing slice [interval, timeout].
+// - values from from context.
+// - defaults.
+func PollTimings(ctx context.Context, timings []time.Duration) (time.Duration /*interval*/, time.Duration /*timeout*/) {
+	// Use the passed timing first, but it could be nil or a strange length.
+	if len(timings) >= 2 {
+		return timings[0], timings[1]
+	}
+
+	var interval *time.Duration
+
+	// Use the passed timings if only interval is provided.
+	if len(timings) == 1 {
+		interval = &timings[0]
+	}
+
+	di, timeout := PollTimingsFromContext(ctx)
+	if interval == nil {
+		interval = &di
+	}
+
+	return *interval, timeout
+}

@@ -29,6 +29,7 @@ import (
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
 	"knative.dev/reconciler-test/pkg/manifest"
+	"knative.dev/reconciler-test/pkg/resources/pod"
 )
 
 //go:embed *.yaml
@@ -94,7 +95,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 		if err != nil {
 			log.Fatal(err)
 		}
-		k8s.WaitForPodRunningOrFail(ctx, t, name)
+		pod.IsRunning(name)(ctx, t)
 		k8s.WaitForReadyOrDoneOrFail(ctx, t, podref)
 
 		// If the eventhubs starts an event receiver, we need to wait for the service endpoint to be synced

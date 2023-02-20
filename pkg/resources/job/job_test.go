@@ -21,6 +21,7 @@ import (
 	"os"
 
 	v1 "k8s.io/api/core/v1"
+
 	"knative.dev/reconciler-test/pkg/manifest"
 	"knative.dev/reconciler-test/pkg/resources/job"
 
@@ -367,4 +368,41 @@ func Example_WithTTLSecondsAfterFinished() {
 	//       containers:
 	//       - name: job-container
 	//         image: baz
+}
+
+func Example_withCommandArgs() {
+	ctx := testlog.NewContext()
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
+		"image":     "baz",
+	}
+
+	job.WithArgs([]string{"a", "b"})(cfg)
+	job.WithCommand([]string{"/bin/sh"})(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: batch/v1
+	// kind: Job
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	// spec:
+	//   template:
+	//     spec:
+	//       containers:
+	//       - name: job-container
+	//         image: baz
+	//         command:
+	//         - "/bin/sh"
+	//         args:
+	//         - "a"
+	//         - "b"
 }

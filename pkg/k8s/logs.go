@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// Deprecated use pod.Logs
 func LogsFor(client kubernetes.Interface, namespace, name string, gvr schema.GroupVersionResource) (string, error) {
 	// Get all pods in this namespace.
 	pods, err := client.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})

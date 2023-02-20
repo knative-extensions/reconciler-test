@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -36,40 +35,22 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
-	"knative.dev/pkg/kmeta"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/resources/job"
+	"knative.dev/reconciler-test/pkg/resources/pod"
 )
 
 // PodCompletedReason is present in ready condition, when the pod completed
 // successfully.
 const PodCompletedReason = "PodCompleted"
 
-// PollTimings will find the correct timings based on priority:
-// - passed timing slice [interval, timeout].
-// - values from from context.
-// - defaults.
-func PollTimings(ctx context.Context, timings []time.Duration) (time.Duration /*interval*/, time.Duration /*timeout*/) {
-	// Use the passed timing first, but it could be nil or a strange length.
-	if len(timings) >= 2 {
-		return timings[0], timings[1]
-	}
-
-	var interval *time.Duration
-
-	// Use the passed timings if only interval is provided.
-	if len(timings) == 1 {
-		interval = &timings[0]
-	}
-
-	di, timeout := environment.PollTimingsFromContext(ctx)
-	if interval == nil {
-		interval = &di
-	}
-
-	return *interval, timeout
-}
+var (
+	// PollTimings will find the correct timings based on priority:
+	// Deprecated use environment.PollTimings
+	PollTimings = environment.PollTimings
+)
 
 // WaitForReadyOrDone will wait for a resource to become ready or succeed.
 // Timing is optional but if provided is [interval, timeout].
@@ -81,7 +62,7 @@ func WaitForReadyOrDone(ctx context.Context, t feature.T, ref corev1.ObjectRefer
 
 	switch gvr.Resource {
 	case "jobs":
-		err := WaitUntilJobDone(ctx, t, ref.Name, interval, timeout)
+		err := job.WaitUntilJobDone(ctx, t, ref.Name, interval, timeout)
 		if err != nil {
 			return err
 		}
@@ -244,6 +225,7 @@ var ErrWaitingForServiceEndpoints = errors.New("waiting for service endpoints")
 
 // WaitForServiceEndpoints polls the status of the specified Service
 // every interval until number of service endpoints >= numOfEndpoints.
+// TODO move this function to resources/service package
 func WaitForServiceEndpoints(ctx context.Context, t feature.T, name string, numberOfExpectedEndpoints int) error {
 	ns := environment.FromContext(ctx).Namespace()
 	interval, timeout := PollTimings(ctx, nil)
@@ -292,6 +274,7 @@ func WaitForServiceEndpoints(ctx context.Context, t feature.T, name string, numb
 
 // WaitForServiceEndpointsOrFail polls the status of the specified Service
 // every interval until number of service endpoints >= numOfEndpoints.
+// TODO move this function to resources/service package
 func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, name string, numberOfExpectedEndpoints int) {
 	if err := WaitForServiceEndpoints(ctx, t, name, numberOfExpectedEndpoints); err != nil {
 		t.Fatalf("Failed while %+v", errors.WithStack(err))
@@ -299,6 +282,7 @@ func WaitForServiceEndpointsOrFail(ctx context.Context, t feature.T, name string
 }
 
 // WaitForServiceReadyOrFail will call WaitForServiceReady and fail if error is returned.
+// TODO move this function to resources/service package
 func WaitForServiceReadyOrFail(ctx context.Context, t feature.T, name string, readinessPath string) {
 	if err := WaitForServiceReady(ctx, t, name, readinessPath); err != nil {
 		t.Fatalf("Failed while %+v", errors.WithStack(err))
@@ -307,78 +291,48 @@ func WaitForServiceReadyOrFail(ctx context.Context, t feature.T, name string, re
 
 const ubi8Image = "registry.access.redhat.com/ubi8/ubi"
 
-// ErrWaitingForServiceReady if waiting for service ready failed.
-var ErrWaitingForServiceReady = errors.New("waiting for service ready")
-
 // WaitForServiceReady will deploy a job that will try to invoke a
 // service using readiness path. This makes sure the service is ready to serve
 // traffic, from other components.
 // See: https://stackoverflow.com/a/59713538/844449
+// TODO move this function to resources/service package
 func WaitForServiceReady(ctx context.Context, t feature.T, name string, readinessPath string) error {
-	env := environment.FromContext(ctx)
-	ns := env.Namespace()
-	jobs := kubeclient.Get(ctx).BatchV1().Jobs(ns)
-	label := "readiness-check"
-	jobName := feature.MakeRandomK8sName(name + "-" + label)
-	sinkURI := apis.HTTP(fmt.Sprintf("%s.%s.svc", name, ns))
+
+	sinkURI := apis.HTTP(fmt.Sprintf("%s.%s.svc", name, environment.FromContext(ctx).Namespace()))
 	sinkURI.Path = readinessPath
+
 	curl := fmt.Sprintf("curl --max-time 2 "+
 		"--trace-ascii %% --trace-time "+
 		"--retry 6 --retry-connrefused %s", sinkURI)
-	mayBeQuitIstio := fmt.Sprintf("(curl -fsI -X POST http://localhost:15020/quitquitquit || echo no-istio)")
-	curl += fmt.Sprintf("%s && %s", curl, mayBeQuitIstio)
-	var one int32 = 1
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{Name: jobName, Namespace: ns},
-		Spec: batchv1.JobSpec{
-			Completions: &one,
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyOnFailure,
-					Containers: []corev1.Container{{
-						Name:    jobName,
-						Image:   ubi8Image,
-						Command: []string{"/bin/sh"},
-						Args:    []string{"-c", curl},
-					}},
-				},
-			},
-		},
-	}
-	created, err := jobs.Create(ctx, job, metav1.CreateOptions{})
+	maybeQuitIstio := fmt.Sprintf("(curl -fsI -X POST http://localhost:15020/quitquitquit || echo no-istio)")
+	curl += fmt.Sprintf("%s && %s", curl, maybeQuitIstio)
+
+	jobName := feature.MakeRandomK8sName(name + "-readiness-check")
+
+	err := job.InstallError(
+		ctx,
+		t,
+		jobName,
+		ubi8Image,
+		job.WithArgs([]string{"-c", curl}),
+		job.WithCommand([]string{"/bin/sh"}),
+		job.WithRestartPolicy(corev1.RestartPolicyOnFailure),
+		job.WithCompletions(1),
+	)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
+		return err
 	}
-	env.Reference(kmeta.ObjectReference(created))
-	if err = WaitUntilJobDone(ctx, t, jobName); err != nil {
-		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-	}
-	job, err = jobs.Get(ctx, jobName, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-	}
-	if !IsJobSucceeded(job) {
-		var pod *corev1.Pod
-		pod, err = GetJobPodByJobName(ctx, jobName)
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-		}
-		logs, err := PodLogs(ctx, pod.Name, jobName, ns)
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-		}
-		status, err := json.MarshalIndent(job.Status, "", "  ")
-		if err != nil {
-			return fmt.Errorf("%w: %v", ErrWaitingForServiceReady, err)
-		}
-		return fmt.Errorf("%w: job failed, status: \n%s\n---\nlogs:\n%s",
-			ErrWaitingForServiceReady, status, logs)
+
+	if err := job.WaitUntilJobSucceeded(ctx, t, jobName); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 // WaitForPodRunningOrFail waits for the given pod to be in running state.
+// TODO move this function to resources/pod package
+// Deprecated use pod.IsRunning
 func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 	ns := environment.FromContext(ctx).Namespace()
 	podClient := kubeclient.Get(ctx).CoreV1().Pods(ns)
@@ -425,28 +379,15 @@ func WaitForPodRunningOrFail(ctx context.Context, t feature.T, podName string) {
 	}
 }
 
-// PodLogs returns Pod logs for given Pod and Container in the namespace
-func PodLogs(ctx context.Context, podName, containerName, namespace string) ([]byte, error) {
-	podClient := kubeclient.Get(ctx).CoreV1().Pods(namespace)
-	podList, err := podClient.List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	for i := range podList.Items {
-		// Pods are big, so avoid copying.
-		pod := &podList.Items[i]
-		if strings.Contains(pod.Name, podName) {
-			result := podClient.GetLogs(pod.Name, &corev1.PodLogOptions{
-				Container: containerName,
-			}).Do(ctx)
-			return result.Raw()
-		}
-	}
-	return nil, fmt.Errorf("could not find logs for %s/%s:%s", namespace, podName, containerName)
-}
+var (
+	// PodLogs returns Pod logs for given Pod and Container in the namespace
+	// Deprecated, use pod.Logs
+	PodLogs = pod.Logs
+)
 
 // WaitForAddress waits until a resource has an address.
 // Timing is optional but if provided is [interval, timeout].
+// TODO move this function to knative package
 func WaitForAddress(ctx context.Context, gvr schema.GroupVersionResource, name string, timing ...time.Duration) (*apis.URL, error) {
 	interval, timeout := PollTimings(ctx, timing)
 

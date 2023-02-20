@@ -24,7 +24,6 @@ import (
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/pkg/k8s"
 )
 
 // PodSecurityCfgFn returns a function for configuring security context for Pod, depending
@@ -36,7 +35,7 @@ func PodSecurityCfgFn(ctx context.Context, t feature.T) CfgFn {
 		t.Fatalf("Error while checking restricted pod security mode for namespace %s", namespace)
 	}
 	if restrictedMode {
-		return k8s.WithDefaultPodSecurityContext
+		return WithDefaultPodSecurityContext
 	}
 	return func(map[string]interface{}) {}
 }
@@ -90,4 +89,36 @@ func WithIstioPodAnnotations(cfg map[string]interface{}) {
 
 	WithAnnotations(podAnnotations)(cfg)
 	WithPodAnnotations(podAnnotations)(cfg)
+}
+
+func WithDefaultPodSecurityContext(cfg map[string]interface{}) {
+	if _, set := cfg["podSecurityContext"]; !set {
+		cfg["podSecurityContext"] = map[string]interface{}{}
+	}
+	podSecurityContext := cfg["podSecurityContext"].(map[string]interface{})
+	podSecurityContext["runAsNonRoot"] = pkgsecurity.DefaultPodSecurityContext.RunAsNonRoot
+	podSecurityContext["seccompProfile"] = map[string]interface{}{}
+	seccompProfile := podSecurityContext["seccompProfile"].(map[string]interface{})
+	seccompProfile["type"] = pkgsecurity.DefaultPodSecurityContext.SeccompProfile.Type
+
+	if _, set := cfg["containerSecurityContext"]; !set {
+		cfg["containerSecurityContext"] = map[string]interface{}{}
+	}
+	containerSecurityContext := cfg["containerSecurityContext"].(map[string]interface{})
+	containerSecurityContext["allowPrivilegeEscalation"] =
+		pkgsecurity.DefaultContainerSecurityContext.AllowPrivilegeEscalation
+	containerSecurityContext["capabilities"] = map[string]interface{}{}
+	capabilities := containerSecurityContext["capabilities"].(map[string]interface{})
+	if len(pkgsecurity.DefaultContainerSecurityContext.Capabilities.Drop) != 0 {
+		capabilities["drop"] = []string{}
+		for _, drop := range pkgsecurity.DefaultContainerSecurityContext.Capabilities.Drop {
+			capabilities["drop"] = append(capabilities["drop"].([]string), string(drop))
+		}
+	}
+	if len(pkgsecurity.DefaultContainerSecurityContext.Capabilities.Add) != 0 {
+		capabilities["add"] = []string{}
+		for _, drop := range pkgsecurity.DefaultContainerSecurityContext.Capabilities.Drop {
+			capabilities["add"] = append(capabilities["add"].([]string), string(drop))
+		}
+	}
 }

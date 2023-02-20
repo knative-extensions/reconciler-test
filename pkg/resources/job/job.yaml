@@ -22,6 +22,9 @@ spec:
   {{ if .ttlSecondsAfterFinished }}
   ttlSecondsAfterFinished: {{ .ttlSecondsAfterFinished }}
   {{ end }}
+  {{ if .completions }}
+  completions: {{ .completions }}
+  {{ end }}
   template:
     {{ if or .podannotations .podlabels }}
     metadata:
@@ -51,6 +54,18 @@ spec:
       containers:
       - name: job-container
         image: {{ .image }}
+        {{ if .command }}
+        command:
+        {{ range $cmd := .command }}
+        - {{ printf "%q" $cmd }}
+        {{ end }}
+        {{ end }}
+        {{ if .args }}
+        args:
+        {{ range $arg := .args }}
+        - {{ printf "%q" $arg }}
+        {{ end }}
+        {{ end }}
         {{ if .envs }}
         env:
         {{ range $key, $value := .envs }}
