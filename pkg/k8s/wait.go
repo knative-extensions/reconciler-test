@@ -306,7 +306,7 @@ func WaitForServiceReady(ctx context.Context, t feature.T, name string, readines
 		"--trace-ascii %% --trace-time "+
 		"--retry 6 --retry-connrefused %s", sinkURI)
 	maybeQuitIstio := fmt.Sprintf("(curl -fsI -X POST http://localhost:15020/quitquitquit || echo no-istio)")
-	curl += fmt.Sprintf("%s && %s", curl, maybeQuitIstio)
+	curl = fmt.Sprintf("%s && %s", curl, maybeQuitIstio)
 
 	jobName := feature.MakeRandomK8sName(name + "-readiness-check")
 
