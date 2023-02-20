@@ -214,7 +214,7 @@ func IsCompleteJob(job *batchv1.Job) bool {
 }
 
 func IsSucceededJob(job *batchv1.Job) bool {
-	return !IsFailedJob(job)
+	return IsCompleteJob(job) && !IsFailedJob(job)
 }
 
 func IsFailedJob(job *batchv1.Job) bool {
