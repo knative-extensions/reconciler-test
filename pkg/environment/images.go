@@ -24,6 +24,7 @@ import (
 
 	"knative.dev/pkg/logging"
 
+	"knative.dev/reconciler-test/pkg/images"
 	"knative.dev/reconciler-test/pkg/images/ko"
 )
 
@@ -199,9 +200,18 @@ func withImageProducer(ctx context.Context, producer ImageProducer) context.Cont
 
 // GetImageProducer extracts an ImageProducer from the given context.
 func GetImageProducer(ctx context.Context) ImageProducer {
+	if images.GetSkipPublishImage(ctx) {
+		return identityImageProducer()
+	}
 	p := ctx.Value(imageProducerKey{})
 	if p == nil {
 		return defaultImageProducer
 	}
 	return p.(ImageProducer)
+}
+
+func identityImageProducer() ImageProducer {
+	return func(ctx context.Context, pack string) (string, error) {
+		return pack, nil
+	}
 }

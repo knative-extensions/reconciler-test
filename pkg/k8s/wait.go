@@ -38,6 +38,7 @@ import (
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/images"
 	"knative.dev/reconciler-test/pkg/resources/job"
 	"knative.dev/reconciler-test/pkg/resources/pod"
 )
@@ -308,6 +309,8 @@ func WaitForServiceReady(ctx context.Context, t feature.T, name string, readines
 	curl += fmt.Sprintf("%s && %s", curl, maybeQuitIstio)
 
 	jobName := feature.MakeRandomK8sName(name + "-readiness-check")
+
+	ctx = images.WithSkipPublishImage(ctx)
 
 	err := job.InstallError(
 		ctx,
