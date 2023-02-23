@@ -60,7 +60,7 @@ func InitFlags(fs *flag.FlagSet) {
 
 	fs.StringVar(ipFilePath, "images.producer.file", "", "file path for file-based image producer")
 
-	fs.BoolVar(cleanupOnFail, "cleanup.on.fail", false, "Set this flag to cleanup even if test fails.")
+	fs.BoolVar(cleanupOnFail, "cleanup.on.fail", false, "Set this flag to do cleanup even if test fails.")
 }
 
 type stateValue struct {
