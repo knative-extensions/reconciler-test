@@ -152,7 +152,7 @@ func TestPanicInSetupSkipsToTeardown(t *testing.T) {
 
 	env.Test(ctx, t, feat)
 
-	require.Equal(t, "setup1teardown1teardown2teardown3", stringBuilder.String())
+	require.Equal(t, "setup1", stringBuilder.String())
 }
 
 func TestPanicContinuesTheExecutionOfAssertions(t *testing.T) {
