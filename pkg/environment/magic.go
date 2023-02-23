@@ -45,7 +45,7 @@ func NewGlobalEnvironment(ctx context.Context, initializers ...func()) GlobalEnv
 		c:                initializeImageStores(ctx),
 		instanceID:       uuid.New().String(),
 		initializers:     initializers,
-		cleanupOnFail:    *cleanupOnFail,
+		teardownOnFail:   *teardownOnFail,
 	}
 }
 
@@ -60,7 +60,7 @@ type MagicGlobalEnvironment struct {
 	instanceID       string
 	initializers     []func()
 	initializersOnce sync.Once
-	cleanupOnFail    bool
+	teardownOnFail   bool
 }
 
 type MagicEnvironment struct {
@@ -84,7 +84,7 @@ type MagicEnvironment struct {
 	imagePullSecretName      string
 	imagePullSecretNamespace string
 
-	cleanupOnFail bool
+	teardownOnFail bool
 }
 
 const (
@@ -166,11 +166,11 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	namespace := feature.MakeK8sNamePrefix(feature.AppendRandomString("test"))
 
 	env := &MagicEnvironment{
-		c:             mr.c,
-		l:             mr.RequirementLevel,
-		s:             mr.FeatureState,
-		featureMatch:  mr.FeatureMatch,
-		cleanupOnFail: mr.cleanupOnFail,
+		c:              mr.c,
+		l:              mr.RequirementLevel,
+		s:              mr.FeatureState,
+		featureMatch:   mr.FeatureMatch,
+		teardownOnFail: mr.teardownOnFail,
 
 		namespace:                namespace,
 		imagePullSecretName:      "kn-test-image-pull-secret",
@@ -330,11 +330,11 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 			// Special case for teardown timing
 			if timing == feature.Teardown {
 				if skip {
-					if mr.cleanupOnFail {
+					if mr.teardownOnFail {
 						// Prepend logging steps to the teardown phase when a previous timing failed.
 						steps = append(mr.loggingSteps(), steps...)
 					} else {
-						// When not doing cleanup only execute logging steps.
+						// When not doing teardown only execute logging steps.
 						steps = mr.loggingSteps()
 					}
 				}

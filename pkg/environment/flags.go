@@ -30,8 +30,8 @@ var (
 	l = new(feature.Levels)
 	f = new(string)
 
-	ipFilePath    = new(string)
-	cleanupOnFail = new(bool)
+	ipFilePath     = new(string)
+	teardownOnFail = new(bool)
 )
 
 // InitFlags registers the requirement and state filter flags supported by the
@@ -60,7 +60,7 @@ func InitFlags(fs *flag.FlagSet) {
 
 	fs.StringVar(ipFilePath, "images.producer.file", "", "file path for file-based image producer")
 
-	fs.BoolVar(cleanupOnFail, "cleanup.on.fail", false, "Set this flag to do cleanup even if test fails.")
+	fs.BoolVar(teardownOnFail, "teardown.on.fail", false, "Set this flag to do teardown even if test fails.")
 }
 
 type stateValue struct {

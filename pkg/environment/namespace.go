@@ -110,7 +110,7 @@ func (mr *MagicEnvironment) CreateNamespaceIfNeeded() error {
 }
 
 func (mr *MagicEnvironment) DeleteNamespaceIfNeeded(result milestone.Result) error {
-	if (result.Failed() && !mr.cleanupOnFail) || !mr.namespaceCreated {
+	if (result.Failed() && !mr.teardownOnFail) || !mr.namespaceCreated {
 		return nil
 	}
 
