@@ -22,7 +22,6 @@ package e2e
 import (
 	"context"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -115,13 +114,8 @@ func TestContextLifecycle(t *testing.T) {
 	env.Test(ctx, t, feat)
 }
 
-var mutex sync.Mutex
-
-// appender might be executed concurrently from different go routines.
 func appender(stringBuilder *strings.Builder, val string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		mutex.Lock()
-		defer mutex.Unlock()
 		stringBuilder.WriteString(val)
 	}
 }
