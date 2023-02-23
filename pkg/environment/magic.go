@@ -329,14 +329,16 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 
 			// Special case for teardown timing
 			if timing == feature.Teardown {
-				// Prepend logging steps to the teardown phase when a previous timing failed.
 				if skip {
-					steps = append(mr.loggingSteps(), steps...)
-					// Teardown steps are executed only if test does not fail.
 					if mr.cleanupOnFail {
-						skip = false
+						// Prepend logging steps to the teardown phase when a previous timing failed.
+						steps = append(mr.loggingSteps(), steps...)
+					} else {
+						// When not doing cleanup only execute logging steps.
+						steps = mr.loggingSteps()
 					}
 				}
+				skip = false
 			}
 
 			originalT.Logf("Running %d steps for timing:\n%s\n\n", len(steps), steps.String())
