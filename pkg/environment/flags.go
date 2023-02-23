@@ -30,7 +30,8 @@ var (
 	l = new(feature.Levels)
 	f = new(string)
 
-	ipFilePath = new(string)
+	ipFilePath        = new(string)
+	skipCleanupOnFail = new(bool)
 )
 
 // InitFlags registers the requirement and state filter flags supported by the
@@ -58,6 +59,8 @@ func InitFlags(fs *flag.FlagSet) {
 	fs.StringVar(f, "feature", "", "run only Features matching `regexp`")
 
 	fs.StringVar(ipFilePath, "images.producer.file", "", "file path for file-based image producer")
+
+	fs.BoolVar(skipCleanupOnFail, "skip-cleanup-on-fail", true, "Set this flag to skip cleanup if test fails.")
 }
 
 type stateValue struct {

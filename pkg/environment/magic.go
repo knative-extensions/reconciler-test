@@ -39,12 +39,13 @@ import (
 // expected to contain the configured Kube client already.
 func NewGlobalEnvironment(ctx context.Context, initializers ...func()) GlobalEnvironment {
 	return &MagicGlobalEnvironment{
-		RequirementLevel: *l,
-		FeatureState:     *s,
-		FeatureMatch:     regexp.MustCompile(*f),
-		c:                initializeImageStores(ctx),
-		instanceID:       uuid.New().String(),
-		initializers:     initializers,
+		RequirementLevel:  *l,
+		FeatureState:      *s,
+		FeatureMatch:      regexp.MustCompile(*f),
+		c:                 initializeImageStores(ctx),
+		instanceID:        uuid.New().String(),
+		initializers:      initializers,
+		skipCleanupOnFail: *skipCleanupOnFail,
 	}
 }
 
@@ -56,9 +57,10 @@ type MagicGlobalEnvironment struct {
 	c context.Context
 	// instanceID represents this instance of the GlobalEnvironment. It is used
 	// to link runs together from a single global environment.
-	instanceID       string
-	initializers     []func()
-	initializersOnce sync.Once
+	instanceID        string
+	initializers      []func()
+	initializersOnce  sync.Once
+	skipCleanupOnFail bool
 }
 
 type MagicEnvironment struct {
@@ -81,6 +83,8 @@ type MagicEnvironment struct {
 	// imagePullSecretNamespace/imagePullSecretName: An optional secret to add to service account of new namespaces
 	imagePullSecretName      string
 	imagePullSecretNamespace string
+
+	skipCleanupOnFail bool
 }
 
 const (
@@ -112,6 +116,9 @@ func (mr *MagicEnvironment) Finish() {
 	}
 	if mr.milestones != nil {
 		mr.milestones.Finished(result)
+	}
+	if result.Failed() && mr.skipCleanupOnFail {
+		return
 	}
 	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
 		if mr.milestones != nil {
@@ -162,10 +169,11 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	namespace := feature.MakeK8sNamePrefix(feature.AppendRandomString("test"))
 
 	env := &MagicEnvironment{
-		c:            mr.c,
-		l:            mr.RequirementLevel,
-		s:            mr.FeatureState,
-		featureMatch: mr.FeatureMatch,
+		c:                 mr.c,
+		l:                 mr.RequirementLevel,
+		s:                 mr.FeatureState,
+		featureMatch:      mr.FeatureMatch,
+		skipCleanupOnFail: mr.skipCleanupOnFail,
 
 		namespace:                namespace,
 		imagePullSecretName:      "kn-test-image-pull-secret",
@@ -327,10 +335,11 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 				// Prepend logging steps to the teardown phase when a previous timing failed.
 				if skip {
 					steps = append(mr.loggingSteps(), steps...)
+					// Teardown steps are executed only if test does not fail.
+					if !mr.skipCleanupOnFail {
+						skip = false
+					}
 				}
-
-				// Teardown steps are executed always, no matter their level and state
-				skip = false
 			}
 
 			originalT.Logf("Running %d steps for timing:\n%s\n\n", len(steps), steps.String())
