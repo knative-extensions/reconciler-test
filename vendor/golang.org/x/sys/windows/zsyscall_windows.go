@@ -40,6 +40,7 @@ var (
 	modadvapi32 = NewLazySystemDLL("advapi32.dll")
 	modcrypt32  = NewLazySystemDLL("crypt32.dll")
 	moddnsapi   = NewLazySystemDLL("dnsapi.dll")
+	moddwmapi   = NewLazySystemDLL("dwmapi.dll")
 	modiphlpapi = NewLazySystemDLL("iphlpapi.dll")
 	modkernel32 = NewLazySystemDLL("kernel32.dll")
 	modmswsock  = NewLazySystemDLL("mswsock.dll")
@@ -175,8 +176,11 @@ var (
 	procDnsNameCompare_W                                     = moddnsapi.NewProc("DnsNameCompare_W")
 	procDnsQuery_W                                           = moddnsapi.NewProc("DnsQuery_W")
 	procDnsRecordListFree                                    = moddnsapi.NewProc("DnsRecordListFree")
+	procDwmGetWindowAttribute                                = moddwmapi.NewProc("DwmGetWindowAttribute")
+	procDwmSetWindowAttribute                                = moddwmapi.NewProc("DwmSetWindowAttribute")
 	procGetAdaptersAddresses                                 = modiphlpapi.NewProc("GetAdaptersAddresses")
 	procGetAdaptersInfo                                      = modiphlpapi.NewProc("GetAdaptersInfo")
+	procGetBestInterfaceEx                                   = modiphlpapi.NewProc("GetBestInterfaceEx")
 	procGetIfEntry                                           = modiphlpapi.NewProc("GetIfEntry")
 	procAssignProcessToJobObject                             = modkernel32.NewProc("AssignProcessToJobObject")
 	procCancelIo                                             = modkernel32.NewProc("CancelIo")
@@ -226,6 +230,7 @@ var (
 	procFreeLibrary                                          = modkernel32.NewProc("FreeLibrary")
 	procGenerateConsoleCtrlEvent                             = modkernel32.NewProc("GenerateConsoleCtrlEvent")
 	procGetACP                                               = modkernel32.NewProc("GetACP")
+	procGetActiveProcessorCount                              = modkernel32.NewProc("GetActiveProcessorCount")
 	procGetCommTimeouts                                      = modkernel32.NewProc("GetCommTimeouts")
 	procGetCommandLineW                                      = modkernel32.NewProc("GetCommandLineW")
 	procGetComputerNameExW                                   = modkernel32.NewProc("GetComputerNameExW")
@@ -247,10 +252,12 @@ var (
 	procGetFileType                                          = modkernel32.NewProc("GetFileType")
 	procGetFinalPathNameByHandleW                            = modkernel32.NewProc("GetFinalPathNameByHandleW")
 	procGetFullPathNameW                                     = modkernel32.NewProc("GetFullPathNameW")
+	procGetLargePageMinimum                                  = modkernel32.NewProc("GetLargePageMinimum")
 	procGetLastError                                         = modkernel32.NewProc("GetLastError")
 	procGetLogicalDriveStringsW                              = modkernel32.NewProc("GetLogicalDriveStringsW")
 	procGetLogicalDrives                                     = modkernel32.NewProc("GetLogicalDrives")
 	procGetLongPathNameW                                     = modkernel32.NewProc("GetLongPathNameW")
+	procGetMaximumProcessorCount                             = modkernel32.NewProc("GetMaximumProcessorCount")
 	procGetModuleFileNameW                                   = modkernel32.NewProc("GetModuleFileNameW")
 	procGetModuleHandleExW                                   = modkernel32.NewProc("GetModuleHandleExW")
 	procGetNamedPipeHandleStateW                             = modkernel32.NewProc("GetNamedPipeHandleStateW")
@@ -295,6 +302,8 @@ var (
 	procLockFileEx                                           = modkernel32.NewProc("LockFileEx")
 	procLockResource                                         = modkernel32.NewProc("LockResource")
 	procMapViewOfFile                                        = modkernel32.NewProc("MapViewOfFile")
+	procModule32FirstW                                       = modkernel32.NewProc("Module32FirstW")
+	procModule32NextW                                        = modkernel32.NewProc("Module32NextW")
 	procMoveFileExW                                          = modkernel32.NewProc("MoveFileExW")
 	procMoveFileW                                            = modkernel32.NewProc("MoveFileW")
 	procMultiByteToWideChar                                  = modkernel32.NewProc("MultiByteToWideChar")
@@ -403,6 +412,7 @@ var (
 	procGetModuleBaseNameW                                   = modpsapi.NewProc("GetModuleBaseNameW")
 	procGetModuleFileNameExW                                 = modpsapi.NewProc("GetModuleFileNameExW")
 	procGetModuleInformation                                 = modpsapi.NewProc("GetModuleInformation")
+	procQueryWorkingSetEx                                    = modpsapi.NewProc("QueryWorkingSetEx")
 	procSubscribeServiceChangeNotifications                  = modsechost.NewProc("SubscribeServiceChangeNotifications")
 	procUnsubscribeServiceChangeNotifications                = modsechost.NewProc("UnsubscribeServiceChangeNotifications")
 	procGetUserNameExW                                       = modsecur32.NewProc("GetUserNameExW")
@@ -438,9 +448,18 @@ var (
 	procCommandLineToArgvW                                   = modshell32.NewProc("CommandLineToArgvW")
 	procSHGetKnownFolderPath                                 = modshell32.NewProc("SHGetKnownFolderPath")
 	procShellExecuteW                                        = modshell32.NewProc("ShellExecuteW")
+	procEnumChildWindows                                     = moduser32.NewProc("EnumChildWindows")
+	procEnumWindows                                          = moduser32.NewProc("EnumWindows")
 	procExitWindowsEx                                        = moduser32.NewProc("ExitWindowsEx")
+	procGetClassNameW                                        = moduser32.NewProc("GetClassNameW")
+	procGetDesktopWindow                                     = moduser32.NewProc("GetDesktopWindow")
+	procGetForegroundWindow                                  = moduser32.NewProc("GetForegroundWindow")
+	procGetGUIThreadInfo                                     = moduser32.NewProc("GetGUIThreadInfo")
 	procGetShellWindow                                       = moduser32.NewProc("GetShellWindow")
 	procGetWindowThreadProcessId                             = moduser32.NewProc("GetWindowThreadProcessId")
+	procIsWindow                                             = moduser32.NewProc("IsWindow")
+	procIsWindowUnicode                                      = moduser32.NewProc("IsWindowUnicode")
+	procIsWindowVisible                                      = moduser32.NewProc("IsWindowVisible")
 	procMessageBoxW                                          = moduser32.NewProc("MessageBoxW")
 	procCreateEnvironmentBlock                               = moduserenv.NewProc("CreateEnvironmentBlock")
 	procDestroyEnvironmentBlock                              = moduserenv.NewProc("DestroyEnvironmentBlock")
@@ -1519,6 +1538,22 @@ func DnsRecordListFree(rl *DNSRecord, freetype uint32) {
 	return
 }
 
+func DwmGetWindowAttribute(hwnd HWND, attribute uint32, value unsafe.Pointer, size uint32) (ret error) {
+	r0, _, _ := syscall.Syscall6(procDwmGetWindowAttribute.Addr(), 4, uintptr(hwnd), uintptr(attribute), uintptr(value), uintptr(size), 0, 0)
+	if r0 != 0 {
+		ret = syscall.Errno(r0)
+	}
+	return
+}
+
+func DwmSetWindowAttribute(hwnd HWND, attribute uint32, value unsafe.Pointer, size uint32) (ret error) {
+	r0, _, _ := syscall.Syscall6(procDwmSetWindowAttribute.Addr(), 4, uintptr(hwnd), uintptr(attribute), uintptr(value), uintptr(size), 0, 0)
+	if r0 != 0 {
+		ret = syscall.Errno(r0)
+	}
+	return
+}
+
 func GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapterAddresses *IpAdapterAddresses, sizePointer *uint32) (errcode error) {
 	r0, _, _ := syscall.Syscall6(procGetAdaptersAddresses.Addr(), 5, uintptr(family), uintptr(flags), uintptr(reserved), uintptr(unsafe.Pointer(adapterAddresses)), uintptr(unsafe.Pointer(sizePointer)), 0)
 	if r0 != 0 {
@@ -1529,6 +1564,14 @@ func GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapter
 
 func GetAdaptersInfo(ai *IpAdapterInfo, ol *uint32) (errcode error) {
 	r0, _, _ := syscall.Syscall(procGetAdaptersInfo.Addr(), 2, uintptr(unsafe.Pointer(ai)), uintptr(unsafe.Pointer(ol)), 0)
+	if r0 != 0 {
+		errcode = syscall.Errno(r0)
+	}
+	return
+}
+
+func getBestInterfaceEx(sockaddr unsafe.Pointer, pdwBestIfIndex *uint32) (errcode error) {
+	r0, _, _ := syscall.Syscall(procGetBestInterfaceEx.Addr(), 2, uintptr(sockaddr), uintptr(unsafe.Pointer(pdwBestIfIndex)), 0)
 	if r0 != 0 {
 		errcode = syscall.Errno(r0)
 	}
@@ -1965,6 +2008,12 @@ func GetACP() (acp uint32) {
 	return
 }
 
+func GetActiveProcessorCount(groupNumber uint16) (ret uint32) {
+	r0, _, _ := syscall.Syscall(procGetActiveProcessorCount.Addr(), 1, uintptr(groupNumber), 0, 0)
+	ret = uint32(r0)
+	return
+}
+
 func GetCommTimeouts(handle Handle, timeouts *CommTimeouts) (err error) {
 	r1, _, e1 := syscall.Syscall(procGetCommTimeouts.Addr(), 2, uintptr(handle), uintptr(unsafe.Pointer(timeouts)), 0)
 	if r1 == 0 {
@@ -2132,6 +2181,12 @@ func GetFullPathName(path *uint16, buflen uint32, buf *uint16, fname **uint16) (
 	return
 }
 
+func GetLargePageMinimum() (size uintptr) {
+	r0, _, _ := syscall.Syscall(procGetLargePageMinimum.Addr(), 0, 0, 0, 0)
+	size = uintptr(r0)
+	return
+}
+
 func GetLastError() (lasterr error) {
 	r0, _, _ := syscall.Syscall(procGetLastError.Addr(), 0, 0, 0, 0)
 	if r0 != 0 {
@@ -2164,6 +2219,12 @@ func GetLongPathName(path *uint16, buf *uint16, buflen uint32) (n uint32, err er
 	if n == 0 {
 		err = errnoErr(e1)
 	}
+	return
+}
+
+func GetMaximumProcessorCount(groupNumber uint16) (ret uint32) {
+	r0, _, _ := syscall.Syscall(procGetMaximumProcessorCount.Addr(), 1, uintptr(groupNumber), 0, 0)
+	ret = uint32(r0)
 	return
 }
 
@@ -2567,6 +2628,22 @@ func MapViewOfFile(handle Handle, access uint32, offsetHigh uint32, offsetLow ui
 	return
 }
 
+func Module32First(snapshot Handle, moduleEntry *ModuleEntry32) (err error) {
+	r1, _, e1 := syscall.Syscall(procModule32FirstW.Addr(), 2, uintptr(snapshot), uintptr(unsafe.Pointer(moduleEntry)), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func Module32Next(snapshot Handle, moduleEntry *ModuleEntry32) (err error) {
+	r1, _, e1 := syscall.Syscall(procModule32NextW.Addr(), 2, uintptr(snapshot), uintptr(unsafe.Pointer(moduleEntry)), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func MoveFileEx(from *uint16, to *uint16, flags uint32) (err error) {
 	r1, _, e1 := syscall.Syscall(procMoveFileExW.Addr(), 3, uintptr(unsafe.Pointer(from)), uintptr(unsafe.Pointer(to)), uintptr(flags))
 	if r1 == 0 {
@@ -2729,7 +2806,7 @@ func ReadDirectoryChanges(handle Handle, buf *byte, buflen uint32, watchSubTree 
 	return
 }
 
-func ReadFile(handle Handle, buf []byte, done *uint32, overlapped *Overlapped) (err error) {
+func readFile(handle Handle, buf []byte, done *uint32, overlapped *Overlapped) (err error) {
 	var _p0 *byte
 	if len(buf) > 0 {
 		_p0 = &buf[0]
@@ -3171,7 +3248,7 @@ func WriteConsole(console Handle, buf *uint16, towrite uint32, written *uint32, 
 	return
 }
 
-func WriteFile(handle Handle, buf []byte, done *uint32, overlapped *Overlapped) (err error) {
+func writeFile(handle Handle, buf []byte, done *uint32, overlapped *Overlapped) (err error) {
 	var _p0 *byte
 	if len(buf) > 0 {
 		_p0 = &buf[0]
@@ -3457,6 +3534,14 @@ func GetModuleFileNameEx(process Handle, module Handle, filename *uint16, size u
 
 func GetModuleInformation(process Handle, module Handle, modinfo *ModuleInfo, cb uint32) (err error) {
 	r1, _, e1 := syscall.Syscall6(procGetModuleInformation.Addr(), 4, uintptr(process), uintptr(module), uintptr(unsafe.Pointer(modinfo)), uintptr(cb), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func QueryWorkingSetEx(process Handle, pv uintptr, cb uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procQueryWorkingSetEx.Addr(), 3, uintptr(process), uintptr(pv), uintptr(cb))
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -3752,8 +3837,50 @@ func ShellExecute(hwnd Handle, verb *uint16, file *uint16, args *uint16, cwd *ui
 	return
 }
 
+func EnumChildWindows(hwnd HWND, enumFunc uintptr, param unsafe.Pointer) {
+	syscall.Syscall(procEnumChildWindows.Addr(), 3, uintptr(hwnd), uintptr(enumFunc), uintptr(param))
+	return
+}
+
+func EnumWindows(enumFunc uintptr, param unsafe.Pointer) (err error) {
+	r1, _, e1 := syscall.Syscall(procEnumWindows.Addr(), 2, uintptr(enumFunc), uintptr(param), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func ExitWindowsEx(flags uint32, reason uint32) (err error) {
 	r1, _, e1 := syscall.Syscall(procExitWindowsEx.Addr(), 2, uintptr(flags), uintptr(reason), 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func GetClassName(hwnd HWND, className *uint16, maxCount int32) (copied int32, err error) {
+	r0, _, e1 := syscall.Syscall(procGetClassNameW.Addr(), 3, uintptr(hwnd), uintptr(unsafe.Pointer(className)), uintptr(maxCount))
+	copied = int32(r0)
+	if copied == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func GetDesktopWindow() (hwnd HWND) {
+	r0, _, _ := syscall.Syscall(procGetDesktopWindow.Addr(), 0, 0, 0, 0)
+	hwnd = HWND(r0)
+	return
+}
+
+func GetForegroundWindow() (hwnd HWND) {
+	r0, _, _ := syscall.Syscall(procGetForegroundWindow.Addr(), 0, 0, 0, 0)
+	hwnd = HWND(r0)
+	return
+}
+
+func GetGUIThreadInfo(thread uint32, info *GUIThreadInfo) (err error) {
+	r1, _, e1 := syscall.Syscall(procGetGUIThreadInfo.Addr(), 2, uintptr(thread), uintptr(unsafe.Pointer(info)), 0)
 	if r1 == 0 {
 		err = errnoErr(e1)
 	}
@@ -3772,6 +3899,24 @@ func GetWindowThreadProcessId(hwnd HWND, pid *uint32) (tid uint32, err error) {
 	if tid == 0 {
 		err = errnoErr(e1)
 	}
+	return
+}
+
+func IsWindow(hwnd HWND) (isWindow bool) {
+	r0, _, _ := syscall.Syscall(procIsWindow.Addr(), 1, uintptr(hwnd), 0, 0)
+	isWindow = r0 != 0
+	return
+}
+
+func IsWindowUnicode(hwnd HWND) (isUnicode bool) {
+	r0, _, _ := syscall.Syscall(procIsWindowUnicode.Addr(), 1, uintptr(hwnd), 0, 0)
+	isUnicode = r0 != 0
+	return
+}
+
+func IsWindowVisible(hwnd HWND) (isVisible bool) {
+	r0, _, _ := syscall.Syscall(procIsWindowVisible.Addr(), 1, uintptr(hwnd), 0, 0)
+	isVisible = r0 != 0
 	return
 }
 

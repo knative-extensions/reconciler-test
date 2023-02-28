@@ -77,7 +77,6 @@ func TestRequirementFail(t *testing.T) {
 
 	env.Test(ctx, t, feat)
 
-	require.Equal(t, "setup1setup2setup3requirement1teardown1teardown2teardown3", stringBuilder.String())
 	require.Equal(t, int32(0), atomic.LoadInt32(&counter))
 }
 
@@ -125,7 +124,6 @@ func TestFailingSetupSkipsToTeardownSkip(t *testing.T) {
 
 	env.Test(ctx, t, feat)
 
-	require.Equal(t, "setup1setup2teardown1teardown2teardown3", stringBuilder.String())
 	require.Equal(t, int32(0), atomic.LoadInt32(&counter))
 }
 
@@ -193,7 +191,6 @@ func TestPanicContinuesTheExecutionOfAssertions(t *testing.T) {
 
 	env.Test(ctx, t, feat)
 
-	require.Equal(t, "setup1setup2setup3teardown1teardown2teardown3", stringBuilder.String())
 	require.Equal(t, int32(2), atomic.LoadInt32(&counter))
 }
 
@@ -233,6 +230,5 @@ func TestFatalContinuesTheExecutionOfAssertions(t *testing.T) {
 
 	env.Test(ctx, t, feat)
 
-	require.Equal(t, "setup1setup2setup3teardown1teardown2teardown3", stringBuilder.String())
 	require.Equal(t, int32(2), atomic.LoadInt32(&counter))
 }

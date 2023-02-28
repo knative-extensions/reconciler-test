@@ -54,8 +54,12 @@ type Emitter interface {
 	StepFinished(feature string, step *feature.Step, t feature.T)
 	TestSetStarted(featureSet string, t feature.T)
 	TestSetFinished(featureSet string, t feature.T)
-	Finished()
+	Finished(result Result)
 	Exception(reason, messageFormat string, messageA ...interface{})
+}
+
+type Result interface {
+	Failed() bool
 }
 
 // NewMilestoneEmitterFromEnv will attempt to pull the env var
@@ -73,7 +77,6 @@ func NewMilestoneEmitterFromEnv(instance, namespace string) (Emitter, error) {
 }
 
 // NewMilestoneEmitter will convert target uri to a milestone event sender and return it.
-//
 func NewMilestoneEmitter(instance, namespace, uri string) (Emitter, error) {
 	target, err := apis.ParseURL(uri)
 	if err != nil {
@@ -181,7 +184,7 @@ func (n *NilSafeClient) TestSetFinished(featureSet string, t feature.T) {
 	n.Event(context.Background(), n.Factory.TestSetFinished(featureSet, t.Name(), t.Skipped(), t.Failed()))
 }
 
-func (n *NilSafeClient) Finished() {
+func (n *NilSafeClient) Finished(_ Result) {
 	if n == nil || n.Client == nil {
 		return
 	}

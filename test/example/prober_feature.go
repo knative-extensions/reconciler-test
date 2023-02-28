@@ -41,9 +41,7 @@ func ProberFeature() *feature.Feature {
 	prober.AsKReference(to)
 	_ = prober.SetTargetKRef(prober.AsKReference(to))
 
-	f.Setup("install sender", prober.SenderInstall(from))
-	f.Requirement("sender is done", prober.SenderDone(from))
-	f.Requirement("receiver is done", prober.ReceiverDone(from, to))
+	f.Requirement("install sender", prober.SenderInstall(from))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", prober.AssertSentAll(from)).
@@ -61,19 +59,14 @@ func ProberFeatureWithDrop() *feature.Feature {
 	prober := eventshub.NewProber()
 	prober.ReceiversRejectFirstN(5)
 	prober.ReceiversRejectResponseCode(429)
-
-	// Configured the sender for how many events it will be sending.
 	prober.SenderFullEvents(6)
 
 	// Install the receiver, then the sender.
 	f.Setup("install recorder", prober.ReceiverInstall(to))
 
-	prober.AsKReference(to)
 	_ = prober.SetTargetKRef(prober.AsKReference(to))
 
-	f.Setup("install sender", prober.SenderInstall(from))
-	f.Requirement("sender is done", prober.SenderDone(from))
-	f.Requirement("receiver is done", prober.ReceiverDone(from, to))
+	f.Requirement("install sender", prober.SenderInstall(from))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", func(ctx context.Context, t feature.T) {
@@ -93,6 +86,10 @@ func ProberFeatureWithDrop() *feature.Feature {
 						t.Errorf("For %s, expected 2xx response, got %d", event.Sent.SentId, event.Response.StatusCode)
 					}
 				}
+			}
+
+			if t.Failed() {
+				prober.DumpState(ctx, t)
 			}
 		}).
 		Must("the recorder received all sent events", prober.AssertReceivedOrRejectedAll(from, to))
@@ -119,10 +116,7 @@ func ProberFeatureYAML() *feature.Feature {
 	// Configured the Sender to send the same events.
 	prober.SenderEventsFromURI("https://raw.githubusercontent.com/cloudevents/conformance/v0.2.0/yaml/v1.0/v1_minimum.yaml")
 
-	f.Setup("install sender with yaml events", prober.SenderInstall(from))
-
-	f.Requirement("sender is done", prober.SenderDone(from))
-	f.Requirement("receiver is done", prober.ReceiverDone(from, to))
+	f.Requirement("install sender with yaml events", prober.SenderInstall(from))
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the sender sent all events", prober.AssertSentAll(from)).

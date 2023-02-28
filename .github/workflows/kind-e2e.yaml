@@ -11,19 +11,15 @@ jobs:
   e2e-tests:
     strategy:
       matrix:
-        go-version: [ 1.16.x ]
+        go-version: [ 1.18.x ]
         platform: [ ubuntu-latest ]
-        ko-version: [ 0.8.1 ]
-        kind-version: [ 0.11.1 ]
+        kind-version: [ 0.14.0 ]
 
     name: e2e tests
     runs-on: ${{ matrix.platform }}
 
     env:
-      GOPATH: ${{ github.workspace }}
-      GO111MODULE: off
       KO_DOCKER_REPO: kind.local
-      KO_VERSION: ${{ matrix.ko-version }}
       KIND_VERSION: ${{ matrix.kind-version }}
 
     steps:
@@ -32,14 +28,6 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
       id: go
-
-    - name: Install Dependencies
-      run: |
-        echo '::group:: install ko ${KO_VERSION}'
-        curl -L https://github.com/google/ko/releases/download/v${KO_VERSION}/ko_${KO_VERSION}_Linux_x86_64.tar.gz | tar xzf - ko
-        chmod +x ./ko
-        sudo mv ko /usr/local/bin
-        echo '::endgroup::'
 
     - name: Check out code onto GOPATH
       uses: actions/checkout@v2
@@ -96,7 +84,8 @@ jobs:
         kubectl apply -f ./test/config
 
         # Run the tests tagged as e2e on the KinD cluster.
-        go test -v -race -count=1 -timeout=15m -tags=e2e ./test/...
+        go run gotest.tools/gotestsum@v1.8.0 --format testname -- \
+          -race -count=1 -timeout=15m -tags=e2e ./test/...
 
     - name: Gather Failure Data
       if: ${{ failure() }}

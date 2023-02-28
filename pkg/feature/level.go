@@ -36,8 +36,8 @@ const (
 	// ignore a particular item
 	Should
 
-	// Should means that there may exist valid reasons in particular circumstances when the
-	// particular behavior is acceptable or even useful
+	// ShouldNot means that there may exist valid reasons in particular circumstances
+	// when the particular behavior is acceptable or even useful
 	ShouldNot
 
 	// May means that an item is truly optional

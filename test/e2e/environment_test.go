@@ -24,7 +24,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -39,43 +38,57 @@ func TestTimingConstraints(t *testing.T) {
 
 	ctx, env := global.Environment(environment.Managed(t))
 
-	// We assert at the end on this string
-	stringBuilder := &strings.Builder{}
-
 	// Build the feature
 	feat := feature.NewFeature()
 
-	counter := int32(0)
+	setupCounter := int32(0)
+	incrementSetupCounter := func(ctx context.Context, t feature.T) {
+		atomic.AddInt32(&setupCounter, 1)
+	}
+	requirementCounter := int32(0)
+	incrementRequirementCounter := func(ctx context.Context, t feature.T) {
+		verifyCounter(&setupCounter, 3, t)
+		atomic.AddInt32(&requirementCounter, 1)
+	}
 
-	feat.Setup("setup1", appender(stringBuilder, "setup1"))
-	feat.Setup("setup2", appender(stringBuilder, "setup2"))
-	feat.Setup("setup3", appender(stringBuilder, "setup3"))
-	feat.Requirement("requirement1", appender(stringBuilder, "requirement1"))
-	feat.Requirement("requirement2", appender(stringBuilder, "requirement2"))
-	feat.Requirement("requirement3", appender(stringBuilder, "requirement3"))
+	assertCounter := int32(0)
+	incrementAssertCounter := func(ctx context.Context, t feature.T) {
+		verifyCounter(&requirementCounter, 5, t)
+		atomic.AddInt32(&assertCounter, 1)
+	}
+
+	teardownCounter := int32(0)
+	incrementTeardownCounter := func(ctx context.Context, t feature.T) {
+		verifyCounter(&assertCounter, 4, t)
+		atomic.AddInt32(&teardownCounter, 1)
+	}
+
+	feat.Setup("setup1", incrementSetupCounter)
+	feat.Setup("setup2", incrementSetupCounter)
+	feat.Setup("setup3", incrementSetupCounter)
+	feat.Requirement("requirement1", incrementRequirementCounter)
+	feat.Requirement("requirement2", incrementRequirementCounter)
+	feat.Requirement("requirement3", incrementRequirementCounter)
+	feat.Requirement("requirement4", incrementRequirementCounter)
+	feat.Requirement("requirement5", incrementRequirementCounter)
 	feat.Stable("A cool feature").
-		Must("aaa", func(ctx context.Context, t feature.T) {
-			time.Sleep(1 * time.Second)
-			atomic.AddInt32(&counter, 1)
-		}).
-		Must("bbb", func(ctx context.Context, t feature.T) {
-			time.Sleep(1 * time.Second)
-			atomic.AddInt32(&counter, 1)
-		}).
-		Must("ccc", func(ctx context.Context, t feature.T) {
-			time.Sleep(1 * time.Second)
-			atomic.AddInt32(&counter, 1)
-		})
-	feat.Teardown("teardown0", func(ctx context.Context, t feature.T) {
-		require.Equal(t, int32(3), atomic.LoadInt32(&counter))
-	})
-	feat.Teardown("teardown1", appender(stringBuilder, "teardown1"))
-	feat.Teardown("teardown2", appender(stringBuilder, "teardown2"))
-	feat.Teardown("teardown3", appender(stringBuilder, "teardown3"))
+		Must("aaa", incrementAssertCounter).
+		Must("bbb", incrementAssertCounter).
+		Must("ccc", incrementAssertCounter).
+		Must("ddd", incrementAssertCounter)
+	feat.Teardown("teardown0", incrementTeardownCounter)
+	feat.Teardown("teardown1", incrementTeardownCounter)
 
 	env.Test(ctx, t, feat)
 
-	require.Equal(t, "setup1setup2setup3requirement1requirement2requirement3teardown1teardown2teardown3", stringBuilder.String())
+	verifyCounter(&teardownCounter, 2, t)
+}
+
+func verifyCounter(counter *int32, expected int32, t feature.T) {
+	got := atomic.LoadInt32(counter)
+	if got != expected {
+		t.Errorf("expected requirement counter to be 4 got %d", got)
+	}
 }
 
 func TestContextLifecycle(t *testing.T) {

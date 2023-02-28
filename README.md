@@ -42,8 +42,6 @@ used for the rest of the test run, it is a singleton.
 // +build e2e
 
 import (
-	"knative.dev/pkg/injection"
-	"knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/environment"
 )
 
@@ -54,24 +52,7 @@ var global environment.GlobalEnvironment
 
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
-	// environment.InitFlags registers state, level and feature filter flags.
-	environment.InitFlags(flag.CommandLine)
-
-	// We get a chance to parse flags to include the framework flags for the
-	// framework as well as any additional flags included in the integration.
-	flag.Parse()
-
-	// EnableInjectionOrDie will enable client injection, this is used by the
-	// testing framework for namespace management, and could be leveraged by
-	// features to pull Kubernetes clients or the test environment out of the
-	// context passed in the features.
-	ctx, startInformers := injection.EnableInjectionOrDie(
-		logging.WithTestLogger(nil), nil) // nolint
-	startInformers()
-
-	// global is used to make instances of Environments, NewGlobalEnvironment
-	// is passing and saving the client injection enabled context for use later.
-	global = environment.NewGlobalEnvironment(ctx)
+	global = environment.NewStandardGlobalEnvironment()
 
 	// Run the tests.
 	os.Exit(m.Run())
@@ -268,8 +249,8 @@ func init() {
 }
 ```
 
-This can be discovered dynamically by the helper function to scan embedded filesystem YAML
-files for `ko://` images, `manifest.ImagesFromFS(fs)`
+This can be discovered dynamically by the helper function to scan embedded
+filesystem YAML files for `ko://` images, `manifest.ImagesFromFS(fs)`
 
 ```go
 import (
@@ -284,8 +265,8 @@ func init() {
 }
 ```
 
-Images registered with the environment package will be produced on the first call
-to `environment.ProduceImages()`, which happens as a byproduct of calling
+Images registered with the environment package will be produced on the first
+call to `environment.ProduceImages()`, which happens as a byproduct of calling
 `global.Environment()`. These images replace the `ko://` tags in YAML files that
 are applied to the cluster with `manifest.InstallYamlFS`.
 
@@ -415,6 +396,62 @@ for running later via `env.Test` or `env.TestSet`. With state, we are attempting
 to make it less difficult to communicate between `Setup` and `Assert` phases of
 testing.
 
+### Inspecting Zipkin traces for failed tests
+
+When the [eventshub](./pkg/eventshub) component is used for sending events then Zipkin traces
+can be collected on test exit. Traces for each test namespace are stored in a separate
+file under `$ARTIFACTS/traces/<namespace>.json` and will be collected only for
+failed tests.
+
+To enable collecting traces from Zipkin, set up the test environment as follows:
+```go
+
+import (
+    "knative.dev/reconciler-test/pkg/environment"
+    "knative.dev/reconciler-test/pkg/knative"
+    "knative.dev/reconciler-test/pkg/tracing"
+)
+
+ctx, env := global.Environment(
+    // Will call env.Finish() when the test exits.
+    environment.Managed(t),
+    // Set the knative namespace which holds the tracing config map.
+    knative.WithKnativeNamespace(system.Namespace()),
+    // Configure tracing for the eventshub component.
+    knative.WithTracingConfig,
+    // Configure logging for the eventshub component.
+    knative.WithLoggingConfig,
+    // Register the tracing listener which will gather event traces on env.Finish().
+    tracing.WithGatherer(t),
+)
+```
+
+The TestMain function should include the cleanup code for Zipkin:
+```go
+func TestMain(m *testing.M) {
+    os.Exit(func() int {
+        // Any tests may set up Zipkin tracing via tracing.WithGatherer, it will only actually be done once.
+        // This should be the ONLY place that cleans it up. If an individual test calls this instead, then
+        // it will break other tests that need the tracing in place.
+        defer tracing.Cleanup()
+        return m.Run()
+    }())
+}
+```
+
+Traces can be viewed as follows:
+- Start a Zipkin container on localhost:
+   ```
+   $ docker run -d -p 9411:9411 ghcr.io/openzipkin/zipkin:2
+   ```
+- Send traces to the Zipkin endpoint:
+   ```
+   $ curl -v localhost:9411/api/v2/spans \
+     -H 'Content-Type: application/json' \
+     -d @$ARTIFACTS/traces/<namespace>.json
+   ```
+- View traces in Zipkin UI at `http://localhost:9411/zipkin`
+
 ### Running Tests
 
 Running tests is nothing more than using `go test`.
@@ -470,4 +507,36 @@ Run all instances of Noop feature, including instances in a Feature Set
 
 ```shell
 go test -v -count=1 -tags=e2e ./test/... --feature=Noop
+```
+
+### Enable Istio sidecar injection
+
+Istio requires annotations on pods and/or labels on namespaces to inject its sidecar, to enable
+Istio injection for reconciler-test resources, you can add the `istio.enabled`
+command line flag:
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... --istio.enabled=true
+```
+
+#### Using Private Registries
+
+If a private registry is to be used with authentication, a Secret needs to be created in the `default` namespace called `kn-test-image-pull-secret` with the credentials.
+The testing framework will copy this secret into any new namespaces created and will update the default ServiceAccount's imagePullSecret.
+
+### Using pre-built images
+
+By default, the framework builds images using `ko`, if test images are already built you can provide
+a file that maps Go main packages to your images:
+
+```yaml
+# images.yaml
+knative.dev/reconciler-test/cmd/eventshub: quay.io/myregistry/eventshub
+knative.dev/reconciler-test/cmd/eventshub2: quay.io/myregistry/eventshub2
+```
+
+and then, reference the file in the `go test` command invocation:
+
+```
+go test -v -count=1 -tags=e2e ./test/... --images.producer.file=images.yaml
 ```

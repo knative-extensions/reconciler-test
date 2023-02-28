@@ -32,14 +32,14 @@ import (
 // Parse parses YAML files into Unstructured objects.
 //
 // It supports 5 cases today:
-// 1. pathname = path to a file --> parses that file.
-// 2. pathname = path to a directory, recursive = false --> parses all files in
-//    that directory.
-// 3. pathname = path to a directory, recursive = true --> parses all files in
-//    that directory and it's descendants
-// 4. pathname = url --> fetches the contents of that URL and parses them as YAML.
-// 5. pathname = combination of all previous cases, the string can contain
-//    multiple records (file, directory or url) separated by comma
+//  1. pathname = path to a file --> parses that file.
+//  2. pathname = path to a directory, recursive = false --> parses all files in
+//     that directory.
+//  3. pathname = path to a directory, recursive = true --> parses all files in
+//     that directory and it's descendants
+//  4. pathname = url --> fetches the contents of that URL and parses them as YAML.
+//  5. pathname = combination of all previous cases, the string can contain
+//     multiple records (file, directory or url) separated by comma
 func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
 
 	pathnames := strings.Split(pathname, ",")
@@ -58,12 +58,11 @@ func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error)
 // read contains logic to distinguish the type of record in pathname
 // (file, directory or url) and calls the appropriate function
 func read(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
-	if isURL(pathname) {
-		return readURL(pathname)
-	}
-
 	info, err := os.Stat(pathname)
 	if err != nil {
+		if isURL(pathname) {
+			return readURL(pathname)
+		}
 		return nil, err
 	}
 

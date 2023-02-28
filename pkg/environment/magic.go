@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,33 +34,33 @@ import (
 	"knative.dev/reconciler-test/pkg/state"
 )
 
-func NewGlobalEnvironment(ctx context.Context) GlobalEnvironment {
-	log := logging.FromContext(ctx)
-	if l.Valid() && s.Valid() {
-		log.Infof("Global environment settings: level %s, state %s, feature %#v", l, s, *f)
-	} else {
-		log.Fatal("Flags are not initialized properly. Ensure to call " +
-			"environment.InitFlags() func.")
-	}
-
+// NewGlobalEnvironment creates a new global environment based on a
+// context.Context, and optional initializers slice. The provided context is
+// expected to contain the configured Kube client already.
+func NewGlobalEnvironment(ctx context.Context, initializers ...func()) GlobalEnvironment {
 	return &MagicGlobalEnvironment{
-		c:                ctx,
-		instanceID:       uuid.New().String(),
 		RequirementLevel: *l,
 		FeatureState:     *s,
 		FeatureMatch:     regexp.MustCompile(*f),
+		c:                initializeImageStores(ctx),
+		instanceID:       uuid.New().String(),
+		initializers:     initializers,
+		teardownOnFail:   *teardownOnFail,
 	}
 }
 
 type MagicGlobalEnvironment struct {
-	c context.Context
-	// instanceID represents this instance of the GlobalEnvironment. It is used
-	// to link runs together from a single global environment.
-	instanceID string
-
 	RequirementLevel feature.Levels
 	FeatureState     feature.States
 	FeatureMatch     *regexp.Regexp
+
+	c context.Context
+	// instanceID represents this instance of the GlobalEnvironment. It is used
+	// to link runs together from a single global environment.
+	instanceID       string
+	initializers     []func()
+	initializersOnce sync.Once
+	teardownOnFail   bool
 }
 
 type MagicEnvironment struct {
@@ -68,16 +69,22 @@ type MagicEnvironment struct {
 	s            feature.States
 	featureMatch *regexp.Regexp
 
-	images           map[string]string
 	namespace        string
 	namespaceCreated bool
 	refs             []corev1.ObjectReference
+	refsMu           sync.Mutex
 
 	// milestones sends milestone events, if configured.
 	milestones milestone.Emitter
 
 	// managedT is used for test-scoped logging, if configured.
 	managedT feature.T
+
+	// imagePullSecretNamespace/imagePullSecretName: An optional secret to add to service account of new namespaces
+	imagePullSecretName      string
+	imagePullSecretNamespace string
+
+	teardownOnFail bool
 }
 
 const (
@@ -85,19 +92,36 @@ const (
 )
 
 func (mr *MagicEnvironment) Reference(ref ...corev1.ObjectReference) {
+	mr.refsMu.Lock()
+	defer mr.refsMu.Unlock()
+
 	mr.refs = append(mr.refs, ref...)
 }
 
 func (mr *MagicEnvironment) References() []corev1.ObjectReference {
-	return mr.refs
+	mr.refsMu.Lock()
+	defer mr.refsMu.Unlock()
+
+	r := make([]corev1.ObjectReference, len(mr.refs))
+	copy(r, mr.refs)
+	return r
 }
 
 func (mr *MagicEnvironment) Finish() {
 	// Delete the namespace after sending the Finished milestone event
 	// since emitters might use the namespace.
-	mr.milestones.Finished()
-	if err := mr.DeleteNamespaceIfNeeded(); err != nil {
-		mr.milestones.Exception(NamespaceDeleteErrorReason, "failed to delete namespace %q, %v", mr.namespace, err)
+	var result milestone.Result = unknownResult{}
+	if mr.managedT != nil {
+		result = mr.managedT
+	}
+	if mr.milestones != nil {
+		mr.milestones.Finished(result)
+	}
+	if err := mr.DeleteNamespaceIfNeeded(result); err != nil {
+		if mr.milestones != nil {
+			mr.milestones.Exception(NamespaceDeleteErrorReason,
+				"failed to delete namespace %q, %v", mr.namespace, err)
+		}
 		panic(err)
 	}
 }
@@ -109,9 +133,17 @@ func WithPollTimings(interval, timeout time.Duration) EnvOpts {
 	}
 }
 
-// Managed enables auto-lifecycle management of the environment. Including:
-//  - registers a t.Cleanup callback on env.Finish().
+// Managed enables auto-lifecycle management of the environment. Including
+// registration of following opts:
+//   - Cleanup,
+//   - WithTestLogger.
 func Managed(t feature.T) EnvOpts {
+	return UnionOpts(Cleanup(t), WithTestLogger(t))
+}
+
+// Cleanup is an environment option to register a cleanup that will call
+// Environment.Finish function at test end automatically.
+func Cleanup(t feature.T) EnvOpts {
 	return func(ctx context.Context, env Environment) (context.Context, error) {
 		if e, ok := env.(*MagicEnvironment); ok {
 			e.managedT = t
@@ -121,46 +153,72 @@ func Managed(t feature.T) EnvOpts {
 	}
 }
 
-func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
-	images, err := ProduceImages()
-	if err != nil {
-		panic(err)
+func WithEmitter(emitter milestone.Emitter) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
+		if e, ok := env.(*MagicEnvironment); ok {
+			e.milestones = emitter
+		}
+		return ctx, nil
 	}
+}
 
+func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
 	namespace := feature.MakeK8sNamePrefix(feature.AppendRandomString("test"))
 
 	env := &MagicEnvironment{
-		c:            mr.c,
-		l:            mr.RequirementLevel,
-		s:            mr.FeatureState,
-		featureMatch: mr.FeatureMatch,
+		c:              mr.c,
+		l:              mr.RequirementLevel,
+		s:              mr.FeatureState,
+		featureMatch:   mr.FeatureMatch,
+		teardownOnFail: mr.teardownOnFail,
 
-		images:    images,
-		namespace: namespace,
+		namespace:                namespace,
+		imagePullSecretName:      "kn-test-image-pull-secret",
+		imagePullSecretNamespace: "default",
 	}
 
 	ctx := ContextWith(mr.c, env)
 
+	log := logging.FromContext(ctx)
 	for _, opt := range opts {
-		if ctx, err = opt(ctx, env); err != nil {
-			panic(err)
+		if nctx, err := opt(ctx, env); err != nil {
+			log.Fatal(err)
+		} else {
+			ctx = nctx
 		}
 	}
+	env.c = ctx
 
-	// It is possible to have milestones set in the options, check for nil in
-	// env first before attempting to pull one from the os environment.
-	if env.milestones == nil {
-		eventEmitter, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, namespace)
-		if err != nil {
-			// This is just an FYI error, don't block the test run.
-			logging.FromContext(mr.c).Error("failed to create the milestone event sender", zap.Error(err))
+	if env.l.Valid() && env.s.Valid() {
+		log.Infof("Environment settings: level %s, state %s, feature %q",
+			env.l, env.s, env.featureMatch)
+	} else {
+		log.Fatal("Flags are not initialized properly. Ensure to call " +
+			"environment.InitFlags() func.")
+	}
+
+	mr.initializersOnce.Do(func() {
+		for _, initializer := range mr.initializers {
+			initializer()
 		}
-		logEmitter := milestone.NewLogEmitter(ctx, namespace, env.managedT)
+	})
+
+	eventEmitter, err := milestone.NewMilestoneEmitterFromEnv(mr.instanceID, namespace)
+	if err != nil {
+		// This is just an FYI error, don't block the test run.
+		logging.FromContext(ctx).Error("failed to create the milestone event sender", zap.Error(err))
+	}
+	logEmitter := milestone.NewLogEmitter(ctx, namespace)
+
+	if env.milestones == nil {
 		env.milestones = milestone.Compose(eventEmitter, logEmitter)
+	} else {
+		// Compose the emitters with those passed through opts.
+		env.milestones = milestone.Compose(env.milestones, eventEmitter, logEmitter)
 	}
 
 	if err := env.CreateNamespaceIfNeeded(); err != nil {
-		panic(err)
+		logging.FromContext(ctx).Fatal(err)
 	}
 
 	env.milestones.Environment(map[string]string{
@@ -173,16 +231,14 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	return ctx, env
 }
 
-func (mr *MagicEnvironment) Images() map[string]string {
-	return mr.images
-}
-
 func (mr *MagicEnvironment) TemplateConfig(base map[string]interface{}) map[string]interface{} {
 	cfg := make(map[string]interface{})
 	for k, v := range base {
 		cfg[k] = v
 	}
-	cfg["namespace"] = mr.namespace
+	if _, ok := cfg["namespace"]; !ok {
+		cfg["namespace"] = mr.namespace
+	}
 	return cfg
 }
 
@@ -210,6 +266,21 @@ func InNamespace(namespace string) EnvOpts {
 	}
 }
 
+// WithImagePullSecret takes namespace and name of a Secret to be added to ServiceAccounts
+// of newly created namespaces. This is useful if tests refer to private registries that require
+// authentication.
+func WithImagePullSecret(namespace string, name string) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
+		mr, ok := env.(*MagicEnvironment)
+		if !ok {
+			return ctx, errors.New("WithImagePullSecret: not a magic env")
+		}
+		mr.imagePullSecretNamespace = namespace
+		mr.imagePullSecretName = name
+		return ctx, nil
+	}
+}
+
 func (mr *MagicEnvironment) Namespace() string {
 	return mr.namespace
 }
@@ -229,11 +300,12 @@ func (mr *MagicEnvironment) Prerequisite(ctx context.Context, t *testing.T, f *f
 func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *feature.Feature) {
 	originalT.Helper() // Helper marks the calling function as a test helper function.
 
-	f.DumpWith(originalT.Log)
-	defer f.DumpWith(originalT.Log) // Log feature state at the end of the run
+	log := logging.FromContext(ctx)
+	f.DumpWith(log.Debug)
+	defer f.DumpWith(log.Debug) // Log feature state at the end of the run
 
 	if !mr.featureMatch.MatchString(f.Name) {
-		originalT.Logf("Skipping feature '%s' assertions because --feature=%s  doesn't match", f.Name, mr.featureMatch.String())
+		log.Warnf("Skipping feature '%s' assertions because --feature=%s  doesn't match", f.Name, mr.featureMatch.String())
 		return
 	}
 
@@ -246,73 +318,72 @@ func (mr *MagicEnvironment) Test(ctx context.Context, originalT *testing.T, f *f
 	ctx = state.ContextWith(ctx, f.State)
 	ctx = feature.ContextWith(ctx, f)
 
-	steps := categorizeSteps(f.Steps)
+	stepsByTiming := categorizeSteps(f.Steps)
 
-	skipAssertions := false
-	skipRequirements := false
-	skipReason := ""
+	mr.milestones.StepsPlanned(f.Name, stepsByTiming, originalT)
 
-	mr.milestones.StepsPlanned(f.Name, steps, originalT)
+	// skip is flag that signals whether the steps for the subsequent timings should
+	// be skipped because a step in a previous timing failed.
+	//
+	// Setup and Teardown steps are executed always
+	skip := false
 
-	for _, s := range steps[feature.Setup] {
-		s := s
+	originalT.Run(f.Name, func(t *testing.T) {
 
-		// Setup are executed always, no matter their level and state
-		internalT := mr.executeWithoutWrappingT(ctx, originalT, f, &s)
+		for _, timing := range feature.Timings() {
+			steps := feature.Steps(stepsByTiming[timing])
 
-		// Failed setup fails everything, so just run the teardown
-		if internalT.Failed() {
-			skipAssertions = true
-			skipRequirements = true // No need to test other requirements
-			break                   // No need to continue the setup
+			// Special case for teardown timing
+			if timing == feature.Teardown {
+				if skip {
+					if mr.teardownOnFail {
+						// Prepend logging steps to the teardown phase when a previous timing failed.
+						steps = append(mr.loggingSteps(), steps...)
+					} else {
+						// When not doing teardown only execute logging steps.
+						steps = mr.loggingSteps()
+					}
+				}
+				skip = false
+			}
+
+			originalT.Logf("Running %d steps for timing:\n%s\n\n", len(steps), steps.String())
+
+			t.Run(timing.String(), func(t *testing.T) {
+				// no parallel, various timing steps run in order: setup, requirement, assert, teardown
+
+				if skip {
+					t.Skipf("Skipping steps for timing %s due to failed previous timing\n", timing.String())
+					return
+				}
+
+				for _, s := range steps {
+					s := s
+					if mr.shouldFail(&s) {
+						mr.execute(ctx, t, f, &s)
+					} else {
+						mr.executeOptional(ctx, t, f, &s)
+					}
+				}
+			})
+
+			if t.Failed() {
+				// skip the following timings since curring timing failed
+				skip = true
+			}
 		}
-	}
+	})
+}
 
-	for _, s := range steps[feature.Requirement] {
-		s := s
+type unknownResult struct{}
 
-		if skipRequirements {
-			break
-		}
-
-		internalT := mr.executeWithoutWrappingT(ctx, originalT, f, &s)
-
-		if internalT.Failed() {
-			skipAssertions = true
-			skipRequirements = true // No need to test other requirements
-		}
-	}
-
-	for _, s := range steps[feature.Assert] {
-		s := s
-
-		if skipAssertions {
-			break
-		}
-
-		if mr.shouldFail(&s) {
-			mr.executeWithoutWrappingT(ctx, originalT, f, &s)
-		} else {
-			mr.executeWithSkippingT(ctx, originalT, f, &s)
-		}
-
-		// TODO implement fail fast feature to avoid proceeding with testing if an "expected level" assert fails here
-	}
-
-	for _, s := range steps[feature.Teardown] {
-		s := s
-
-		// Teardown are executed always, no matter their level and state
-		mr.executeWithoutWrappingT(ctx, originalT, f, &s)
-	}
-
-	if skipReason != "" {
-		originalT.Skipf("Skipping feature '%s' assertions because %s", f.Name, skipReason)
-	}
+func (u unknownResult) Failed() bool {
+	return false
 }
 
 // TODO: this logic is strange and hard to follow.
 func (mr *MagicEnvironment) shouldFail(s *feature.Step) bool {
+	// if it's _not_ alpha nor must
 	return !(mr.s&s.S == 0 || mr.l&s.L == 0)
 }
 
@@ -326,7 +397,7 @@ func (mr *MagicEnvironment) TestSet(ctx context.Context, t *testing.T, fs *featu
 	for _, f := range fs.Features {
 		// Make sure the name is appended
 		f.Name = fs.Name + "/" + f.Name
-		mr.Test(ctx, t, &f)
+		mr.Test(ctx, t, f)
 	}
 }
 

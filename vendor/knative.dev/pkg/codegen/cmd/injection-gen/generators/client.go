@@ -23,6 +23,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
 	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
@@ -284,6 +286,11 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 					"Group":        group,
 					"VersionLower": version,
 					"Kind":         t.Name.Name,
+
+					"ptrString": c.Universe.Function(types.Name{
+						Package: "knative.dev/pkg/ptr",
+						Name:    "String",
+					}),
 				}
 
 				for _, v := range verbs.List() {
@@ -330,7 +337,8 @@ func (g *clientGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 						if e.IsSubresource() {
 							opts["Subresource"] = e.SubResourcePath
 						}
-						sw.Do(strings.Replace(tmpl, " "+strings.Title(e.VerbType), " "+e.VerbName, -1), opts)
+						caser := cases.Title(language.English)
+						sw.Do(strings.Replace(tmpl, " "+caser.String(e.VerbType), " "+e.VerbName, -1), opts)
 					}
 				}
 			}
@@ -572,13 +580,51 @@ func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Patch(ctx {{
 `,
 	"apply": `{{if .generateApply}}
 func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) Apply(ctx {{ .contextContext|raw }}, in *{{ .ApplyType|raw }}, opts {{ .metav1ApplyOptions|raw }}) (result *{{ .ResultType|raw }}, err error) {
-	panic("NYI")
+	in.Kind = {{ .ptrString|raw }}("{{ .Kind }}")
+	{{ if .Group }}
+	in.APIVersion = {{ .ptrString|raw }}("{{ .Group }}/{{ .VersionLower }}")
+	{{ else }}
+	in.APIVersion = {{ .ptrString|raw }}("{{ .VersionLower }}")
+	{{ end }}
+
+	uo := &{{ .unstructuredUnstructured|raw }}{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn{{if .Namespaced}}.Namespace(w.namespace){{end}}.Apply(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &{{ .ResultType|raw }}{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 {{end}}
 `,
 	"applyStatus": `{{if .generateApply}}
 func (w *wrap{{.GroupGoName}}{{.Version}}{{ .Type.Name.Name }}Impl) ApplyStatus(ctx {{ .contextContext|raw }}, in *{{ .ApplyType|raw }}, opts {{ .metav1ApplyOptions|raw }}) (result *{{ .ResultType|raw }}, err error) {
-	panic("NYI")
+	in.Kind = {{ .ptrString|raw }}("{{ .Kind }}")
+	{{ if .Group }}
+	in.APIVersion = {{ .ptrString|raw }}("{{ .Group }}/{{ .VersionLower }}")
+	{{ else }}
+	in.APIVersion = {{ .ptrString|raw }}("{{ .VersionLower }}")
+	{{ end }}
+
+	uo := &{{ .unstructuredUnstructured|raw }}{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err = w.dyn{{if .Namespaced}}.Namespace(w.namespace){{end}}.ApplyStatus(ctx, uo.GetName(), uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &{{ .ResultType|raw }}{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 {{end}}
 `,
