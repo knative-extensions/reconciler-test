@@ -104,7 +104,6 @@ func testTimingConstraints(t *testing.T, isParallel bool) {
 			env.ParallelTest(ctx, t, feat)
 		})
 	} else {
-
 		env.Test(ctx, t, feat)
 	}
 
