@@ -194,7 +194,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 			env.l, env.s, env.featureMatch)
 	} else {
 		log.Fatal("Flags are not initialized properly. Ensure to call " +
-			"environment.InitFlags() func.")
+			"environment.InitFlags() func, level %s, state %s", env.l.String(), env.s.String())
 	}
 
 	mr.initializersOnce.Do(func() {
