@@ -32,12 +32,16 @@ func TestState(t *testing.T) {
 }
 
 func (tc stateTestCase) run(t *testing.T) {
+	t.Parallel()
 	got := tc.state.Valid()
 	if tc.invalid == got {
 		t.Errorf("want %t, got %t", !tc.invalid, got)
 	}
 }
 
+// stateTestCases returns all possible bitwise OR combinations of
+// feature.States: valid ones, invalid, and empty. For example: `Alpha|Stable`,
+// `Alpha|Beta|Stable`, etc.
 func stateTestCases() []stateTestCase {
 	states := []feature.States{
 		feature.Alpha,

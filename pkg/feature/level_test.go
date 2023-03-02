@@ -32,12 +32,16 @@ func TestLevel(t *testing.T) {
 }
 
 func (tc levelTestCase) run(t *testing.T) {
+	t.Parallel()
 	got := tc.level.Valid()
 	if tc.invalid == got {
 		t.Errorf("want %t, got %t", !tc.invalid, got)
 	}
 }
 
+// levelTestCases returns all possible bitwise OR combinations of
+// feature.Levels: valid ones, invalid, and empty. For example: `Must|Should`,
+// `Must|MustNot|Should|ShouldNot|May`, or `Invalid(128)` etc.
 func levelTestCases() []levelTestCase {
 	levels := []feature.Levels{
 		feature.Must,
