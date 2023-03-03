@@ -519,6 +519,16 @@ command line flag:
 go test -v -count=1 -tags=e2e ./test/... --istio.enabled=true
 ```
 
+### Using a specific namespace
+
+By default, reconciler-test uses auto-generated namespaces to run tests, to use a specific
+namespace, a flag, `environment.namespace` can be provided, and it will create
+the namespace if it doesn't exist.
+
+```shell
+go test -v -count=1 -tags=e2e ./test/... --environment.namespace=knative-tests
+```
+
 #### Using Private Registries
 
 If a private registry is to be used with authentication, a Secret needs to be created in the `default` namespace called `kn-test-image-pull-secret` with the credentials.
