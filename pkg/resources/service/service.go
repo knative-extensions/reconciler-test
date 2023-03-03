@@ -54,6 +54,7 @@ func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 		// no ports are provided, so use the default 80:8080 ones
 		// to be compatible with deprecated resources/svc package
 		cfg["ports"] = []corev1.ServicePort{{
+			Name:       "http",
 			Port:       80,
 			TargetPort: intstr.FromInt(8080),
 		}}
