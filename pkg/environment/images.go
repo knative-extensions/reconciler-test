@@ -18,11 +18,12 @@ package environment
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
 
+	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/logging"
 
 	"knative.dev/reconciler-test/pkg/images/ko"
@@ -42,10 +43,6 @@ var (
 	produceImagesLock = sync.Mutex{}
 )
 
-// parallelQueueSize is the max number of packages at one time in queue to be
-// consumed by image producer.
-const parallelQueueSize = 1_000
-
 // ImageProducer is a function that will be used to produce the container images.
 //
 // pack is a Go main package reference like `knative.dev/reconciler-test/cmd/eventshub`.
@@ -56,12 +53,11 @@ type ImageProducer func(ctx context.Context, pack string) (string, error)
 // Can be called multiple times with the same package.
 // A package will be used to produce the image and used
 // like `image: ko://<package>` inside test yaml.
-func RegisterPackage(pack ...string) EnvOpts {
+func RegisterPackage(packs ...string) EnvOpts {
 	return func(ctx context.Context, _ Environment) (context.Context, error) {
-		rk := registeredPackagesKey{}
-		rk.register(ctx, pack)
-		store := rk.get(ctx)
-		return context.WithValue(ctx, rk, store), nil
+		ps := getPackagesStore(ctx)
+		ps.register(packs)
+		return withPackagesStore(ctx, ps), nil
 	}
 }
 
@@ -72,10 +68,9 @@ func RegisterPackage(pack ...string) EnvOpts {
 // like `image: <key>` inside test yaml.
 func WithImages(given map[string]string) EnvOpts {
 	return func(ctx context.Context, _ Environment) (context.Context, error) {
-		ik := imageStoreKey{}
-		store := ik.new()
-		store.refs = given
-		return context.WithValue(ctx, ik, store), nil
+		store := getImageStore(ctx)
+		store.register(given)
+		return withImageStore(ctx, store), nil
 	}
 }
 
@@ -84,27 +79,29 @@ func WithImages(given map[string]string) EnvOpts {
 func ProduceImages(ctx context.Context) (map[string]string, error) {
 	produceImagesLock.Lock()
 	defer produceImagesLock.Unlock()
-	rk := registeredPackagesKey{}
-	ik := imageStoreKey{}
-	store := ik.get(ctx)
 
+	store := getImageStore(ctx)
 	ip := GetImageProducer(ctx)
 
-	for _, pack := range rk.packages(ctx) {
-		koPack := fmt.Sprintf("ko://%s", pack)
-		if store.refs[koPack] != "" {
+	eg := errgroup.Group{}
+
+	for _, pack := range getRegisteredPackages(ctx) {
+		if store.has(pack) {
 			continue
 		}
-		image, err := ip(ctx, pack)
-		if errors.Is(err, ko.ErrKoPublishFailed) {
-			logging.FromContext(ctx).Warnw("Ko publish failed, using image directly", "error", err, "image", pack)
-			image = pack
-			err = nil
-		}
-		if err != nil {
-			return nil, err
-		}
-		store.refs[koPack] = strings.TrimSpace(image)
+
+		eg.Go(func() error {
+			image, err := ip(ctx, pack)
+			if err != nil {
+				return err
+			}
+			store.register(map[string]string{pack: strings.TrimSpace(image)})
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, fmt.Errorf("failed to produce images: %w", err)
 	}
 	return store.copyRefs(), nil
 }
@@ -123,67 +120,107 @@ func initializeImageStores(ctx context.Context) context.Context {
 	return mctx
 }
 
-type registeredPackagesKey struct{}
-
+// packagesStore aggregates packages registered and to be resolved by the ImageProducer.
 type packagesStore struct {
-	refs chan string
+	refs   sets.String
+	refsMu *sync.Mutex
 }
 
-func (k registeredPackagesKey) get(ctx context.Context) *packagesStore {
-	if registered, ok := ctx.Value(k).(*packagesStore); ok {
-		return registered
+func (ps *packagesStore) register(packs []string) {
+	ps.refsMu.Lock()
+	defer ps.refsMu.Unlock()
+
+	ps.refs.Insert(packs...)
+}
+
+func (ps *packagesStore) copyPackages() []string {
+	ps.refsMu.Lock()
+	defer ps.refsMu.Unlock()
+
+	return ps.refs.List()
+}
+
+// packagesStoreKey is the key for packagesStore registered and to be resolved by the
+// ImageProducer.
+type packagesStoreKey struct{}
+
+// getPackagesStore gets the packagesStore stored in the given context.
+func getPackagesStore(ctx context.Context) *packagesStore {
+	if ps, ok := ctx.Value(packagesStoreKey{}).(*packagesStore); ok {
+		return ps
 	}
 	return &packagesStore{
-		refs: make(chan string, parallelQueueSize),
+		refs:   sets.NewString(),
+		refsMu: &sync.Mutex{},
 	}
 }
 
-func (k registeredPackagesKey) packages(ctx context.Context) []string {
-	store := k.get(ctx)
-	refs := make([]string, 0)
-	for {
-		select {
-		case ref := <-store.refs:
-			refs = append(refs, ref)
-		default:
-			return refs
-		}
-	}
+// withPackagesStore put the given packageStore in the context.
+func withPackagesStore(ctx context.Context, store *packagesStore) context.Context {
+	return context.WithValue(ctx, packagesStoreKey{}, store)
 }
 
-func (k registeredPackagesKey) register(ctx context.Context, packs []string) {
-	store := k.get(ctx)
-	for _, pack := range packs {
-		pack = strings.TrimPrefix(pack, "ko://")
-		store.refs <- pack
-	}
+// getRegisteredPackages get the registered packages from the packagesStore stored in the given
+// context.
+func getRegisteredPackages(ctx context.Context) []string {
+	ps := getPackagesStore(ctx)
+	return ps.copyPackages()
 }
 
+// imageStore stores a mapping between Go packages and container images
+type imageStore struct {
+	refs   map[string]string
+	refsMu *sync.Mutex
+}
+
+// imageStoreKey is the context key for the imageStore.
 type imageStoreKey struct{}
 
-func (k imageStoreKey) new() *imageStore {
+func getImageStore(ctx context.Context) *imageStore {
+	if is, ok := ctx.Value(imageStoreKey{}).(*imageStore); ok {
+		return is
+	}
+	return newImageStore(make(map[string]string))
+}
+
+func newImageStore(refs map[string]string) *imageStore {
 	return &imageStore{
-		refs: make(map[string]string),
+		refs:   refs,
+		refsMu: &sync.Mutex{},
 	}
 }
 
-func (k imageStoreKey) get(ctx context.Context) *imageStore {
-	if i, ok := ctx.Value(k).(*imageStore); ok {
-		return i
-	}
-	return k.new()
+func withImageStore(ctx context.Context, store *imageStore) context.Context {
+	return context.WithValue(ctx, imageStoreKey{}, store)
 }
 
-type imageStore struct {
-	refs map[string]string
-}
+func (is *imageStore) copyRefs() map[string]string {
+	is.refsMu.Lock()
+	defer is.refsMu.Unlock()
 
-func (is imageStore) copyRefs() map[string]string {
 	refs := make(map[string]string, len(is.refs))
 	for k, v := range is.refs {
 		refs[k] = v
 	}
 	return refs
+}
+
+func (is *imageStore) has(key string) bool {
+	is.refsMu.Lock()
+	defer is.refsMu.Unlock()
+
+	_, ok := is.refs[key]
+	return ok
+}
+
+func (is *imageStore) register(images map[string]string) {
+	is.refsMu.Lock()
+	defer is.refsMu.Unlock()
+
+	for k, v := range images {
+		// Overrides existing keys
+		is.refs[k] = v
+	}
 }
 
 // imageProducerKey is the key for the ImageProducer context value.
