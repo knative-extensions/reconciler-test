@@ -56,13 +56,13 @@ func Example_min() {
 	//   name: foo
 	//   namespace: bar
 	//   labels:
-	//     app: foo
+	//     app: "foo"
 	// spec:
 	//   schedule: "* * * * *"
 	//   jobTemplate:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       template:
 	//         spec:
@@ -84,6 +84,7 @@ func Example_full() {
 		job.WithLabels(map[string]string{
 			"color": "green",
 			"app":   "foo",
+			"bar":   "true",
 		}),
 		job.WithAnnotations(map[string]interface{}{
 			"app.kubernetes.io/name": "app",
@@ -122,15 +123,17 @@ func Example_full() {
 	//   annotations:
 	//     app.kubernetes.io/name: "app"
 	//   labels:
-	//     app: foo
-	//     color: green
+	//     app: "foo"
+	//     bar: "true"
+	//     color: "green"
 	// spec:
 	//   schedule: "* * * * *"
 	//   jobTemplate:
 	//     metadata:
 	//       labels:
-	//         app: foo
-	//         color: green
+	//         app: "foo"
+	//         bar: "true"
+	//         color: "green"
 	//     spec:
 	//       backoffLimit: 20
 	//       ttlSecondsAfterFinished: 30
