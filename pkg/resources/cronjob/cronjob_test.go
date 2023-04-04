@@ -38,6 +38,9 @@ func Example_min() {
 		"name":      "foo",
 		"namespace": "bar",
 		"image":     "baz",
+		"labels": map[string]string{
+			"app": "foo",
+		},
 	}
 
 	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
@@ -52,6 +55,8 @@ func Example_min() {
 	// metadata:
 	//   name: foo
 	//   namespace: bar
+	//   labels:
+	//     app: foo
 	// spec:
 	//   schedule: "* * * * *"
 	//   jobTemplate:
@@ -78,6 +83,7 @@ func Example_full() {
 	opts := []manifest.CfgFn{
 		job.WithLabels(map[string]string{
 			"color": "green",
+			"app":   "foo",
 		}),
 		job.WithAnnotations(map[string]interface{}{
 			"app.kubernetes.io/name": "app",
@@ -116,6 +122,7 @@ func Example_full() {
 	//   annotations:
 	//     app.kubernetes.io/name: "app"
 	//   labels:
+	//     app: foo
 	//     color: green
 	// spec:
 	//   schedule: "* * * * *"
@@ -123,6 +130,7 @@ func Example_full() {
 	//     metadata:
 	//       labels:
 	//         app: foo
+	//         color: green
 	//     spec:
 	//       backoffLimit: 20
 	//       ttlSecondsAfterFinished: 30
