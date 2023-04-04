@@ -109,7 +109,7 @@ func Example_full() {
 	//   annotations:
 	//     app.kubernetes.io/name: "app"
 	//   labels:
-	//     color: green
+	//     color: "green"
 	// spec:
 	//   backoffLimit: 20
 	//   ttlSecondsAfterFinished: 30
@@ -118,7 +118,7 @@ func Example_full() {
 	//       annotations:
 	//         pod-annotation: "foo"
 	//       labels:
-	//         app: my-app
+	//         app: "my-app"
 	//     spec:
 	//       restartPolicy: Never
 	//       containers:
@@ -233,8 +233,8 @@ func Example_WithPodLabels() {
 	//   template:
 	//     metadata:
 	//       labels:
-	//         color: blue
-	//         version: 3
+	//         color: "blue"
+	//         version: "3"
 	//     spec:
 	//       containers:
 	//       - name: job-container

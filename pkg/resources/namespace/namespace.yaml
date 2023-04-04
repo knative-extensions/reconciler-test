@@ -11,6 +11,6 @@ metadata:
   {{ if .labels }}
   labels:
     {{ range $key, $value := .labels }}
-    {{ $key }}: {{ $value }}
+    {{ $key }}: "{{ $value }}"
     {{ end }}
   {{ end }}

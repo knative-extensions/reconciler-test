@@ -55,11 +55,11 @@ func Example_min() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -118,18 +118,18 @@ func Example_full() {
 	//   annotations:
 	//     app.kubernetes.io/name: "app"
 	//   labels:
-	//     color: green
+	//     color: "green"
 	// spec:
 	//   replicas: 6
 	//   selector:
 	//     matchLabels:
-	//       app: my-app
+	//       app: "my-app"
 	//   template:
 	//     metadata:
 	//       annotations:
 	//         pod-annotation: "foo"
 	//       labels:
-	//         app: my-app
+	//         app: "my-app"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -177,13 +177,13 @@ func Example_withSelectors() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       sel1: val1
-	//       sel2: val2
+	//       sel1: "val1"
+	//       sel2: "val2"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         sel1: val1
-	//         sel2: val2
+	//         sel1: "val1"
+	//         sel2: "val2"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -220,13 +220,13 @@ func Example_withPodAnnotations() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       annotations:
 	//         pod-annotation: "foo"
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -261,11 +261,11 @@ func Example_withReplicas() {
 	//   replicas: 6
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -299,11 +299,11 @@ func Example_withPullPolicy() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -340,11 +340,11 @@ func Example_withEnv() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -382,11 +382,11 @@ func Example_withCommand() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -425,11 +425,11 @@ func Example_withArgs() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container
@@ -467,11 +467,11 @@ func Example_withPort() {
 	// spec:
 	//   selector:
 	//     matchLabels:
-	//       app: foo
+	//       app: "foo"
 	//   template:
 	//     metadata:
 	//       labels:
-	//         app: foo
+	//         app: "foo"
 	//     spec:
 	//       containers:
 	//       - name: user-container

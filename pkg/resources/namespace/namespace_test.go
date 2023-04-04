@@ -82,5 +82,5 @@ func Example_full() {
 	//   annotations:
 	//     app.kubernetes.io/name: "app"
 	//   labels:
-	//     color: green
+	//     color: "green"
 }

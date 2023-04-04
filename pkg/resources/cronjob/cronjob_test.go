@@ -142,7 +142,7 @@ func Example_full() {
 	//           annotations:
 	//             pod-annotation: "foo"
 	//           labels:
-	//             app: my-app
+	//             app: "my-app"
 	//         spec:
 	//           restartPolicy: Never
 	//           containers:

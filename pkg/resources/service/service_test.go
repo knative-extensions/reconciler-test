@@ -106,10 +106,10 @@ func Example_full() {
 	//   annotations:
 	//     app.kubernetes.io/name: "app"
 	//   labels:
-	//     color: green
+	//     color: "green"
 	// spec:
 	//   selector:
-	//     app.kubernetes.io/name: foobar
+	//     app.kubernetes.io/name: "foobar"
 	//   ports:
 	//     - protocol: TCP
 	//       port: 1234
@@ -149,8 +149,8 @@ func Example_WithSelectors() {
 	//   namespace: bar
 	// spec:
 	//   selector:
-	//     color: blue
-	//     version: 3
+	//     color: "blue"
+	//     version: "3"
 	//   ports:
 	//     - protocol: TCP
 	//       port: 1234
