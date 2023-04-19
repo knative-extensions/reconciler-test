@@ -58,3 +58,6 @@ jobs:
       with:
         upstream-path: upstream
         downstream-path: downstream
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
