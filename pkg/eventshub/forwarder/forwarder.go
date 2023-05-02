@@ -122,7 +122,7 @@ func (o *Forwarder) Start(ctx context.Context) error {
 }
 
 func (o *Forwarder) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	ctx, span := trace.StartSpan(o.ctx, "eventshub-forwarder")
+	requestCtx, span := trace.StartSpan(request.Context(), "eventshub-forwarder")
 	defer span.End()
 
 	m := cloudeventshttp.NewMessageFromHttpRequest(request)
@@ -160,13 +160,13 @@ func (o *Forwarder) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 		logging.FromContext(o.ctx).Fatalw("Error while venting the received event", zap.Error(err))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, o.Sink, nil)
+	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, o.Sink, nil)
 	if err != nil {
-		logging.FromContext(ctx).Error("Cannot create the request: ", err)
+		logging.FromContext(o.ctx).Error("Cannot create the request: ", err)
 	}
-	err = cehttp.WriteRequest(ctx, m, req)
+	err = cehttp.WriteRequest(requestCtx, m, req)
 	if err != nil {
-		logging.FromContext(ctx).Error("Cannot write the event: ", err)
+		logging.FromContext(o.ctx).Error("Cannot write the event: ", err)
 	}
 
 	eventString := "unknown"
@@ -182,13 +182,13 @@ func (o *Forwarder) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 
 	// Publish sent event info
 	if err := o.EventLogs.Vent(o.sentInfo(event, req, err)); err != nil {
-		logging.FromContext(ctx).Error("Cannot log forwarded event: ", err)
+		logging.FromContext(o.ctx).Error("Cannot log forwarded event: ", err)
 	}
 
 	if err == nil {
 		// Vent the response info
 		if err := o.EventLogs.Vent(o.responseInfo(res, event)); err != nil {
-			logging.FromContext(ctx).Error("Cannot log response for forwarded event: ", err)
+			logging.FromContext(o.ctx).Error("Cannot log response for forwarded event: ", err)
 		}
 	}
 
