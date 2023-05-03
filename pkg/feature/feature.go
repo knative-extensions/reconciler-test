@@ -199,12 +199,25 @@ func (f *Feature) References() []corev1.ObjectReference {
 //
 // Expected to be used as a StepFn.
 func (f *Feature) DeleteResources(ctx context.Context, t T) {
+	refFailedDeletion, err := DeleteResources(ctx, t, f.References())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	f.refsMu.Lock()
+	defer f.refsMu.Unlock()
+
+	f.refs = refFailedDeletion
+}
+
+func DeleteResources(ctx context.Context, t T, refs []corev1.ObjectReference) ([]corev1.ObjectReference, error) {
 	dc := dynamicclient.Get(ctx)
-	for _, ref := range f.References() {
+
+	for _, ref := range refs {
 
 		gv, err := schema.ParseGroupVersion(ref.APIVersion)
 		if err != nil {
-			t.Fatalf("Could not parse GroupVersion for %+v", ref.APIVersion)
+			return nil, fmt.Errorf("could not parse GroupVersion for %+v", ref.APIVersion)
 		}
 
 		resource := apis.KindToResource(gv.WithKind(ref.Kind))
@@ -227,10 +240,10 @@ func (f *Feature) DeleteResources(ctx context.Context, t T) {
 
 	err := wait.Poll(time.Second, 4*time.Minute, func() (bool, error) {
 		refFailedDeletion = nil // Reset failed deletion.
-		for _, ref := range f.References() {
+		for _, ref := range refs {
 			gv, err := schema.ParseGroupVersion(ref.APIVersion)
 			if err != nil {
-				t.Fatalf("Could not parse GroupVersion for %+v", ref.APIVersion)
+				return false, fmt.Errorf("could not parse GroupVersion for %+v", ref.APIVersion)
 			}
 
 			resource := apis.KindToResource(gv.WithKind(ref.Kind))
@@ -255,13 +268,10 @@ func (f *Feature) DeleteResources(ctx context.Context, t T) {
 	})
 	if err != nil {
 		LogReferences(refFailedDeletion...)(ctx, t)
-		t.Fatalf("failed to wait for resources to be deleted: %v", err)
+		return nil, fmt.Errorf("failed to wait for resources to be deleted: %v", err)
 	}
 
-	f.refsMu.Lock()
-	defer f.refsMu.Unlock()
-
-	f.refs = refFailedDeletion
+	return refFailedDeletion, nil
 }
 
 var (
