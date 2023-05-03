@@ -27,8 +27,11 @@ import (
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-//go:embed *.yaml
+//go:embed 102-service.yaml 103-pod.yaml
 var templates embed.FS
+
+//go:embed 104-forwarder.yaml
+var templatesForwarder embed.FS
 
 func Example() {
 	ctx := testlog.NewContext()
@@ -37,6 +40,7 @@ func Example() {
 	}
 	cfg := map[string]interface{}{
 		"name":          "hubhub",
+		"serviceName":   "hubhub",
 		"namespace":     "example",
 		"image":         "ko://knative.dev/reconciler-test/cmd/eventshub",
 		"withReadiness": true,
@@ -108,6 +112,7 @@ func ExampleIstioAnnotation() {
 	}
 	cfg := map[string]interface{}{
 		"name":          "hubhub",
+		"serviceName":   "hubhub",
 		"namespace":     "example",
 		"image":         "ko://knative.dev/reconciler-test/cmd/eventshub",
 		"withReadiness": true,
@@ -183,9 +188,10 @@ func ExampleNoReadiness() {
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
 	}
 	cfg := map[string]interface{}{
-		"name":      "hubhub",
-		"namespace": "example",
-		"image":     "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"name":        "hubhub",
+		"serviceName": "hubhub",
+		"namespace":   "example",
+		"image":       "ko://knative.dev/reconciler-test/cmd/eventshub",
 		"envs": map[string]string{
 			"foo": "bar",
 			"baz": "boof",
@@ -266,4 +272,54 @@ func TestUnmarshal(t *testing.T) {
 		})
 	}
 
+}
+
+func ExampleForwarder() {
+	ctx := testlog.NewContext()
+	images := map[string]string{
+		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
+	}
+	cfg := map[string]interface{}{
+		"name":        "hubhub",
+		"serviceName": "hubhub",
+		"namespace":   "example",
+		"image":       "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"sink":        "http://my-svc.cluster.local",
+		"envs": map[string]string{
+			"foo": "bar",
+			"baz": "boof",
+		},
+	}
+
+	files, err := manifest.ExecuteYAML(ctx, templatesForwarder, images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: serving.knative.dev/v1
+	// kind: Service
+	// metadata:
+	//   name: hubhub
+	//   namespace: example
+	// spec:
+	//   template:
+	//     spec:
+	//       serviceAccountName: "example"
+	//       containers:
+	//         - name: eventshub-forwarder
+	//           image: uri://a-real-container
+	//           imagePullPolicy: "IfNotPresent"
+	//           env:
+	//             - name: "NAME"
+	//               value: hubhub
+	//             - name: "NAMESPACE"
+	//               value: example
+	//             - name: "SINK"
+	//               value: http://my-svc.cluster.local
+	//             - name: "baz"
+	//               value: "boof"
+	//             - name: "foo"
+	//               value: "bar"
 }
