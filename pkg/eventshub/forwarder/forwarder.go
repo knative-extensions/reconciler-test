@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2023 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ type Forwarder struct {
 
 	ctx          context.Context
 	handlerFuncs []eventshub.HandlerFunc
-	clientOpts   []eventshub.Option
+	clientOpts   []eventshub.ClientOption
 	httpClient   *http.Client
 }
 
@@ -68,7 +68,7 @@ type envConfig struct {
 	Sink string `envconfig:"SINK" required:"true"`
 }
 
-func NewFromEnv(ctx context.Context, eventLogs *eventshub.EventLogs, handlerFuncs []eventshub.HandlerFunc, clientOpts []eventshub.Option) *Forwarder {
+func NewFromEnv(ctx context.Context, eventLogs *eventshub.EventLogs, handlerFuncs []eventshub.HandlerFunc, clientOpts []eventshub.ClientOption) *Forwarder {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var", err)

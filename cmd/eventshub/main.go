@@ -49,7 +49,7 @@ func main() {
 			eventshub.ForwarderEventGenerator: func(ctx context.Context, logs *eventshub.EventLogs) error {
 				return forwarder.NewFromEnv(ctx, logs,
 					[]eventshub.HandlerFunc{eventshub.WithServerTracing},
-					[]eventshub.Option{eventshub.WithClientTracing}).Start(ctx)
+					[]eventshub.ClientOption{eventshub.WithClientTracing}).Start(ctx)
 			},
 		},
 	)

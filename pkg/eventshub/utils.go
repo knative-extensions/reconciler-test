@@ -119,4 +119,4 @@ func WithClientTracing(client *http.Client) error {
 }
 
 type HandlerFunc func(handler http.Handler) http.Handler
-type Option func(*http.Client) error
+type ClientOption func(*http.Client) error
