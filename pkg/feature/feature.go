@@ -165,7 +165,6 @@ func (f *Feature) References() []corev1.ObjectReference {
 // DeleteResources delete all known resources to the Feature registered
 // via `Reference`.
 //
-// It doesn't fail when a referenced resource couldn't be deleted.
 // Use References to get the undeleted resources.
 //
 // Expected to be used as a StepFn.
