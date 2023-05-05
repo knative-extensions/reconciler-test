@@ -129,14 +129,9 @@ func (mr *MagicEnvironment) Finish() {
 	if mr.managedT != nil {
 		result = mr.managedT
 		if !result.Failed() {
-			refFailedDeletion, err := feature.DeleteResources(mr.c, mr.managedT, mr.References())
-			if err != nil {
+			if err := feature.DeleteResources(mr.c, mr.managedT, mr.References()); err != nil {
 				mr.managedT.Fatal(err)
 			}
-
-			mr.refsMu.Lock()
-			mr.refs = refFailedDeletion
-			mr.refsMu.Unlock()
 		}
 	}
 	if mr.milestones != nil {
