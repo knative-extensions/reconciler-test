@@ -169,25 +169,19 @@ func (f *Feature) References() []corev1.ObjectReference {
 //
 // Expected to be used as a StepFn.
 func (f *Feature) DeleteResources(ctx context.Context, t T) {
-	refFailedDeletion, err := DeleteResources(ctx, t, f.References())
-	if err != nil {
+	if err := DeleteResources(ctx, t, f.References()); err != nil {
 		t.Fatal(err)
 	}
-
-	f.refsMu.Lock()
-	defer f.refsMu.Unlock()
-
-	f.refs = refFailedDeletion
 }
 
-func DeleteResources(ctx context.Context, t T, refs []corev1.ObjectReference) ([]corev1.ObjectReference, error) {
+func DeleteResources(ctx context.Context, t T, refs []corev1.ObjectReference) error {
 	dc := dynamicclient.Get(ctx)
 
 	for _, ref := range refs {
 
 		gv, err := schema.ParseGroupVersion(ref.APIVersion)
 		if err != nil {
-			return nil, fmt.Errorf("could not parse GroupVersion for %+v", ref.APIVersion)
+			return fmt.Errorf("could not parse GroupVersion for %+v", ref.APIVersion)
 		}
 
 		resource := apis.KindToResource(gv.WithKind(ref.Kind))
@@ -205,11 +199,7 @@ func DeleteResources(ctx context.Context, t T, refs []corev1.ObjectReference) ([
 		}
 	}
 
-	// refFailedDeletion keeps the failed to delete resources.
-	var refFailedDeletion []corev1.ObjectReference
-
 	err := wait.Poll(time.Second, 4*time.Minute, func() (bool, error) {
-		refFailedDeletion = nil // Reset failed deletion.
 		for _, ref := range refs {
 			gv, err := schema.ParseGroupVersion(ref.APIVersion)
 			if err != nil {
@@ -226,7 +216,7 @@ func DeleteResources(ctx context.Context, t T, refs []corev1.ObjectReference) ([
 				continue
 			}
 			if err != nil {
-				refFailedDeletion = append(refFailedDeletion, ref)
+				LogReferences(ref)(ctx, t)
 				return false, fmt.Errorf("failed to get resource %+v %s/%s: %w", resource, ref.Namespace, ref.Name, err)
 			}
 
@@ -237,11 +227,10 @@ func DeleteResources(ctx context.Context, t T, refs []corev1.ObjectReference) ([
 		return true, nil
 	})
 	if err != nil {
-		LogReferences(refFailedDeletion...)(ctx, t)
-		return nil, fmt.Errorf("failed to wait for resources to be deleted: %v", err)
+		return fmt.Errorf("failed to wait for resources to be deleted: %v", err)
 	}
 
-	return refFailedDeletion, nil
+	return nil
 }
 
 var (
