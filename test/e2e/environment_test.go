@@ -145,3 +145,57 @@ func appender(stringBuilder *strings.Builder, val string) feature.StepFn {
 		stringBuilder.WriteString(val)
 	}
 }
+
+func TestPrerequisiteShouldRunFalse(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment(environment.Managed(t))
+
+	f := feature.NewFeature()
+	f.Prerequisite("other timings should not run", func(ctx context.Context, t feature.T) (feature.PrerequisiteResult, error) {
+		return feature.PrerequisiteResult{ShouldRun: false}, nil
+	})
+
+	mustNeverHappen := func(ctx context.Context, t feature.T) {
+		t.Fatal("bug: this must never happen")
+	}
+
+	f.Setup("failed setup", mustNeverHappen)
+	f.Requirement("failed setup", mustNeverHappen)
+	f.Teardown("teardown", mustNeverHappen)
+
+	env.Test(ctx, t, f)
+}
+
+func TestPrerequisiteShouldRunTrue(t *testing.T) {
+	ctx, env := global.Environment(environment.Managed(t))
+
+	f := feature.NewFeatureNamed("should run all timings")
+	f.Prerequisite("other timings should run", func(ctx context.Context, t feature.T) (feature.PrerequisiteResult, error) {
+		return feature.PrerequisiteResult{ShouldRun: true}, nil
+	})
+
+	setupCounter := int32(0)
+	requirementCounter := int32(0)
+	teardownCounter := int32(0)
+
+	f.Setup("setup", func(ctx context.Context, t feature.T) {
+		atomic.AddInt32(&setupCounter, 1)
+	})
+	f.Requirement("requirement", func(ctx context.Context, t feature.T) {
+		verifyCounter(&setupCounter, 1, t)
+		atomic.AddInt32(&requirementCounter, 1)
+	})
+	f.Teardown("teardown", func(ctx context.Context, t feature.T) {
+		verifyCounter(&setupCounter, 1, t)
+		verifyCounter(&requirementCounter, 1, t)
+		atomic.AddInt32(&teardownCounter, 1)
+	})
+
+	env.Test(ctx, t, f)
+	env.Test(ctx, t, feature.StepFn(func(ctx context.Context, t feature.T) {
+		verifyCounter(&setupCounter, 1, t)
+		verifyCounter(&requirementCounter, 1, t)
+		verifyCounter(&teardownCounter, 1, t)
+	}).AsFeature())
+}
