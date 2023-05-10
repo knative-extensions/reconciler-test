@@ -231,6 +231,8 @@ var EnableIncrementalId = envOption("INCREMENTAL_ID", "true")
 // OverrideTime overrides the event time with the time when sending the event.
 var OverrideTime = envOption("OVERRIDE_TIME", "true")
 
+var UseHTTPS = envOption("USE_HTTPS", "true")
+
 // SendMultipleEvents defines how much events to send and the period (in millisecond) between them.
 func SendMultipleEvents(numberOfEvents int, period time.Duration) EventsHubOption {
 	return compose(

@@ -34,6 +34,11 @@ import (
 	"knative.dev/reconciler-test/pkg/eventshub/dropevents"
 )
 
+const (
+	CertFileName = "cert.pem"
+	KeyFileName  = "key.pem"
+)
+
 // Receiver is the entry point for sinking events into the event log.
 type Receiver struct {
 	// Name is the name of this Receiver, used to filter if multiple observers.
@@ -50,6 +55,7 @@ type Receiver struct {
 	skipResponseCode    int
 	skipResponseHeaders map[string]string
 	skipResponseBody    string
+	useHTTPS            bool
 }
 
 type envConfig struct {
@@ -90,6 +96,9 @@ type envConfig struct {
 
 	// If events should be dropped, specify additional HTTP Headers to return in response.
 	SkipResponseHeaders map[string]string `envconfig:"SKIP_RESPONSE_HEADERS" default:"" required:"false"`
+
+	// If events can be received via https
+	UseHTTPS bool `envconfig:"USE_HTTPS" default:"false" required:"false"`
 }
 
 func NewFromEnv(ctx context.Context, eventLogs *eventshub.EventLogs) *Receiver {
@@ -136,6 +145,7 @@ func NewFromEnv(ctx context.Context, eventLogs *eventshub.EventLogs) *Receiver {
 		skipResponseCode:    env.SkipResponseCode,
 		skipResponseBody:    env.SkipResponseBody,
 		skipResponseHeaders: env.SkipResponseHeaders,
+		useHTTPS:            env.UseHTTPS,
 	}
 }
 
@@ -143,16 +153,24 @@ func NewFromEnv(ctx context.Context, eventLogs *eventshub.EventLogs) *Receiver {
 // HTTP requests. This is a is a blocking call.
 func (o *Receiver) Start(ctx context.Context, handlerFuncs ...func(handler http.Handler) http.Handler) error {
 	var handler http.Handler = o
+	addr := ":443"
+	if !o.useHTTPS {
+		addr = ":8080"
+	}
 
 	for _, dec := range handlerFuncs {
 		handler = dec(handler)
 	}
 
-	server := &http.Server{Addr: ":8080", Handler: handler}
+	server := &http.Server{Addr: addr, Handler: handler}
 
 	var err error
 	go func() {
-		err = server.ListenAndServe()
+		if !o.useHTTPS {
+			err = server.ListenAndServe()
+		} else {
+			err = server.ListenAndServeTLS(CertFileName, KeyFileName)
+		}
 	}()
 
 	<-ctx.Done()
@@ -167,6 +185,14 @@ func (o *Receiver) Start(ctx context.Context, handlerFuncs ...func(handler http.
 }
 
 func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	ServerHandler(o, writer, request)
+}
+
+func (o *Receiver) ServeTLS(writer http.ResponseWriter, request *http.Request) {
+	ServerHandler(o, writer, request)
+}
+
+func ServerHandler(o *Receiver, writer http.ResponseWriter, request *http.Request) {
 	// Special case probe events && readiness probe.
 	if request.Method == http.MethodHead || request.URL.Path == "/health/ready" {
 		code := http.StatusOK
