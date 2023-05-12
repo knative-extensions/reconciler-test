@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/cloudevents/conformance v0.2.0
-	github.com/cloudevents/sdk-go/v2 v2.12.0
+	github.com/cloudevents/sdk-go/v2 v2.13.0
 	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/golang-lru v0.5.4
@@ -14,7 +14,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.9.0
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.21.0
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.25.4
@@ -66,7 +66,7 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
@@ -88,6 +88,7 @@ require (
 	k8s.io/klog/v2 v2.80.2-0.20221028030830-9ae4992afb54 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/utils v0.0.0-20221108210102-8e77b1f39fe2 // indirect
+	knative.dev/eventing v0.37.0
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )

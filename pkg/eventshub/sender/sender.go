@@ -23,6 +23,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"net/http"
 	nethttp "net/http"
 	"strconv"
 	"time"
@@ -35,11 +37,13 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/cloudevents/sdk-go/v2/types"
 	"github.com/kelseyhightower/envconfig"
+	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"knative.dev/eventing/pkg/eventingtls"
 	"knative.dev/pkg/logging"
-
+	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 	"knative.dev/reconciler-test/pkg/eventshub"
 )
 
@@ -48,6 +52,9 @@ type generator struct {
 
 	// Sink url for the message destination
 	Sink string `envconfig:"SINK" required:"true"`
+
+	// CACerts for sending events to HTTPS endpoint with custom provided CA Certs
+	CACerts string `envconfig:"CA_CERTS" required:"false"`
 
 	// The duration to wait before starting sending the first message
 	Delay string `envconfig:"DELAY" default:"5" required:"false"`
@@ -133,6 +140,31 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		time.Sleep(delay)
 		logging.FromContext(ctx).Info("awake, continuing")
 	}
+
+	if env.CACerts != "" {
+		cacerts = env.CACerts
+	}
+
+	opts := make([]cehttp.Option, 0, 1)
+	opts = append(opts, cloudevents.WithTarget(cacerts))
+
+	if eventingtls.IsHttpsSink(sink) {
+		clientConfig := eventingtls.NewDefaultClientConfig()
+		clientConfig.CACerts = &cacerts
+
+		httpTransport := http.DefaultTransport.(*http.Transport).Clone()
+		httpTransport.TLSClientConfig, err = eventingtls.GetTLSClientConfig(clientConfig)
+		if err != nil {
+			log.Fatalf("Failed to get TLS Client Config: %v", err)
+		}
+
+		pOpts = append(opts, cehttp.WithRoundTripper(&ochttp.Transport{
+			Base:        transport,
+			Propagation: tracecontextb3.TraceContextEgress,
+		}))
+	}
+
+	c, err := client.NewClientHTTP(opts, nil)
 
 	if env.ProbeSink {
 		probingTimeout := time.Duration(env.ProbeSinkTimeout) * time.Second
