@@ -19,12 +19,16 @@ package sender
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	nethttp "net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 
@@ -48,6 +52,9 @@ type generator struct {
 
 	// Sink url for the message destination
 	Sink string `envconfig:"SINK" required:"true"`
+
+	// CACert is the certificate for enabling HTTPS in Sink URL
+	CACerts string `envconfig:"CA_CERTS"`
 
 	// The duration to wait before starting sending the first message
 	Delay string `envconfig:"DELAY" default:"5" required:"false"`
@@ -134,6 +141,24 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		logging.FromContext(ctx).Info("awake, continuing")
 	}
 
+	httpClient := &nethttp.Client{}
+	if isHTTPSSink(env.Sink) {
+		caCertPool, err := x509.SystemCertPool()
+		if err != nil {
+			return fmt.Errorf("failed to create cert pool %s: %w", env.Sink, err)
+		}
+		caCertPool.AppendCertsFromPEM([]byte(env.CACerts))
+
+		httpClient = &nethttp.Client{
+			Transport: &nethttp.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs:    caCertPool,
+					MinVersion: tls.VersionTLS12,
+				},
+			},
+		}
+	}
+
 	if env.ProbeSink {
 		probingTimeout := time.Duration(env.ProbeSinkTimeout) * time.Second
 		// Probe the sink for up to a minute.
@@ -143,7 +168,12 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 				return false, err
 			}
 
-			if _, err := nethttp.DefaultClient.Do(req); err != nil {
+			if isHTTPSSink(env.Sink) {
+				if _, err := httpClient.Do(req); err != nil {
+					logging.FromContext(ctx).Error(zap.Error(err))
+					return false, nil
+				}
+			} else if _, err := nethttp.DefaultClient.Do(req); err != nil {
 				logging.FromContext(ctx).Error(zap.Error(err))
 				return false, nil
 			}
@@ -152,8 +182,6 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 			return fmt.Errorf("probing the sink '%s' using timeout %s failed: %w", env.Sink, probingTimeout, err)
 		}
 	}
-
-	httpClient := &nethttp.Client{}
 
 	for _, opt := range clientOpts {
 		if err := opt(httpClient); err != nil {
@@ -475,4 +503,15 @@ func durationWithUnit(s string) string {
 	}
 
 	return s
+}
+
+func isHTTPSSink(u string) bool {
+	if u == "" {
+		return false
+	}
+	pu, err := url.Parse(u)
+	if err != nil || pu == nil {
+		return false
+	}
+	return strings.EqualFold(pu.Scheme, "https")
 }
