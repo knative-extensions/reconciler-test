@@ -22,7 +22,10 @@ readonly rootdir
 source "${rootdir}/vendor/knative.dev/hack/e2e-tests.sh"
 
 function knative_setup() {
-  kubectl apply -f "${rootdir}/test/config"
+  kubectl apply -f "${rootdir}/test/config" || return $?
+
+  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml || return $?
+  wait_until_pods_running cert-manager || return $?
 }
 
 initialize "$@"

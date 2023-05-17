@@ -25,6 +25,7 @@ import (
 
 	// See: https://github.com/kubernetes/client-go/issues/242
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	"knative.dev/reconciler-test/pkg/environment"
 )
 
