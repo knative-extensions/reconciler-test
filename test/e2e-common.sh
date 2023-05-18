@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2022 The Knative Authors
+# Copyright 2023 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 
 set -Eeo pipefail
 
-rootdir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
-readonly rootdir
+root_dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
+readonly root_dir
 
-source "${rootdir}/test/e2e-common.sh"
+source "${root_dir}/vendor/knative.dev/hack/e2e-tests.sh"
 
-initialize "$@"
+function test_setup() {
+  kubectl apply -f "${root_dir}/test/config" || return $?
 
-set -Eeuo pipefail
-
-go_test_e2e -timeout 10m ./test/...
-
-success
+  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml || return $?
+  wait_until_pods_running cert-manager || return $?
+}

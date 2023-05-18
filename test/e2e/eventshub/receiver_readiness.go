@@ -37,12 +37,13 @@ import (
 	"knative.dev/pkg/apis"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/kmeta"
+	"sigs.k8s.io/yaml"
+
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/eventshub/assert"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
-	"sigs.k8s.io/yaml"
 )
 
 const ubi8Image = "registry.access.redhat.com/ubi8/ubi"

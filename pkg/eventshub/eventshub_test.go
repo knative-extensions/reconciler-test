@@ -67,6 +67,7 @@ func Example() {
 	//     app: eventshub-hubhub
 	//   ports:
 	//     - protocol: TCP
+	//       name: http
 	//       port: 80
 	//       targetPort: 8080
 	// ---
@@ -141,6 +142,7 @@ func ExampleIstioAnnotation() {
 	//     app: eventshub-hubhub
 	//   ports:
 	//     - protocol: TCP
+	//       name: http
 	//       port: 80
 	//       targetPort: 8080
 	// ---
@@ -215,6 +217,7 @@ func ExampleNoReadiness() {
 	//     app: eventshub-hubhub
 	//   ports:
 	//     - protocol: TCP
+	//       name: http
 	//       port: 80
 	//       targetPort: 8080
 	// ---

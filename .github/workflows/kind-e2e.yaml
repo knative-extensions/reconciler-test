@@ -80,8 +80,7 @@ jobs:
       run: |
         set -x
 
-        # Apply the reconciler test config.
-        kubectl apply -f ./test/config
+        source test/e2e-common.sh && test_setup
 
         # Run the tests tagged as e2e on the KinD cluster.
         go run gotest.tools/gotestsum@v1.8.0 --format testname -- \
