@@ -44,7 +44,7 @@ func TestEventsHubReceiverTLS(t *testing.T) {
 		k8s.WithEventListener,
 	)
 
-	env.Test(ctx, t, ensureCACerts())
+	env.Prerequisite(ctx, t, ensureCACerts())
 	env.Test(ctx, t, receiverTLS())
 }
 
