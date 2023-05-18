@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"testing"
 
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
@@ -35,7 +36,7 @@ func TestEventsHubReceiverTLS(t *testing.T) {
 	t.Parallel()
 
 	ctx, env := global.Environment(
-		//environment.Managed(t), // Will call env.Finish() when the test exits.
+		environment.Managed(t), // Will call env.Finish() when the test exits.
 		eventshub.WithTLS(t),
 		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
@@ -43,31 +44,33 @@ func TestEventsHubReceiverTLS(t *testing.T) {
 		k8s.WithEventListener,
 	)
 
-	caCerts := eventshub.GetCaCerts(ctx)
-	if caCerts == nil || len(*caCerts) == 0 {
-		t.Errorf("expected non empty CA certs")
-		return
-	}
-
+	env.Test(ctx, t, ensureCACerts())
 	env.Test(ctx, t, receiverTLS())
+}
+
+func ensureCACerts() *feature.Feature {
+	f := feature.NewFeatureNamed("ensure CA certs created")
+
+	f.Assert("CA secret is present", secret.IsPresent("eventshub-ca"))
+	f.Assert("CA certs is in context", func(ctx context.Context, t feature.T) {
+		caCerts := eventshub.GetCaCerts(ctx)
+		if caCerts == nil || len(*caCerts) == 0 {
+			t.Errorf("expected non empty CA certs")
+			return
+		}
+	})
+
+	return f
 }
 
 func receiverTLS() *feature.Feature {
 	f := feature.NewFeatureNamed("Receiver TLS")
 
-	sinkName := "sink"
+	sinkName := feature.MakeRandomK8sName("sink")
 
 	f.Setup("deploy TLS receiver", eventshub.Install(sinkName, eventshub.StartReceiverTLS))
 
-	f.Requirement("CA secret is present", secret.IsPresent("eventshub-ca"))
-	f.Requirement("TLS certificate pair secret is present", secret.IsPresent(fmt.Sprintf("server-tls-%s", sinkName)))
-
-	f.Assert("get CA certs", func(ctx context.Context, t feature.T) {
-		caCerts := eventshub.GetCaCerts(ctx)
-		if caCerts == nil || len(*caCerts) == 0 {
-			t.Errorf("expected non empty CA certs")
-		}
-	})
+	f.Assert("TLS certificate pair secret is present", secret.IsPresent(fmt.Sprintf("server-tls-%s", sinkName)))
 
 	return f
 }
