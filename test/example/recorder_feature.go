@@ -45,7 +45,7 @@ func RecorderFeature() *feature.Feature {
 
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
-			OnStore(to).MatchEvent(HasId(event.ID())).Exact(1),
+			OnStore(to).MatchReceivedEvent(HasId(event.ID())).Exact(1),
 		)
 
 	return f
@@ -68,12 +68,12 @@ func RecorderFeatureYAML() *feature.Feature {
 	f.Alpha("direct sending between a producer and a recorder").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
-				OnStore(to).MatchEvent(HasId("conformance-0001")).Exact(1)(ctx, t)
-				OnStore(to).MatchEvent(HasId("conformance-0002")).Exact(1)(ctx, t)
-				OnStore(to).MatchEvent(HasId("conformance-0003")).Exact(1)(ctx, t)
-				OnStore(to).MatchEvent(HasId("conformance-0004")).Exact(1)(ctx, t)
-				OnStore(to).MatchEvent(HasId("conformance-0005")).Exact(1)(ctx, t)
-				OnStore(to).MatchEvent(HasId("conformance-0006")).Exact(1)(ctx, t)
+				OnStore(to).MatchReceivedEvent(HasId("conformance-0001")).Exact(1)(ctx, t)
+				OnStore(to).MatchReceivedEvent(HasId("conformance-0002")).Exact(1)(ctx, t)
+				OnStore(to).MatchReceivedEvent(HasId("conformance-0003")).Exact(1)(ctx, t)
+				OnStore(to).MatchReceivedEvent(HasId("conformance-0004")).Exact(1)(ctx, t)
+				OnStore(to).MatchReceivedEvent(HasId("conformance-0005")).Exact(1)(ctx, t)
+				OnStore(to).MatchReceivedEvent(HasId("conformance-0006")).Exact(1)(ctx, t)
 			})
 
 	return f
