@@ -407,10 +407,10 @@ func (mr *MagicEnvironment) test(ctx context.Context, originalT *testing.T, f *f
 				if skip {
 					if mr.teardownOnFail {
 						// Prepend logging steps to the teardown phase when a previous timing failed.
-						steps = append(mr.loggingSteps(), steps...)
+						steps = append(mr.loggingSteps( /* shouldFail */ true), steps...)
 					} else {
 						// When not doing teardown only execute logging steps.
-						steps = mr.loggingSteps()
+						steps = mr.loggingSteps( /* shouldFail */ false)
 					}
 				}
 				skip = skipTeardown

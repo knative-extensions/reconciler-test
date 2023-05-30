@@ -26,17 +26,32 @@ import (
 )
 
 // loggingSteps returns a number of steps that logs environment-managed resources.
-func (mr *MagicEnvironment) loggingSteps() []feature.Step {
+func (mr *MagicEnvironment) loggingSteps(shouldFail bool) []feature.Step {
 	mr.refsMu.Lock()
 	defer mr.refsMu.Unlock()
 
-	return []feature.Step{{
-		Name: "Log references",
-		S:    feature.Any,
-		L:    feature.Must,
-		T:    feature.Teardown,
-		Fn:   feature.LogReferences(mr.refs...),
-	}}
+	return []feature.Step{
+		{
+			Name: "Log references",
+			S:    feature.Any,
+			L:    feature.Must,
+			T:    feature.Teardown,
+			Fn: func(ctx context.Context, t feature.T) {
+				if shouldFail {
+					feature.FailingLogReferences(mr.refs...)(ctx, t)
+				} else {
+					feature.LogReferences(mr.refs...)(ctx, t)
+				}
+			},
+		},
+		{
+			Name: "Export pods logs",
+			S:    feature.Any,
+			L:    feature.Must,
+			T:    feature.Teardown,
+			Fn:   feature.ExportPodsLogs(mr.namespace, "knative-eventing", "knative-serving"),
+		},
+	}
 }
 
 // WithTestLogger returns a context with test logger configured.

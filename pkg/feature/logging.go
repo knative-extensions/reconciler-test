@@ -26,13 +26,36 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
+
+	"knative.dev/reconciler-test/pkg/logging"
 )
 
 func LogReferences(refs ...corev1.ObjectReference) StepFn {
 	return func(ctx context.Context, t T) {
 		for _, ref := range refs {
 			logReference(ref)(ctx, t)
+		}
+	}
+}
+
+func FailingLogReferences(refs ...corev1.ObjectReference) StepFn {
+	return func(ctx context.Context, t T) {
+		for _, ref := range refs {
+			logReference(ref)(ctx, t)
+		}
+		t.Error("FAIL") // Force print log lines
+	}
+}
+
+func ExportPodsLogs(namespaces ...string) StepFn {
+	return func(ctx context.Context, t T) {
+
+		for _, ns := range namespaces {
+			if err := logging.ExportLogs(kubeclient.Get(ctx), ns, ""); err != nil {
+				t.Log("Failed to export logs", ns, err)
+			}
 		}
 	}
 }
