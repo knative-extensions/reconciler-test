@@ -31,6 +31,7 @@ func Example() {
 	ctx := testlog.NewContext()
 	files, err := manifest.ExecuteYAML(ctx, templates, nil,
 		map[string]interface{}{
+			"name":      "examplen",
 			"namespace": "example",
 		})
 	if err != nil {
@@ -42,13 +43,13 @@ func Example() {
 	// apiVersion: v1
 	// kind: ServiceAccount
 	// metadata:
-	//   name: example
+	//   name: examplen
 	//   namespace: example
 	// ---
 	// apiVersion: rbac.authorization.k8s.io/v1
 	// kind: Role
 	// metadata:
-	//   name: example
+	//   name: examplen
 	//   namespace: example
 	// rules:
 	//   - apiGroups: [ "" ]
@@ -66,14 +67,14 @@ func Example() {
 	// apiVersion: rbac.authorization.k8s.io/v1
 	// kind: RoleBinding
 	// metadata:
-	//   name: example
+	//   name: examplen
 	//   namespace: example
 	// roleRef:
 	//   apiGroup: rbac.authorization.k8s.io
 	//   kind: Role
-	//   name: example
+	//   name: examplen
 	// subjects:
 	//   - kind: ServiceAccount
-	//     name: example
+	//     name: examplen
 	//     namespace: example
 }
