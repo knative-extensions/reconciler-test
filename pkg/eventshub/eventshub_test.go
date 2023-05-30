@@ -75,7 +75,7 @@ func Example() {
 	//   labels:
 	//     app: eventshub-hubhub
 	// spec:
-	//   serviceAccountName: "example"
+	//   serviceAccountName: "hubhub"
 	//   restartPolicy: "OnFailure"
 	//   containers:
 	//     - name: eventshub
@@ -152,7 +152,7 @@ func ExampleIstioAnnotation() {
 	//       sidecar.istio.io/inject: "true"
 	//       sidecar.istio.io/rewriteAppHTTPProbers: "true"
 	// spec:
-	//   serviceAccountName: "example"
+	//   serviceAccountName: "hubhub"
 	//   restartPolicy: "OnFailure"
 	//   containers:
 	//     - name: eventshub
@@ -223,7 +223,7 @@ func ExampleNoReadiness() {
 	//   labels:
 	//     app: eventshub-hubhub
 	// spec:
-	//   serviceAccountName: "example"
+	//   serviceAccountName: "hubhub"
 	//   restartPolicy: "OnFailure"
 	//   containers:
 	//     - name: eventshub
