@@ -14,20 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package knative
+package environment
 
 import (
 	"context"
-
-	"knative.dev/reconciler-test/pkg/environment"
 )
 
-// Deprecated: use environment.WithKnativeNamespace
-func WithKnativeNamespace(namespace string) environment.EnvOpts {
-	return environment.WithKnativeNamespace(namespace)
+type knativeNamespaceConfig struct{}
+
+func WithKnativeNamespace(namespace string) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
+		return context.WithValue(ctx, knativeNamespaceConfig{}, namespace), nil
+	}
 }
 
-// Deprecated: use environment.KnativeNamespaceFromContext
 func KnativeNamespaceFromContext(ctx context.Context) string {
-	return environment.KnativeNamespaceFromContext(ctx)
+	if ns := knativeNamespaceFromContext(ctx); ns != "" {
+		return ns
+	}
+	panic("no knative namespace found in the context, make sure you properly configured the env opts using WithKnativeNamespace")
+}
+
+func knativeNamespaceFromContext(ctx context.Context) string {
+	if e, ok := ctx.Value(knativeNamespaceConfig{}).(string); ok {
+		return e
+	}
+	return ""
 }

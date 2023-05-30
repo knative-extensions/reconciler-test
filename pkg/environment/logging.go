@@ -49,7 +49,7 @@ func (mr *MagicEnvironment) loggingSteps(shouldFail bool) []feature.Step {
 			S:    feature.Any,
 			L:    feature.Must,
 			T:    feature.Teardown,
-			Fn:   feature.ExportPodsLogs(mr.namespace, "knative-eventing", "knative-serving"),
+			Fn:   feature.ExportPodsLogs(mr.namespace, knativeNamespaceFromContext(mr.c)),
 		},
 	}
 }
