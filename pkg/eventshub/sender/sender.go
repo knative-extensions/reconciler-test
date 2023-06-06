@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	nethttp "net/http"
 	"net/url"
 	"strconv"
@@ -55,6 +56,9 @@ type generator struct {
 
 	// CACert is the certificate for enabling HTTPS in Sink URL
 	CACerts string `envconfig:"CA_CERTS"`
+
+	// EnforceTLS is used to enforce TLS.
+	EnforceTLS bool `envconfig:"ENFORCE_TLS" default:"false"`
 
 	// The duration to wait before starting sending the first message
 	Delay string `envconfig:"DELAY" default:"5" required:"false"`
@@ -114,7 +118,7 @@ type generator struct {
 	eventQueue []conformanceevent.Event
 }
 
-func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventshub.ClientOption) error {
+func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts eventshub.ClientOption, handlerfuncs ...func(handler http.Handler) http.Handler) error {
 	var env generator
 	if err := envconfig.Process("", &env); err != nil {
 		return fmt.Errorf("failed to process env var. %w", err)
@@ -139,6 +143,34 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		logging.FromContext(ctx).Info("will sleep for ", delay)
 		time.Sleep(delay)
 		logging.FromContext(ctx).Info("awake, continuing")
+	}
+
+	server := &https.Server{addr: ":8080", Handler: handler}
+	serverTLS := &http.Server{
+		Addr: ":8443",
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+		Handler: handler,
+	}
+
+	var httpErr error
+	go func() {
+		httpErr = server.ListenAndServe()
+	}()
+	var httpsErr error
+	if env.EnforceTLS {
+		go func() {
+			httpsErr = serverTLS.ListenAndServe("/etc/tls/certificates/tls.crt", "/etc/tls/certifcates/tls.key")
+		}()
+		defer serverTLS.Close()
+	}
+
+	if httpErr != nil {
+		return fmt.Errorf("error while starting the HTTP server: %w", httpErr)
+	}
+	if httpsErr != nil {
+		return fmt.Errorf("error while starting the HTTPS server: %w", httpsErr)
 	}
 
 	httpClient := &nethttp.Client{}
@@ -290,7 +322,7 @@ func (g *generator) sentInfo(event *cloudevents.Event, req *nethttp.Request, err
 	return sentEventInfo
 }
 
-func (g *generator) responseInfo(res *nethttp.Response, event *cloudevents.Event) eventshub.EventInfo {
+func (g *generator) responseInfo(res *nethttp.Response, event *cloudevents.Event, request *http.Request) eventshub.EventInfo {
 	var eventId string
 	if event != nil {
 		eventId = event.ID()
@@ -308,6 +340,19 @@ func (g *generator) responseInfo(res *nethttp.Response, event *cloudevents.Event
 	}
 
 	responseMessage := cehttp.NewMessageFromHttpResponse(res)
+
+	var rejectErr error
+	if g.EnforceTLS && !isTLS(request) {
+		rejectErr = fmt.Errorf("failed to enforce TLS connection for request %s", request.URL.String)
+	}
+
+	event, eventErr := cloudevents.NewEventFromHTTPRequest(request)
+	errString := ""
+	if rejectErr != nil {
+		errString = rejectErr.Error()
+	} else if eventErr != nil {
+		errString = eventErr.Error()
+	}
 
 	if responseMessage.ReadEncoding() == binding.EncodingUnknown {
 		body, err := ioutil.ReadAll(res.Body)
@@ -514,4 +559,9 @@ func isHTTPSSink(u string) bool {
 		return false
 	}
 	return strings.EqualFold(pu.Scheme, "https")
+}
+
+func isTLS(request *http.Request) bool {
+	return strings.EqualFold(request.URL.Scheme, "https") &&
+		request.TLS != nil && request.TLS.HandshakeComplete
 }

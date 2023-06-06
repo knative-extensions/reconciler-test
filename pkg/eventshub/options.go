@@ -86,6 +86,34 @@ func StartSenderURL(sink string) EventsHubOption {
 	})
 }
 
+func StartsenderTLS(sinkSvc string) EventsHubOption {
+	return compose(envAdditive(EventGeneratorsEnv, "CACerts"), func(ctx context.Context, envs map[string]string) error {
+		envs["SINK"] = "https://" + network.GetServiceHostname(sinkSvc, environment.FromContext(ctx).Namespace())
+		return nil
+	})
+}
+
+func StartSenderToResourceTLS(gvr schema.GroupVersionResource, name string) EventsHubOption {
+	return compose(envAdditive(EventGeneratorsEnv, "CACerts"), func(ctx context.Context, envs map[string]string) error {
+		u, err := k8s.Address(ctx, gvr, name)
+		if err != nil {
+			return err
+		}
+		if u == nil {
+			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
+		}
+		envs["SINK"] = "https://" + u.String()
+		return nil
+	})
+}
+
+func StartSenderURLTLS(sink string) EventsHubOption {
+	return compose(envAdditive(EventGeneratorsEnv, "CACerts"), func(ctx context.Context, envs map[string]string) error {
+		envs["SINK"] = "https://" + sink
+		return nil
+	})
+}
+
 // --- Receiver options
 
 // EchoEvent is an option to let the eventshub reply with the received event
