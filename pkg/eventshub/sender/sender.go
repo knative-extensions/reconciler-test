@@ -145,36 +145,9 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts eventshub.
 		logging.FromContext(ctx).Info("awake, continuing")
 	}
 
-	server := &https.Server{addr: ":8080", Handler: handler}
-	serverTLS := &http.Server{
-		Addr: ":8443",
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
-		Handler: handler,
-	}
+	httpClient := nethttp.DefaultClient
 
-	var httpErr error
-	go func() {
-		httpErr = server.ListenAndServe()
-	}()
-	var httpsErr error
 	if env.EnforceTLS {
-		go func() {
-			httpsErr = serverTLS.ListenAndServe("/etc/tls/certificates/tls.crt", "/etc/tls/certifcates/tls.key")
-		}()
-		defer serverTLS.Close()
-	}
-
-	if httpErr != nil {
-		return fmt.Errorf("error while starting the HTTP server: %w", httpErr)
-	}
-	if httpsErr != nil {
-		return fmt.Errorf("error while starting the HTTPS server: %w", httpsErr)
-	}
-
-	httpClient := &nethttp.Client{}
-	if isHTTPSSink(env.Sink) {
 		caCertPool, err := x509.SystemCertPool()
 		if err != nil {
 			return fmt.Errorf("failed to create cert pool %s: %w", env.Sink, err)
@@ -200,12 +173,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts eventshub.
 				return false, err
 			}
 
-			if isHTTPSSink(env.Sink) {
-				if _, err := httpClient.Do(req); err != nil {
-					logging.FromContext(ctx).Error(zap.Error(err))
-					return false, nil
-				}
-			} else if _, err := nethttp.DefaultClient.Do(req); err != nil {
+			if _, err := httpClient.Do(req); err != nil {
 				logging.FromContext(ctx).Error(zap.Error(err))
 				return false, nil
 			}
