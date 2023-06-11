@@ -52,12 +52,12 @@ type EventsHubOption = func(context.Context, map[string]string) error
 // This can be used together with EchoEvent, ReplyWithTransformedEvent, ReplyWithAppendedData
 var StartReceiver EventsHubOption = envAdditive(EventGeneratorsEnv, "receiver")
 
-var startsender EventsHubOption = envAdditive(EventGeneratorsEnv, "sender")
+var Startsender EventsHubOption = envAdditive(EventGeneratorsEnv, "sender")
 
 // StartSendertls starts the sender in the eventshub with TLS enforcement.
 // It requires cert-manager operator to be able to create TLS Certificate.const
 // To get the CA certificate used you can use GetCAcerts
-var StartSendertls EventsHubOption = compose(startsender, envAdditive(EnforceTLS, "true"))
+var StartSendertls EventsHubOption = compose(Startsender, envAdditive(EnforceTLS, "true"))
 
 // StartSender starts the sender in the eventshub
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
@@ -93,7 +93,7 @@ func StartSenderURL(sink string) EventsHubOption {
 	})
 }
 
-func StartsenderTLS(sinkSvc string) EventsHubOption {
+func StartSenderTLS(sinkSvc string) EventsHubOption {
 	return compose(envAdditive(EventGeneratorsEnv, "sender"), func(ctx context.Context, envs map[string]string) error {
 		envs["CACerts"] = "https://" + network.GetServiceHostname(sinkSvc, environment.FromContext(ctx).Namespace())
 		return nil
