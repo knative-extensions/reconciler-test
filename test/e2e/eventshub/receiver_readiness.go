@@ -166,7 +166,7 @@ func precacheSenderImage(ctx context.Context, t feature.T) {
 
 func receiveEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 	return assert.OnStore(sinkName).
-		MatchEvent(cetest.HasId(ev.ID())).
+		MatchReceivedEvent(cetest.HasId(ev.ID())).
 		Exact(1)
 }
 
