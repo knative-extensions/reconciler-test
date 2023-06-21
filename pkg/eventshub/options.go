@@ -62,6 +62,13 @@ func StartSenderTLS(sinkSvc string, caCerts *caCerts) EventsHubOption {
 	})s
 }
 
+// StartReceiverTLS starts the receiver in the eventshub with TLS enforcement.
+// This can be used together with EchoEvent, ReplyWithTransformedEvent, ReplyWithAppendedData.
+//
+// It requires cert-manager operator to be able to create TLS Certificate.
+// To get the CA certificate used you can use GetCaCerts.
+var StartReceiverTLS EventsHubOption = compose(StartReceiver, envAdditive(EnforceTLS, "true"))
+
 // StartSender starts the sender in the eventshub
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
 func StartSender(sinkSvc string) EventsHubOption {

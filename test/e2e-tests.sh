@@ -19,11 +19,7 @@ set -Eeo pipefail
 rootdir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
 readonly rootdir
 
-source "${rootdir}/vendor/knative.dev/hack/e2e-tests.sh"
-
-function knative_setup() {
-  kubectl apply -f "${rootdir}/test/config"
-}
+source "${rootdir}/test/e2e-common.sh"
 
 initialize "$@"
 

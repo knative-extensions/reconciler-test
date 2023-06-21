@@ -37,12 +37,13 @@ import (
 	"knative.dev/pkg/apis"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/kmeta"
+	"sigs.k8s.io/yaml"
+
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/eventshub/assert"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
-	"sigs.k8s.io/yaml"
 )
 
 const ubi8Image = "registry.access.redhat.com/ubi8/ubi"
@@ -165,7 +166,7 @@ func precacheSenderImage(ctx context.Context, t feature.T) {
 
 func receiveEvent(ev cloudevents.Event, sinkName string) feature.StepFn {
 	return assert.OnStore(sinkName).
-		MatchEvent(cetest.HasId(ev.ID())).
+		MatchReceivedEvent(cetest.HasId(ev.ID())).
 		Exact(1)
 }
 

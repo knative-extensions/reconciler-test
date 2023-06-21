@@ -67,6 +67,7 @@ func Example() {
 	//     app: eventshub-hubhub
 	//   ports:
 	//     - protocol: TCP
+	//       name: http
 	//       port: 80
 	//       targetPort: 8080
 	// ---
@@ -78,7 +79,7 @@ func Example() {
 	//   labels:
 	//     app: eventshub-hubhub
 	// spec:
-	//   serviceAccountName: "example"
+	//   serviceAccountName: "hubhub"
 	//   restartPolicy: "OnFailure"
 	//   containers:
 	//     - name: eventshub
@@ -141,6 +142,7 @@ func ExampleIstioAnnotation() {
 	//     app: eventshub-hubhub
 	//   ports:
 	//     - protocol: TCP
+	//       name: http
 	//       port: 80
 	//       targetPort: 8080
 	// ---
@@ -155,7 +157,7 @@ func ExampleIstioAnnotation() {
 	//       sidecar.istio.io/inject: "true"
 	//       sidecar.istio.io/rewriteAppHTTPProbers: "true"
 	// spec:
-	//   serviceAccountName: "example"
+	//   serviceAccountName: "hubhub"
 	//   restartPolicy: "OnFailure"
 	//   containers:
 	//     - name: eventshub
@@ -215,6 +217,7 @@ func ExampleNoReadiness() {
 	//     app: eventshub-hubhub
 	//   ports:
 	//     - protocol: TCP
+	//       name: http
 	//       port: 80
 	//       targetPort: 8080
 	// ---
@@ -226,7 +229,7 @@ func ExampleNoReadiness() {
 	//   labels:
 	//     app: eventshub-hubhub
 	// spec:
-	//   serviceAccountName: "example"
+	//   serviceAccountName: "hubhub"
 	//   restartPolicy: "OnFailure"
 	//   containers:
 	//     - name: eventshub
@@ -306,7 +309,7 @@ func ExampleForwarder() {
 	// spec:
 	//   template:
 	//     spec:
-	//       serviceAccountName: "example"
+	//       serviceAccountName: "hubhub"
 	//       containers:
 	//         - name: eventshub-forwarder
 	//           image: uri://a-real-container
