@@ -24,12 +24,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"net/http"
 	nethttp "net/http"
-	"net/url"
 	"strconv"
-	"strings"
 	"time"
 	"unicode"
 
@@ -118,7 +116,7 @@ type generator struct {
 	eventQueue []conformanceevent.Event
 }
 
-func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts eventshub.ClientOption, handlerfuncs ...func(handler http.Handler) http.Handler) error {
+func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventshub.ClientOption) error {
 	var env generator
 	if err := envconfig.Process("", &env); err != nil {
 		return fmt.Errorf("failed to process env var. %w", err)
@@ -154,14 +152,12 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts eventshub.
 		}
 		caCertPool.AppendCertsFromPEM([]byte(env.CACerts))
 
-		httpClient = &nethttp.Client{
-			Transport: &nethttp.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs:    caCertPool,
-					MinVersion: tls.VersionTLS12,
-				},
-			},
+		transport := nethttp.DefaultTransport.(*nethttp.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{
+			RootCAs:    caCertPool,
+			MinVersion: tls.VersionTLS12,
 		}
+		httpClient = &nethttp.Client{Transport: transport}
 	}
 
 	if env.ProbeSink {
@@ -290,7 +286,7 @@ func (g *generator) sentInfo(event *cloudevents.Event, req *nethttp.Request, err
 	return sentEventInfo
 }
 
-func (g *generator) responseInfo(res *nethttp.Response, event *cloudevents.Event, request *http.Request) eventshub.EventInfo {
+func (g *generator) responseInfo(res *nethttp.Response, event *cloudevents.Event) eventshub.EventInfo {
 	var eventId string
 	if event != nil {
 		eventId = event.ID()
@@ -309,21 +305,8 @@ func (g *generator) responseInfo(res *nethttp.Response, event *cloudevents.Event
 
 	responseMessage := cehttp.NewMessageFromHttpResponse(res)
 
-	var rejectErr error
-	if g.EnforceTLS && !isTLS(request) {
-		rejectErr = fmt.Errorf("failed to enforce TLS connection for request %s", request.URL.String)
-	}
-
-	event, eventErr := cloudevents.NewEventFromHTTPRequest(request)
-	errString := ""
-	if rejectErr != nil {
-		errString = rejectErr.Error()
-	} else if eventErr != nil {
-		errString = eventErr.Error()
-	}
-
 	if responseMessage.ReadEncoding() == binding.EncodingUnknown {
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 
 		if err != nil {
 			responseInfo.Error = err.Error()
@@ -516,20 +499,4 @@ func durationWithUnit(s string) string {
 	}
 
 	return s
-}
-
-func isHTTPSSink(u string) bool {
-	if u == "" {
-		return false
-	}
-	pu, err := url.Parse(u)
-	if err != nil || pu == nil {
-		return false
-	}
-	return strings.EqualFold(pu.Scheme, "https")
-}
-
-func isTLS(request *http.Request) bool {
-	return strings.EqualFold(request.URL.Scheme, "https") &&
-		request.TLS != nil && request.TLS.HandshakeComplete
 }

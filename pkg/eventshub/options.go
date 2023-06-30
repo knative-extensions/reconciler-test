@@ -52,16 +52,6 @@ type EventsHubOption = func(context.Context, map[string]string) error
 // This can be used together with EchoEvent, ReplyWithTransformedEvent, ReplyWithAppendedData
 var StartReceiver EventsHubOption = envAdditive(EventGeneratorsEnv, "receiver")
 
-// StartSenderTLS starts the sender in the eventshub with TLS enforcement.
-func StartSenderTLS(sinkSvc string, caCerts *caCerts) EventsHubOption {
-	return compose(StartSender(sinkSvc), envAdditive(EnforceTLS, "true"), func(ctx context.Context, envs map[string]string) error {
-		if caCerts != nil {
-			envs["CA_CERTS"] = *caCerts
-		}
-		return nil
-	})s
-}
-
 // StartReceiverTLS starts the receiver in the eventshub with TLS enforcement.
 // This can be used together with EchoEvent, ReplyWithTransformedEvent, ReplyWithAppendedData.
 //
@@ -76,6 +66,16 @@ func StartSender(sinkSvc string) EventsHubOption {
 		envs["SINK"] = "http://" + network.GetServiceHostname(sinkSvc, environment.FromContext(ctx).Namespace())
 		return nil
 	})
+}
+
+// StartSenderTLS starts the sender in the eventshub with TLS enforcement.
+func StartSenderTLS(sinkSvc string, caCerts *string) EventsHubOption {
+	return func(ctx context.Context, envs map[string]string) error {
+		return StartSenderURLTLS(
+			"https://"+network.GetServiceHostname(sinkSvc, environment.FromContext(ctx).Namespace()),
+			caCerts,
+		)(ctx, envs)
+	}
 }
 
 // StartSenderToResource starts the sender in the eventshub pointing to the provided resource
@@ -94,6 +94,26 @@ func StartSenderToResource(gvr schema.GroupVersionResource, name string) EventsH
 	})
 }
 
+// StartSenderToResourceTLS starts the sender in the eventshub pointing to the provided resource
+// This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
+func StartSenderToResourceTLS(gvr schema.GroupVersionResource, name string) EventsHubOption {
+	return func(ctx context.Context, m map[string]string) error {
+		u, err := k8s.Addressable(ctx, gvr, name)
+		if err != nil {
+			return err
+		}
+		if u == nil {
+			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
+		}
+
+		return compose(
+			StartSender(u.URL.String()),
+			envAdditive(EnforceTLS, "true"),
+			envCACerts(u.CACerts),
+		)(ctx, m)
+	}
+}
+
 // StartSenderURL starts the sender in the eventshub sinking to a URL.
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
 func StartSenderURL(sink string) EventsHubOption {
@@ -103,32 +123,14 @@ func StartSenderURL(sink string) EventsHubOption {
 	})
 }
 
-func StartSenderTLS(sinkSvc string) EventsHubOption {
-	return compose(envAdditive(EventGeneratorsEnv, "sender"), func(ctx context.Context, envs map[string]string) error {
-		envs["CACerts"] = "https://" + network.GetServiceHostname(sinkSvc, environment.FromContext(ctx).Namespace())
-		return nil
-	})
-}
-
-func StartSenderToResourceTLS(gvr schema.GroupVersionResource, name string) EventsHubOption {
-	return compose(envAdditive(EventGeneratorsEnv, "sender"), func(ctx context.Context, envs map[string]string) error {
-		u, err := k8s.Address(ctx, gvr, name)
-		if err != nil {
-			return err
-		}
-		if u == nil {
-			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
-		}
-		envs["CACerts"] = "https://" + u.String()
-		return nil
-	})
-}
-
-func StartSenderURLTLS(sink string) EventsHubOption {
-	return compose(envAdditive(EventGeneratorsEnv, "sender"), func(ctx context.Context, envs map[string]string) error {
-		envs["CACerts"] = "https://" + sink
-		return nil
-	})
+// StartSenderURLTLS starts the sender in the eventshub sinking to a URL.
+// This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
+func StartSenderURLTLS(sink string, caCerts *string) EventsHubOption {
+	return compose(envAdditive(EventGeneratorsEnv, "sender"), envAdditive(EnforceTLS, "true"), envCACerts(caCerts),
+		func(ctx context.Context, envs map[string]string) error {
+			envs["SINK"] = sink
+			return nil
+		})
 }
 
 // --- Receiver options
@@ -332,4 +334,13 @@ func envAdditive(key, value string) EventsHubOption {
 
 func envDuration(key string, value time.Duration) EventsHubOption {
 	return envOption(key, strconv.Itoa(int(math.Ceil(value.Seconds()))))
+}
+
+func envCACerts(caCerts *string) EventsHubOption {
+	return func(ctx context.Context, m map[string]string) error {
+		if caCerts != nil {
+			return envAdditive("CA_CERTS", *caCerts)(ctx, m)
+		}
+		return nil
+	}
 }
