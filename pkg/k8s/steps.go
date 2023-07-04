@@ -19,13 +19,10 @@ package k8s
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/resolver"
-	"knative.dev/pkg/tracker"
+	"knative.dev/pkg/network"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,18 +91,17 @@ func IsAddressable(gvr schema.GroupVersionResource, name string, timing ...time.
 	}
 }
 
-// Address attempts to resolve an Addressable address into a URL.
-func Address(ctx context.Context, gvr schema.GroupVersionResource, name string) (*apis.URL, error) {
-	addr, err := Addressable(ctx, gvr, name)
-	if err != nil {
-		return nil, err
-	}
-	return addr.URL, nil
-}
-
-// Addressable attempts to resolve an Addressable object into a duckv1.Addressable.
-func Addressable(ctx context.Context, gvr schema.GroupVersionResource, name string) (*duckv1.Addressable, error) {
+// Address attempts to resolve an Addressable address into a URL. If the
+// resource is found but not Addressable, Address will return (nil, nil).
+func Address(ctx context.Context, gvr schema.GroupVersionResource, name string) (*duckv1.Addressable, error) {
 	env := environment.FromContext(ctx)
+
+	// Special case Service.
+	if gvr.Group == "" && gvr.Version == "v1" && gvr.Resource == "services" {
+		u := "http://" + network.GetServiceHostname(name, env.Namespace())
+		url, err := apis.ParseURL(u)
+		return &duckv1.Addressable{URL: url}, err
+	}
 
 	like := &duckv1.AddressableType{}
 	us, err := dynamicclient.Get(ctx).Resource(gvr).Namespace(env.Namespace()).Get(ctx, name, metav1.GetOptions{})
@@ -119,27 +115,11 @@ func Addressable(ctx context.Context, gvr schema.GroupVersionResource, name stri
 	obj.ResourceVersion = gvr.Version
 	obj.APIVersion = gvr.GroupVersion().String()
 
-	r := resolver.NewURIResolverFromTracker(ctx, tracker.New(func(name types.NamespacedName) {}, 0))
-
-	d := duckv1.Destination{
-		Ref: &duckv1.KReference{
-			Kind:       unsafeGuessResourceToKind(gvr.Resource),
-			Namespace:  env.Namespace(),
-			Name:       name,
-			APIVersion: gvr.GroupVersion().String(),
-		},
+	if obj.Status.Address == nil || obj.Status.Address.URL == nil {
+		// Not Addressable (yet?).
+		return nil, nil
 	}
 
-	return r.AddressableFromDestinationV1(ctx, d, like)
-}
-
-// unsafeGuessResourceToKind is trying to reverse algorithm meta.UnsafeGuessKindToResource for the
-// cases we commonly use.
-func unsafeGuessResourceToKind(resource string) string {
-	if strings.HasSuffix(resource, "s") {
-		resource = resource[:len(resource)-1]
-	}
-	r := []rune(resource)
-	r[0] = []rune(strings.ToUpper(string(r[0])))[0]
-	return string(r)
+	// Success!
+	return obj.Status.Address, nil
 }
