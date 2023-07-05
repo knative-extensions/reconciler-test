@@ -24,8 +24,12 @@ import (
 	"fmt"
 	"testing"
 
+	cetest "github.com/cloudevents/sdk-go/v2/test"
+	"github.com/google/uuid"
+
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
+	"knative.dev/reconciler-test/pkg/eventshub/assert"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
@@ -67,10 +71,30 @@ func receiverTLS() *feature.Feature {
 	f := feature.NewFeatureNamed("Receiver TLS")
 
 	sinkName := feature.MakeRandomK8sName("sink")
+	sourceName := feature.MakeRandomK8sName("source")
+
+	event := cetest.FullEvent()
+	event.SetID(uuid.New().String())
 
 	f.Setup("deploy TLS receiver", eventshub.Install(sinkName, eventshub.StartReceiverTLS))
 
+	f.Requirement("deploy TLS sender", func(ctx context.Context, t feature.T) {
+		eventshub.Install(sourceName,
+			eventshub.StartSenderToResourceTLS(eventshub.ReceiverGVR(ctx), sinkName),
+			eventshub.InputEvent(event),
+		)(ctx, t)
+	})
+
 	f.Assert("TLS certificate pair secret is present", secret.IsPresent(fmt.Sprintf("server-tls-%s", sinkName)))
+
+	f.Assert("Receive event", assert.OnStore(sinkName).
+		MatchReceivedEvent(cetest.HasId(event.ID())).
+		AtLeast(1),
+	)
+	f.Assert("Sent event", assert.OnStore(sourceName).
+		MatchSentEvent(cetest.HasId(event.ID())).
+		AtLeast(1),
+	)
 
 	return f
 }
