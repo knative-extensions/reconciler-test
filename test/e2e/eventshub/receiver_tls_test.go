@@ -80,7 +80,7 @@ func receiverTLS() *feature.Feature {
 
 	f.Requirement("deploy TLS sender", func(ctx context.Context, t feature.T) {
 		eventshub.Install(sourceName,
-			eventshub.StartSenderToResourceTLS(eventshub.ReceiverGVR(ctx), sinkName),
+			eventshub.StartSenderToResourceTLS(eventshub.ReceiverGVR(ctx), sinkName, eventshub.GetCaCerts(ctx)),
 			eventshub.InputEvent(event),
 		)(ctx, t)
 	})

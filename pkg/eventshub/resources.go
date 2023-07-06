@@ -110,7 +110,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			"serviceName":    serviceName,
 			"envs":           envs,
 			"image":          ImageFromContext(ctx),
-			"withReadiness":  isReceiver,
+			"isReceiver":     isReceiver,
 			"withEnforceTLS": isEnforceTLS,
 		}
 
@@ -123,7 +123,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 
 		manifest.PodSecurityCfgFn(ctx, t)(cfg)
 
-		if isEnforceTLS {
+		if isEnforceTLS && isReceiver {
 			if _, err := manifest.InstallYamlFS(ctx, serviceTLSCertificate, cfg); err != nil {
 				log.Fatal(err)
 			}
