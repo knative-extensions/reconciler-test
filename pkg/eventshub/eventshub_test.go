@@ -39,11 +39,11 @@ func Example() {
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
 	}
 	cfg := map[string]interface{}{
-		"name":          "hubhub",
-		"serviceName":   "hubhub",
-		"namespace":     "example",
-		"image":         "ko://knative.dev/reconciler-test/cmd/eventshub",
-		"withReadiness": true,
+		"name":        "hubhub",
+		"serviceName": "hubhub",
+		"namespace":   "example",
+		"image":       "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"isReceiver":  true,
 		"envs": map[string]string{
 			"foo": "bar",
 			"baz": "boof",
@@ -112,11 +112,11 @@ func ExampleIstioAnnotation() {
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
 	}
 	cfg := map[string]interface{}{
-		"name":          "hubhub",
-		"serviceName":   "hubhub",
-		"namespace":     "example",
-		"image":         "ko://knative.dev/reconciler-test/cmd/eventshub",
-		"withReadiness": true,
+		"name":        "hubhub",
+		"serviceName": "hubhub",
+		"namespace":   "example",
+		"image":       "ko://knative.dev/reconciler-test/cmd/eventshub",
+		"isReceiver":  true,
 		"envs": map[string]string{
 			"foo": "bar",
 			"baz": "boof",
