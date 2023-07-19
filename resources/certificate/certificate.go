@@ -46,7 +46,6 @@ var (
 
 type RotateCertificate struct {
 	Certificate types.NamespacedName
-	Secret      types.NamespacedName
 }
 
 // Rotate rotates a cert-manager issued certificate.
@@ -87,7 +86,13 @@ type Certificate struct {
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	Spec Spec `json:"spec"`
+
 	Status Status `json:"status"`
+}
+
+type Spec struct {
+	SecretName string `json:"secretName"`
 }
 
 // Status defines the observed state of Certificate
@@ -151,12 +156,24 @@ func waitForRotation(ctx context.Context, t feature.T, rotate RotateCertificate,
 }
 
 func getSecret(ctx context.Context, t feature.T, rotate RotateCertificate) *corev1.Secret {
+	obj, err := dynamicclient.Get(ctx).Resource(certificateGVR).
+		Namespace(rotate.Certificate.Namespace).
+		Get(ctx, rotate.Certificate.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Failed to get certificate %s/%s: %v", rotate.Certificate.Namespace, rotate.Certificate.Name, err)
+	}
+
+	cert := &Certificate{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, cert); err != nil {
+		t.Fatal(err)
+	}
+
 	secret, err := kubeclient.Get(ctx).
 		CoreV1().
-		Secrets(rotate.Secret.Namespace).
-		Get(ctx, rotate.Secret.Name, metav1.GetOptions{})
+		Secrets(rotate.Certificate.Namespace).
+		Get(ctx, cert.Spec.SecretName, metav1.GetOptions{})
 	if err != nil {
-		t.Fatal("Failed to get secret", err)
+		t.Fatalf("Failed to get secret %s/%s: %v", rotate.Certificate.Namespace, cert.Spec.SecretName, err)
 	}
 
 	return secret
