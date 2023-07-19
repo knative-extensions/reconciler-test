@@ -23,12 +23,15 @@ import (
 	"fmt"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
 	"knative.dev/reconciler-test/pkg/resources/cronjob"
+	"knative.dev/reconciler-test/resources/certificate"
 )
 
 func TestCronJobInstall(t *testing.T) {
@@ -58,4 +61,25 @@ func TestCronJobInstall(t *testing.T) {
 		AsFeature(),
 	)
 	env.Test(ctx, t, cronjob.AtLeastOneIsSucceeded(name).AsFeature())
+}
+
+func TestRotateCertificates(t *testing.T) {
+
+	ctx, env := global.Environment()
+
+	ns := "knative-reconciler-test"
+
+	env.Test(ctx, t,
+		certificate.Rotate(
+			certificate.RotateCertificate{
+				Certificate: types.NamespacedName{
+					Namespace: ns,
+					Name:      "test-certificate",
+				},
+				Secret: types.NamespacedName{
+					Namespace: ns,
+					Name:      "test-certificate-tls",
+				},
+			},
+		).AsFeature())
 }
