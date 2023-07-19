@@ -72,6 +72,7 @@ func receiverTLS() *feature.Feature {
 
 	sinkName := feature.MakeRandomK8sName("sink")
 	sourceName := feature.MakeRandomK8sName("source")
+	secretName := fmt.Sprintf("server-tls-%s", sinkName)
 
 	event := cetest.FullEvent()
 	event.SetID(uuid.New().String())
@@ -85,7 +86,7 @@ func receiverTLS() *feature.Feature {
 		)(ctx, t)
 	})
 
-	f.Assert("TLS certificate pair secret is present", secret.IsPresent(fmt.Sprintf("server-tls-%s", sinkName)))
+	f.Assert("TLS certificate pair secret is present", secret.IsPresent(secretName))
 
 	f.Assert("Receive event", assert.OnStore(sinkName).
 		MatchReceivedEvent(cetest.HasId(event.ID())).
@@ -93,6 +94,10 @@ func receiverTLS() *feature.Feature {
 	)
 	f.Assert("Sent event", assert.OnStore(sourceName).
 		MatchSentEvent(cetest.HasId(event.ID())).
+		AtLeast(1),
+	)
+	f.Assert("Sender received expected peer certificate", assert.OnStore(sourceName).
+		MatchPeerCertificatesReceived(assert.MatchPeerCertificatesFromSecret(secretName, "tls.crt")).
 		AtLeast(1),
 	)
 
