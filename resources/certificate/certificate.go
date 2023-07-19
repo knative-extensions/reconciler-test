@@ -141,14 +141,16 @@ func rotateCertificate(ctx context.Context, rotate RotateCertificate) error {
 }
 
 func waitForRotation(ctx context.Context, t feature.T, rotate RotateCertificate, before *corev1.Secret) {
+	keys := []string{"tls.key", "tls.crt"}
 	err := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
 		current := getSecret(ctx, t, rotate)
-		for k, v := range before.Data {
-			if !bytes.Equal(v, current.Data[k]) {
-				return true, nil
+		for _, key := range keys {
+			if bytes.Equal(before.Data[key], current.Data[key]) {
+				t.Logf("Value for key %s is equal", key)
+				return false, nil
 			}
 		}
-		return false, nil
+		return true, nil
 	})
 	if err != nil {
 		t.Errorf("Failed while waiting for Certificate rotation to happen: %v", err)

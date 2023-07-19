@@ -112,11 +112,11 @@ func TestRotateCertificates(t *testing.T) {
 			t.Errorf("Failed to get secret %s/%s: %v", secret.Namespace, secret.Name, err)
 		}
 
-		if isEqualKey(before, after, "tls.key") {
-			t.Errorf("Certificates rotation didn't happen tls.key is equal")
-		}
 		if isEqualKey(before, after, "tls.crt") {
 			t.Errorf("Certificates rotation didn't happen tls.crt is equal")
+		}
+		if isEqualKey(before, after, "tls.key") {
+			t.Errorf("Certificates rotation didn't happen tls.key is equal")
 		}
 	})
 
