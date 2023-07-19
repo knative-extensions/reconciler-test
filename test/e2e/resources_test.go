@@ -74,14 +74,15 @@ func TestRotateCertificates(t *testing.T) {
 
 	ns := "knative-reconciler-test"
 
+	secret := types.NamespacedName{
+		Namespace: ns,
+		Name:      "test-certificate-tls",
+	}
+
 	rc := certificate.RotateCertificate{
 		Certificate: types.NamespacedName{
 			Namespace: ns,
 			Name:      "test-certificate",
-		},
-		Secret: types.NamespacedName{
-			Namespace: ns,
-			Name:      "test-certificate-tls",
 		},
 	}
 
@@ -93,10 +94,10 @@ func TestRotateCertificates(t *testing.T) {
 		var err error
 		before, err = kubeclient.Get(ctx).
 			CoreV1().
-			Secrets(rc.Secret.Namespace).
-			Get(ctx, rc.Secret.Name, metav1.GetOptions{})
+			Secrets(secret.Namespace).
+			Get(ctx, secret.Name, metav1.GetOptions{})
 		if err != nil {
-			t.Errorf("Failed to get secret %s/%s: %v", rc.Secret.Namespace, rc.Secret.Name, err)
+			t.Errorf("Failed to get secret %s/%s: %v", secret.Namespace, secret.Name, err)
 		}
 	})
 
@@ -105,10 +106,10 @@ func TestRotateCertificates(t *testing.T) {
 	f.Assert("verify different certificates", func(ctx context.Context, t feature.T) {
 		after, err := kubeclient.Get(ctx).
 			CoreV1().
-			Secrets(rc.Secret.Namespace).
-			Get(ctx, rc.Secret.Name, metav1.GetOptions{})
+			Secrets(secret.Namespace).
+			Get(ctx, secret.Name, metav1.GetOptions{})
 		if err != nil {
-			t.Errorf("Failed to get secret %s/%s: %v", rc.Secret.Namespace, rc.Secret.Name, err)
+			t.Errorf("Failed to get secret %s/%s: %v", secret.Namespace, secret.Name, err)
 		}
 
 		if isEqualKey(before, after, "tls.key") {
