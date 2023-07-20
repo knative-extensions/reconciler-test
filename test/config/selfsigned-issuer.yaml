@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Copyright 2023 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,16 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -Eeo pipefail
+# This is the root issuer to bootstrap the eventing CA.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-issuer
+  namespace: knative-reconciler-test
+spec:
+  selfSigned: {}
+---
+# This is the Eventing CA certificate.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: selfsigned-ca
+  namespace: knative-reconciler-test
+spec:
+  secretName: reconciler-test-ca
 
-root_dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
-readonly root_dir
+  isCA: true
+  commonName: selfsigned-ca
+  privateKey:
+    algorithm: ECDSA
+    size: 256
 
-source "${root_dir}/vendor/knative.dev/hack/e2e-tests.sh"
-
-function test_setup() {
-  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml || return $?
-  wait_until_pods_running cert-manager || return $?
-
-  kubectl apply -f "${root_dir}/test/config" || return $?
-}
+  issuerRef:
+    name: selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
