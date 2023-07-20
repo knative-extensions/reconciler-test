@@ -20,8 +20,15 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
@@ -29,6 +36,7 @@ import (
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
 	"knative.dev/reconciler-test/pkg/resources/cronjob"
+	"knative.dev/reconciler-test/resources/certificate"
 )
 
 func TestCronJobInstall(t *testing.T) {
@@ -58,4 +66,63 @@ func TestCronJobInstall(t *testing.T) {
 		AsFeature(),
 	)
 	env.Test(ctx, t, cronjob.AtLeastOneIsSucceeded(name).AsFeature())
+}
+
+func TestRotateCertificates(t *testing.T) {
+
+	ctx, env := global.Environment()
+
+	ns := "knative-reconciler-test"
+
+	secret := types.NamespacedName{
+		Namespace: ns,
+		Name:      "test-certificate-tls",
+	}
+
+	rc := certificate.RotateCertificate{
+		Certificate: types.NamespacedName{
+			Namespace: ns,
+			Name:      "test-certificate",
+		},
+	}
+
+	f := feature.NewFeatureNamed("Rotate certificates")
+
+	var before *corev1.Secret
+
+	f.Setup("get secret", func(ctx context.Context, t feature.T) {
+		var err error
+		before, err = kubeclient.Get(ctx).
+			CoreV1().
+			Secrets(secret.Namespace).
+			Get(ctx, secret.Name, metav1.GetOptions{})
+		if err != nil {
+			t.Errorf("Failed to get secret %s/%s: %v", secret.Namespace, secret.Name, err)
+		}
+	})
+
+	f.Requirement("rotate certs", certificate.Rotate(rc))
+
+	f.Assert("verify different certificates", func(ctx context.Context, t feature.T) {
+		after, err := kubeclient.Get(ctx).
+			CoreV1().
+			Secrets(secret.Namespace).
+			Get(ctx, secret.Name, metav1.GetOptions{})
+		if err != nil {
+			t.Errorf("Failed to get secret %s/%s: %v", secret.Namespace, secret.Name, err)
+		}
+
+		if isEqualKey(before, after, "tls.crt") {
+			t.Errorf("Certificates rotation didn't happen tls.crt is equal")
+		}
+		if isEqualKey(before, after, "tls.key") {
+			t.Errorf("Certificates rotation didn't happen tls.key is equal")
+		}
+	})
+
+	env.Test(ctx, t, f)
+}
+
+func isEqualKey(s1, s2 *corev1.Secret, key string) bool {
+	return bytes.Equal(s1.Data[key], s2.Data[key])
 }
