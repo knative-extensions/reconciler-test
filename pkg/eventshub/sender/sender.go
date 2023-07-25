@@ -143,33 +143,9 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		logging.FromContext(ctx).Info("awake, continuing")
 	}
 
-	httpClient := nethttp.DefaultClient
-	transport := nethttp.DefaultTransport.(*nethttp.Transport)
-
-	if env.EnforceTLS {
-		caCertPool, err := x509.SystemCertPool()
-		if err != nil {
-			return fmt.Errorf("failed to create cert pool %s: %w", env.Sink, err)
-		}
-		caCertPool.AppendCertsFromPEM([]byte(env.CACerts))
-
-		transport = nethttp.DefaultTransport.(*nethttp.Transport).Clone()
-
-		// Force multiple TLS handshakes
-		transport.DisableKeepAlives = true
-		transport.IdleConnTimeout = 500 * time.Millisecond
-
-		transport.TLSClientConfig = &tls.Config{
-			RootCAs:    caCertPool,
-			MinVersion: tls.VersionTLS12,
-			VerifyConnection: func(state tls.ConnectionState) error {
-				if err := logs.Vent(env.peerCertificatesReceived(state)); err != nil {
-					return err
-				}
-				return nil
-			},
-		}
-		httpClient = &nethttp.Client{Transport: transport}
+	httpClient, _, err := createClient(env, logs)
+	if err != nil {
+		return err
 	}
 
 	if env.ProbeSink {
@@ -191,12 +167,6 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		}
 	}
 
-	for _, opt := range clientOpts {
-		if err := opt(httpClient); err != nil {
-			return fmt.Errorf("unable to apply option: %w", err)
-		}
-	}
-
 	switch env.EventEncoding {
 	case "binary":
 		ctx = cloudevents.WithEncodingBinary(ctx)
@@ -209,7 +179,18 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 	ticker := time.NewTicker(period)
 	for {
 
-		transport.CloseIdleConnections()
+		// when enforcing TLS we want to create multiple transports to force multiple TLS handshakes
+		// on each request sent so that VerifyConnection is called multiple times.
+		httpClient, _, err = createClient(env, logs)
+		if err != nil {
+			return err
+		}
+
+		for _, opt := range clientOpts {
+			if err := opt(httpClient); err != nil {
+				return fmt.Errorf("unable to apply option: %w", err)
+			}
+		}
 
 		ctx, span := trace.StartSpan(ctx, "eventshub-sender")
 
@@ -257,6 +238,36 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 			return nil
 		}
 	}
+}
+
+func createClient(env generator, logs *eventshub.EventLogs) (*nethttp.Client, *nethttp.Transport, error) {
+	if env.EnforceTLS {
+		caCertPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create cert pool %s: %w", env.Sink, err)
+		}
+		caCertPool.AppendCertsFromPEM([]byte(env.CACerts))
+
+		transport := nethttp.DefaultTransport.(*nethttp.Transport).Clone()
+
+		// Force multiple TLS handshakes
+		transport.DisableKeepAlives = true
+		transport.IdleConnTimeout = 500 * time.Millisecond
+
+		transport.TLSClientConfig = &tls.Config{
+			RootCAs:    caCertPool,
+			MinVersion: tls.VersionTLS12,
+			VerifyConnection: func(state tls.ConnectionState) error {
+				if err := logs.Vent(env.peerCertificatesReceived(state)); err != nil {
+					return err
+				}
+				return nil
+			},
+		}
+		return &nethttp.Client{Transport: transport}, transport, nil
+	}
+
+	return nethttp.DefaultClient, nethttp.DefaultTransport.(*nethttp.Transport), nil
 }
 
 func (g *generator) peerCertificatesReceived(state tls.ConnectionState) eventshub.EventInfo {
