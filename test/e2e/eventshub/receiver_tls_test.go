@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	cetest "github.com/cloudevents/sdk-go/v2/test"
 	"github.com/google/uuid"
@@ -83,6 +84,7 @@ func receiverTLS() *feature.Feature {
 		eventshub.Install(sourceName,
 			eventshub.StartSenderToResourceTLS(eventshub.ReceiverGVR(ctx), sinkName, eventshub.GetCaCerts(ctx)),
 			eventshub.InputEvent(event),
+			eventshub.SendMultipleEvents(10, time.Second),
 		)(ctx, t)
 	})
 
@@ -98,7 +100,7 @@ func receiverTLS() *feature.Feature {
 	)
 	f.Assert("Sender received expected peer certificate", assert.OnStore(sourceName).
 		MatchPeerCertificatesReceived(assert.MatchPeerCertificatesFromSecret(secretName, "tls.crt")).
-		AtLeast(1),
+		AtLeast(5),
 	)
 
 	return f
