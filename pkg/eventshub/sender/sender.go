@@ -144,6 +144,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 	}
 
 	httpClient := nethttp.DefaultClient
+	transport := nethttp.DefaultTransport.(*nethttp.Transport)
 
 	if env.EnforceTLS {
 		caCertPool, err := x509.SystemCertPool()
@@ -152,7 +153,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		}
 		caCertPool.AppendCertsFromPEM([]byte(env.CACerts))
 
-		transport := nethttp.DefaultTransport.(*nethttp.Transport).Clone()
+		transport = nethttp.DefaultTransport.(*nethttp.Transport).Clone()
 		transport.TLSClientConfig = &tls.Config{
 			RootCAs:    caCertPool,
 			MinVersion: tls.VersionTLS12,
@@ -202,6 +203,8 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 
 	ticker := time.NewTicker(period)
 	for {
+
+		transport.CloseIdleConnections()
 
 		ctx, span := trace.StartSpan(ctx, "eventshub-sender")
 
