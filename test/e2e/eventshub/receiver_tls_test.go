@@ -92,11 +92,11 @@ func receiverTLS() *feature.Feature {
 
 	f.Assert("Receive event", assert.OnStore(sinkName).
 		MatchReceivedEvent(cetest.HasId(event.ID())).
-		AtLeast(1),
+		AtLeast(10),
 	)
 	f.Assert("Sent event", assert.OnStore(sourceName).
 		MatchSentEvent(cetest.HasId(event.ID())).
-		AtLeast(1),
+		AtLeast(10),
 	)
 	f.Assert("Sender received expected peer certificate", assert.OnStore(sourceName).
 		MatchPeerCertificatesReceived(assert.MatchPeerCertificatesFromSecret(secretName, "tls.crt")).
