@@ -154,6 +154,11 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		caCertPool.AppendCertsFromPEM([]byte(env.CACerts))
 
 		transport = nethttp.DefaultTransport.(*nethttp.Transport).Clone()
+
+		// Force multiple TLS handshakes
+		transport.DisableKeepAlives = true
+		transport.IdleConnTimeout = 500 * time.Millisecond
+
 		transport.TLSClientConfig = &tls.Config{
 			RootCAs:    caCertPool,
 			MinVersion: tls.VersionTLS12,
