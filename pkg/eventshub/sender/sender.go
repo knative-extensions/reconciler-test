@@ -39,6 +39,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/types"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/trace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/logging"
@@ -116,6 +117,10 @@ type generator struct {
 	eventQueue []conformanceevent.Event
 }
 
+var (
+	verifyConnectionCounter = atomic.NewUint64(0)
+)
+
 func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventshub.ClientOption) error {
 	var env generator
 	if err := envconfig.Process("", &env); err != nil {
@@ -143,7 +148,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		logging.FromContext(ctx).Info("awake, continuing")
 	}
 
-	httpClient, _, err := createClient(env, logs)
+	httpClient, _, err := createClient(ctx, env, logs)
 	if err != nil {
 		return err
 	}
@@ -181,7 +186,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 
 		// when enforcing TLS we want to create multiple transports to force multiple TLS handshakes
 		// on each request sent so that VerifyConnection is called multiple times.
-		httpClient, _, err = createClient(env, logs)
+		httpClient, _, err = createClient(ctx, env, logs)
 		if err != nil {
 			return err
 		}
@@ -240,7 +245,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 	}
 }
 
-func createClient(env generator, logs *eventshub.EventLogs) (*nethttp.Client, *nethttp.Transport, error) {
+func createClient(ctx context.Context, env generator, logs *eventshub.EventLogs) (*nethttp.Client, *nethttp.Transport, error) {
 	if env.EnforceTLS {
 		caCertPool, err := x509.SystemCertPool()
 		if err != nil {
@@ -258,7 +263,9 @@ func createClient(env generator, logs *eventshub.EventLogs) (*nethttp.Client, *n
 			RootCAs:    caCertPool,
 			MinVersion: tls.VersionTLS12,
 			VerifyConnection: func(state tls.ConnectionState) error {
-				if err := logs.Vent(env.peerCertificatesReceived(state)); err != nil {
+				logging.FromContext(ctx).Infow("VerifyConnection")
+
+				if err := logs.Vent(env.peerCertificatesReceived(verifyConnectionCounter.Inc(), state)); err != nil {
 					return err
 				}
 				return nil
@@ -270,13 +277,14 @@ func createClient(env generator, logs *eventshub.EventLogs) (*nethttp.Client, *n
 	return nethttp.DefaultClient, nethttp.DefaultTransport.(*nethttp.Transport), nil
 }
 
-func (g *generator) peerCertificatesReceived(state tls.ConnectionState) eventshub.EventInfo {
+func (g *generator) peerCertificatesReceived(counter uint64, state tls.ConnectionState) eventshub.EventInfo {
 	return eventshub.EventInfo{
 		Kind:       eventshub.PeerCertificatesReceived,
 		Connection: eventshub.TLSConnectionStateToConnection(&state),
 		Origin:     g.SenderName,
 		Observer:   g.SenderName,
 		Time:       time.Now(),
+		Sequence:   counter,
 	}
 }
 
