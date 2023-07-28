@@ -99,7 +99,9 @@ func receiverTLS() *feature.Feature {
 		AtLeast(10),
 	)
 	f.Assert("Sender received expected peer certificate", assert.OnStore(sourceName).
-		MatchPeerCertificatesReceived(assert.MatchPeerCertificatesFromSecret(secretName, "tls.crt")).
+		MatchPeerCertificatesReceived(func(ctx context.Context, info eventshub.EventInfo) error {
+			return assert.MatchPeerCertificatesFromSecret(environment.FromContext(ctx).Namespace(), secretName, "tls.crt")(ctx, info)
+		}).
 		AtLeast(5),
 	)
 
