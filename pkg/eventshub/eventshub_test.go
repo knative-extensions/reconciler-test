@@ -309,7 +309,7 @@ func ExampleForwarder() {
 	// spec:
 	//   template:
 	//     spec:
-	//       serviceAccountName: "example"
+	//       serviceAccountName: "hubhub"
 	//       containers:
 	//         - name: eventshub-forwarder
 	//           image: uri://a-real-container
