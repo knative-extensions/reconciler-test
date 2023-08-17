@@ -154,6 +154,7 @@ func ExampleIstioAnnotation() {
 	//   labels:
 	//     app: eventshub-hubhub
 	//   annotations:
+	//       proxy.istio.io/config: "{ 'holdApplicationUntilProxyStarts': true }"
 	//       sidecar.istio.io/inject: "true"
 	//       sidecar.istio.io/rewriteAppHTTPProbers: "true"
 	// spec:
