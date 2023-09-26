@@ -32,6 +32,8 @@ import (
 
 //go:embed *.yaml
 var yaml embed.FS
+var WithLabels = manifest.WithLabels
+var WithAnnotations = manifest.WithAnnotations
 
 func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 	cfg := map[string]interface{}{

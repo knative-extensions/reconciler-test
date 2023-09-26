@@ -20,7 +20,6 @@ import (
 	"embed"
 	"os"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 	"knative.dev/reconciler-test/pkg/resources/serviceaccount"
@@ -59,22 +58,12 @@ func Example_full() {
 		"namespace": "bar",
 	}
 
-	controller := true
 	opts := []manifest.CfgFn{
 		serviceaccount.WithLabels(map[string]string{
 			"color": "green",
 		}),
 		serviceaccount.WithAnnotations(map[string]interface{}{
 			"app.kubernetes.io/name": "app",
-		}),
-		serviceaccount.WithOwnerReferences([]metav1.OwnerReference{
-			{
-				APIVersion: "eventing.knative.dev/v1",
-				Kind:       "Trigger",
-				Name:       "my-trigger",
-				UID:        "my-trigger-uid",
-				Controller: &controller,
-			},
 		}),
 	}
 
@@ -98,10 +87,4 @@ func Example_full() {
 	//     app.kubernetes.io/name: "app"
 	//   labels:
 	//     color: "green"
-	//   ownerReferences:
-	//     - apiVersion: eventing.knative.dev/v1
-	//       kind: Trigger
-	//       name: my-trigger
-	//       uid: my-trigger-uid
-	//       controller: true
 }
