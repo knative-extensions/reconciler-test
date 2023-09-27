@@ -19,7 +19,8 @@ set -Eeo pipefail
 root_dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
 readonly root_dir
 
-source "${root_dir}/vendor/knative.dev/hack/e2e-tests.sh"
+# shellcheck disable=SC1090
+source "$(go run knative.dev/hack/cmd/script e2e-tests.sh)"
 
 function test_setup() {
   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml || return $?

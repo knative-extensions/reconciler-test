@@ -16,6 +16,7 @@
 
 set -Eeuo pipefail
 
-source "$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")/vendor/knative.dev/hack/presubmit-tests.sh"
+# shellcheck disable=SC1090
+source "$(go run knative.dev/hack/cmd/script presubmit-tests.sh)"
 
 main "$@"
