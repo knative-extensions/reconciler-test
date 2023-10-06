@@ -37,8 +37,8 @@ const (
 	ConfigLoggingEnv   = "K_CONFIG_LOGGING"
 	EventGeneratorsEnv = "EVENT_GENERATORS"
 	EventLogsEnv       = "EVENT_LOGS"
-	SinkAudienceEnv    = "SINK_AUDIENCE"
 	EnableOIDCAuthEnv  = "ENABLE_OIDC_AUTH"
+	OIDCTokenEnv       = "OIDC_TOKEN"
 
 	EnforceTLS = "ENFORCE_TLS"
 )

@@ -53,9 +53,6 @@ var serviceTLSCertificate embed.FS
 //go:embed 105-issuer-ca.yaml 105-certificate-ca.yaml 105-issuer-certificate.yaml
 var caTLSCertificates embed.FS
 
-//go:embed 106-oidc-sa.yaml
-var oidcServiceAccount embed.FS
-
 const (
 	caSecretName = "eventshub-ca"
 )
@@ -117,15 +114,21 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			"image":          ImageFromContext(ctx),
 			"isReceiver":     isReceiver,
 			"withEnforceTLS": isEnforceTLS,
-			"clusterDomain":  network.GetClusterDomainName(),
 			"withOIDCAuth":   isOIDCAuth,
+			"clusterDomain":  network.GetClusterDomainName(),
 		}
 
-		if isOIDCAuth {
-			if _, err := manifest.InstallYamlFS(ctx, oidcServiceAccount, cfg); err != nil {
-				log.Fatal(err)
+		if isOIDCAuth && !isReceiver {
+			if _, ok := envs[OIDCTokenEnv]; !ok {
+				log.Fatal("OIDC token for sender required, when OIDC is enabled")
 			}
-			envs["OIDC_SERVICE_ACCOUNT_NAME"] = fmt.Sprintf("oidc-%s", name)
+
+			secret.Install(fmt.Sprintf("oidc-%s", name), secret.WithStringData(map[string]string{
+				"token": envs[OIDCTokenEnv],
+			}))(ctx, t)
+
+			// remove the token from the env vars
+			delete(envs, OIDCTokenEnv)
 		}
 
 		// Install ServiceAccount, Role, RoleBinding

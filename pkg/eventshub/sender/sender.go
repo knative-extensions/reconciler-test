@@ -25,8 +25,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	nethttp "net/http"
+	"os"
 	"strconv"
 	"time"
 	"unicode"
@@ -44,11 +44,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/logging"
 
-	authv1 "k8s.io/api/authentication/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/reconciler-test/pkg/eventshub"
-
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
 type generator struct {
@@ -59,9 +55,6 @@ type generator struct {
 
 	// CACert is the certificate for enabling HTTPS in Sink URL
 	CACerts string `envconfig:"CA_CERTS"`
-
-	// SinkAudience is the OIDC audience of the sink
-	SinkAudience string `envconfig:"SINK_AUDIENCE"`
 
 	// EnforceTLS is used to enforce TLS.
 	EnforceTLS bool `envconfig:"ENFORCE_TLS" default:"false"`
@@ -167,7 +160,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 	}
 
 	if env.EnableOIDCAuth {
-		jwt, err := getOIDCToken(ctx, env.SinkAudience, env.OIDCServiceAccount, env.SystemNamespace)
+		jwt, err := getOIDCToken()
 		if err != nil {
 			return err
 		}
@@ -551,7 +544,7 @@ func (g *generator) nextGenerated(ctx context.Context) (*nethttp.Request, *cloud
 	}
 
 	if g.InputBody != "" {
-		req.Body = ioutil.NopCloser(bytes.NewReader([]byte(g.InputBody)))
+		req.Body = io.NopCloser(bytes.NewReader([]byte(g.InputBody)))
 	}
 
 	return req, event, nil
@@ -569,23 +562,11 @@ func durationWithUnit(s string) string {
 	return s
 }
 
-func getOIDCToken(ctx context.Context, audience, oidcSAName, oidcSANamespace string) (string, error) {
-	kubeClient := kubeclient.Get(ctx)
-
-	tokenRequest := authv1.TokenRequest{
-		Spec: authv1.TokenRequestSpec{
-			Audiences: []string{audience},
-		},
-	}
-
-	tokenRequestResponse, err := kubeClient.
-		CoreV1().
-		ServiceAccounts(oidcSANamespace).
-		CreateToken(context.TODO(), oidcSAName, &tokenRequest, metav1.CreateOptions{})
-
+func getOIDCToken() (string, error) {
+	buf, err := os.ReadFile("/oidc/token")
 	if err != nil {
-		return "", fmt.Errorf("could not request a token for %s/%s: %w", oidcSANamespace, oidcSAName, err)
+		return "", fmt.Errorf("could not read token from file: %w", err)
 	}
 
-	return tokenRequestResponse.Status.Token, nil
+	return string(buf), nil
 }
