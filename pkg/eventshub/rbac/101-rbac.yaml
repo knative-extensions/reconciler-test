@@ -34,7 +34,7 @@ rules:
     resources:
       - "serviceaccounts/token"
     resourceNames:
-      - {{ .oidcSAName}}
+      - oidc-{{ .name }}
     verbs:
       - create
   {{ end }}

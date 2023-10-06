@@ -125,9 +125,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			if _, err := manifest.InstallYamlFS(ctx, oidcServiceAccount, cfg); err != nil {
 				log.Fatal(err)
 			}
-			saName := fmt.Sprintf("oidc-%s", name)
-			envs["OIDC_SERVICE_ACCOUNT_NAME"] = saName
-			cfg["oidcSAName"] = saName
+			envs["OIDC_SERVICE_ACCOUNT_NAME"] = fmt.Sprintf("oidc-%s", name)
 		}
 
 		// Install ServiceAccount, Role, RoleBinding
