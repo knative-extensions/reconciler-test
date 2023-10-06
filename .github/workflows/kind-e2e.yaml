@@ -11,7 +11,7 @@ jobs:
   e2e-tests:
     strategy:
       matrix:
-        go-version: [ 1.18.x ]
+        go-version: [ 1.20.x ]
         platform: [ ubuntu-latest ]
         kind-version: [ 0.14.0 ]
 
