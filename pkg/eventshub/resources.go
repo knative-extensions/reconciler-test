@@ -123,7 +123,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 				log.Fatal("OIDC token for sender required, when OIDC is enabled")
 			}
 
-			secret.Install(fmt.Sprintf("oidc-%s", name), secret.WithStringData(map[string]string{
+			secret.Install(fmt.Sprintf("oidc-token-%s", name), secret.WithStringData(map[string]string{
 				"token": envs[OIDCTokenEnv],
 			}))(ctx, t)
 
