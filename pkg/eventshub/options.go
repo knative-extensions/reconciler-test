@@ -268,11 +268,9 @@ func InputMethod(method string) EventsHubOption {
 	return envOption("INPUT_METHOD", method)
 }
 
-var EnableOIDCAuth = envOption(EnableOIDCAuthEnv, "true")
-
 // OIDCToken sets the token used for OIDC authentication
 func OIDCToken(jwt string) EventsHubOption {
-	return envOption(OIDCTokenEnv, jwt)
+	return compose(envOption(EnableOIDCAuthEnv, "true"), envOption(OIDCTokenEnv, jwt))
 }
 
 // AddTracing adds tracing headers when sending events.
