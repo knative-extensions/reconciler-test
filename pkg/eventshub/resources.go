@@ -53,6 +53,9 @@ var serviceTLSCertificate embed.FS
 //go:embed 105-issuer-ca.yaml 105-certificate-ca.yaml 105-issuer-certificate.yaml
 var caTLSCertificates embed.FS
 
+//go:embed 106-oidc-sa.yaml
+var oidcServiceAccount embed.FS
+
 const (
 	caSecretName = "eventshub-ca"
 )
@@ -92,6 +95,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 
 		isReceiver := strings.Contains(envs[EventGeneratorsEnv], "receiver")
 		isEnforceTLS := strings.Contains(envs[EnforceTLS], "true")
+		isOIDCAuth := strings.Contains(envs[EnableOIDCAuthEnv], "true")
 
 		var withForwarder bool
 		// Allow forwarder only when eventshub is receiver.
@@ -114,6 +118,16 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			"isReceiver":     isReceiver,
 			"withEnforceTLS": isEnforceTLS,
 			"clusterDomain":  network.GetClusterDomainName(),
+			"withOIDCAuth":   isOIDCAuth,
+		}
+
+		if isOIDCAuth {
+			if _, err := manifest.InstallYamlFS(ctx, oidcServiceAccount, cfg); err != nil {
+				log.Fatal(err)
+			}
+			saName := fmt.Sprintf("oidc-%s", name)
+			envs["OIDC_SERVICE_ACCOUNT_NAME"] = saName
+			cfg["oidcSAName"] = saName
 		}
 
 		// Install ServiceAccount, Role, RoleBinding

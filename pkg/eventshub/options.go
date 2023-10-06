@@ -90,10 +90,10 @@ func StartSenderToResource(gvr schema.GroupVersionResource, name string) EventsH
 		}
 
 		if u.URL.Scheme == "https" {
-			return StartSenderURLTLS(u.URL.String(), u.CACerts)(ctx, envs)
+			return compose(StartSenderURLTLS(u.URL.String(), u.CACerts), SinkAudience(u.Audience))(ctx, envs)
 		}
 
-		return StartSenderURL(u.URL.String())(ctx, envs)
+		return compose(StartSenderURL(u.URL.String()), SinkAudience(u.Audience))(ctx, envs)
 	}
 }
 
@@ -114,7 +114,7 @@ func StartSenderToResourceTLS(gvr schema.GroupVersionResource, name string, caCe
 		if caCerts == nil && u.CACerts != nil {
 			caCerts = u.CACerts
 		}
-		return StartSenderURLTLS(u.URL.String(), caCerts)(ctx, m)
+		return compose(StartSenderURLTLS(u.URL.String(), caCerts), SinkAudience(u.Audience))(ctx, m)
 	}
 }
 
@@ -266,6 +266,16 @@ func InputBody(b string) EventsHubOption {
 // InputMethod overrides which http method to use when sending events (default is POST)
 func InputMethod(method string) EventsHubOption {
 	return envOption("INPUT_METHOD", method)
+}
+
+var EnableOIDCAuth = envOption(EnableOIDCAuthEnv, "true")
+
+// SinkAudience defines the audience of the sink which will be used for OIDC authentication
+func SinkAudience(aud *string) EventsHubOption {
+	if aud != nil {
+		return envOption(SinkAudienceEnv, *aud)
+	}
+	return func(ctx context.Context, m map[string]string) error { return nil }
 }
 
 // AddTracing adds tracing headers when sending events.
