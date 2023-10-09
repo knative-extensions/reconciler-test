@@ -19,6 +19,7 @@ package eventshub
 import (
 	"context"
 	"embed"
+	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/utils/pointer"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
@@ -39,6 +41,13 @@ import (
 	"knative.dev/reconciler-test/pkg/resources/knativeservice"
 	"knative.dev/reconciler-test/pkg/resources/secret"
 	"knative.dev/reconciler-test/pkg/resources/service"
+	"knative.dev/reconciler-test/pkg/resources/serviceaccount"
+
+	authv1 "k8s.io/api/authentication/v1"
+)
+
+const (
+	OIDCTokenExiryMinutes = 10
 )
 
 //go:embed 102-service.yaml 103-pod.yaml
@@ -92,7 +101,7 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 
 		isReceiver := strings.Contains(envs[EventGeneratorsEnv], "receiver")
 		isEnforceTLS := strings.Contains(envs[EnforceTLS], "true")
-		isOIDCAuth := strings.Contains(envs[EnableOIDCAuthEnv], "true")
+		isOIDCEnabled := strings.Contains(envs[OIDCEnabledEnv], "true")
 
 		var withForwarder bool
 		// Allow forwarder only when eventshub is receiver.
@@ -113,21 +122,35 @@ func Install(name string, options ...EventsHubOption) feature.StepFn {
 			"envs":           envs,
 			"image":          ImageFromContext(ctx),
 			"isReceiver":     isReceiver,
+			"withOIDCAuth":   isOIDCEnabled,
 			"withEnforceTLS": isEnforceTLS,
-			"withOIDCAuth":   isOIDCAuth,
 			"clusterDomain":  network.GetClusterDomainName(),
 		}
 
-		if isOIDCAuth && !isReceiver {
-			if _, ok := envs[OIDCTokenEnv]; !ok {
-				log.Fatal("OIDC token for sender required, when OIDC is enabled")
+		if isOIDCEnabled && !isReceiver {
+			// install oidc sa
+			oidcSAName := fmt.Sprintf("oidc-%s", name)
+			serviceaccount.Install(oidcSAName)(ctx, t)
+
+			// generate token
+			token := envs[OIDCTokenEnv]
+			if token == "" {
+				var err error
+
+				token, err = generateOIDCToken(ctx, oidcSAName, envs)
+				if err != nil {
+					t.Fatalf("could not generate OIDC token: %w", err)
+				}
 			}
 
-			secret.Install(fmt.Sprintf("oidc-token-%s", name), secret.WithStringData(map[string]string{
-				"token": envs[OIDCTokenEnv],
+			// install oidc secret & enable mounting
+			oidcSecretName := fmt.Sprintf("oidc-token-%s", name)
+			secret.Install(oidcSecretName, secret.WithStringData(map[string]string{
+				"token": token,
 			}))(ctx, t)
+			cfg["oidcSAName"] = oidcSAName
 
-			// remove the token from the env vars
+			// remove token from envs
 			delete(envs, OIDCTokenEnv)
 		}
 
@@ -249,4 +272,64 @@ func getCACertsFromSecret(ctx context.Context) ([]byte, error) {
 
 	caCrt, _ := s.Data["ca.crt"]
 	return caCrt, nil
+}
+
+func generateOIDCToken(ctx context.Context, saName string, envs map[string]string) (string, error) {
+	kubeClient := kubeclient.Get(ctx)
+	namespace := environment.FromContext(ctx).Namespace()
+
+	wantExpiredToken := strings.Contains(envs[OIDCGenerateExpiredTokenEnv], "true")
+	wantInvalidAudienceToken := strings.Contains(envs[OIDCGenerateInvalidAudienceTokenEnv], "true")
+	wantCorruptedSignatureToken := strings.Contains(envs[OIDCGenerateCorruptedSignatureTokenEnv], "true")
+
+	// we start with a valid token
+	tokenRequest := authv1.TokenRequest{
+		Spec: authv1.TokenRequestSpec{
+			Audiences: []string{
+				envs[OIDCSinkAudienceEnv],
+			},
+		},
+	}
+
+	if wantExpiredToken {
+		tokenRequest.Spec.ExpirationSeconds = pointer.Int64(OIDCTokenExiryMinutes * 60)
+	}
+
+	if wantInvalidAudienceToken {
+		tokenRequest.Spec.Audiences = []string{
+			fmt.Sprintf("invalid-%s", envs[OIDCSinkAudienceEnv]),
+		}
+	}
+
+	// request token
+	tokenRequestResponse, err := kubeClient.
+		CoreV1().
+		ServiceAccounts(namespace).
+		CreateToken(context.TODO(), saName, &tokenRequest, metav1.CreateOptions{})
+
+	if err != nil {
+		return "", fmt.Errorf("could not request a token for %s: %w", saName, err)
+	}
+
+	// do post request steps
+	token := tokenRequestResponse.Status.Token
+
+	if wantCorruptedSignatureToken {
+		parts := strings.Split(token, ".")
+		if len(parts) != 3 {
+			return "", fmt.Errorf("could not split token into header, payload and signature")
+		}
+
+		headerB64, payloadB64, signatureB64 := parts[0], parts[1], parts[2]
+
+		signature, err := base64.StdEncoding.DecodeString(signatureB64)
+		if err != nil {
+			return "", fmt.Errorf("could not base64 decode signature: %w", err)
+		}
+		signatureB64 = base64.StdEncoding.EncodeToString([]byte(signature[1:])) // remove first char from signatur --> invalidate
+
+		token = fmt.Sprintf("%s.%s.%s", headerB64, payloadB64, signatureB64)
+	}
+
+	return token, nil
 }

@@ -29,6 +29,15 @@ rules:
       - "events"
     verbs:
       - "*"
+  {{ if .withOIDCAuth }}
+  - apiGroups: [ "" ]
+    resources:
+      - "serviceaccounts/token"
+    resourceNames:
+      - {{ .oidcSAName }}
+    verbs:
+      - create
+  {{ end }}
 
 ---
 

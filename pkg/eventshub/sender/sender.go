@@ -62,9 +62,6 @@ type generator struct {
 	// EnableOIDC is used to enable OIDC authentication.
 	EnableOIDCAuth bool `envconfig:"ENABLE_OIDC_AUTH" default:"false"`
 
-	// OIDCServiceAccount is the name of the service account used for OIDC authentication
-	OIDCServiceAccount string `envconfig:"OIDC_SERVICE_ACCOUNT_NAME"`
-
 	// The duration to wait before starting sending the first message
 	Delay string `envconfig:"DELAY" default:"5" required:"false"`
 
