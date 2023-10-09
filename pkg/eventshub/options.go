@@ -273,8 +273,12 @@ func OIDCValidToken() EventsHubOption {
 	return compose(envOption(OIDCGenerateValidTokenEnv, "true"), envOIDCEnabled())
 }
 
-// OIDCExpiredToken adds an expired OIDC token to the request. As the minimal expiry for
-// JWTs from Kubernetes are 10 minutes, the sender will delay the send by 10 + 1 minutes.
+// OIDCExpiredToken adds an expired OIDC token to the request. As the minimal
+// expiry for JWTs from Kubernetes are 10 minutes, the sender will delay the
+// send by 10 + 1 minutes.
+// This should be used in combination of an increase of the RetryTimings (via
+// eventshub.WithRetryTimings()) not not run in the default 4 minute timeout
+// while waiting for an event which is send after 10 + 1 minutes.
 func OIDCExpiredToken() EventsHubOption {
 	return compose(envOption(OIDCGenerateExpiredTokenEnv, "true"), InitialSenderDelay(time.Minute*(OIDCTokenExiryMinutes+1)), envOIDCEnabled())
 }
