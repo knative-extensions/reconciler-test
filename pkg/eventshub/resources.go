@@ -324,9 +324,11 @@ func generateOIDCToken(ctx context.Context, saName string, envs map[string]strin
 
 		signature, err := base64.StdEncoding.DecodeString(signatureB64)
 		if err != nil {
-			return "", fmt.Errorf("could not base64 decode signature: %w", err)
+			// the signature may or may not encoded. When err != nil, it probably was not encoded --> use directly
+			signatureB64 = signatureB64[1:] // remove first char from signature --> invalidate
+		} else {
+			signatureB64 = base64.StdEncoding.EncodeToString([]byte(signature[1:])) // remove first char from signature --> invalidate
 		}
-		signatureB64 = base64.StdEncoding.EncodeToString([]byte(signature[1:])) // remove first char from signatur --> invalidate
 
 		token = fmt.Sprintf("%s.%s.%s", headerB64, payloadB64, signatureB64)
 	}
