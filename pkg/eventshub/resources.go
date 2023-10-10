@@ -47,7 +47,7 @@ import (
 )
 
 const (
-	OIDCTokenExiryMinutes = 10
+	OIDCTokenExpiryMinutes = 10
 )
 
 //go:embed 102-service.yaml 103-pod.yaml
@@ -292,7 +292,7 @@ func generateOIDCToken(ctx context.Context, saName string, envs map[string]strin
 	}
 
 	if wantExpiredToken {
-		tokenRequest.Spec.ExpirationSeconds = pointer.Int64(OIDCTokenExiryMinutes * 60)
+		tokenRequest.Spec.ExpirationSeconds = pointer.Int64(OIDCTokenExpiryMinutes * 60)
 	}
 
 	if wantInvalidAudienceToken {

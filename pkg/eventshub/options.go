@@ -280,7 +280,7 @@ func OIDCValidToken() EventsHubOption {
 // eventshub.WithRetryTimings()) not not run in the default 4 minute timeout
 // while waiting for an event which is send after 10 + 1 minutes.
 func OIDCExpiredToken() EventsHubOption {
-	return compose(envOption(OIDCGenerateExpiredTokenEnv, "true"), InitialSenderDelay(time.Minute*(OIDCTokenExiryMinutes+1)), envOIDCEnabled())
+	return compose(envOption(OIDCGenerateExpiredTokenEnv, "true"), InitialSenderDelay(time.Minute*(OIDCTokenExpiryMinutes+1)), envOIDCEnabled())
 }
 
 // OIDCInvalidAudience creates an OIDC token with an invalid audience
