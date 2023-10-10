@@ -19,18 +19,10 @@ package pod
 import (
 	"context"
 	"embed"
-	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/manifest"
-
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
 //go:embed *.yaml
@@ -66,32 +58,4 @@ func registerImage(ctx context.Context, image string) error {
 	reg := environment.RegisterPackage(image)
 	_, err := reg(ctx, environment.FromContext(ctx))
 	return err
-}
-
-func WaitForCompleted(name string, timing ...time.Duration) feature.StepFn {
-	return func(ctx context.Context, t feature.T) {
-		interval, timeout := k8s.PollTimings(ctx, timing)
-
-		err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-			client := kubeclient.Get(ctx)
-			namespace := environment.FromContext(ctx).Namespace()
-
-			pod, err := client.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
-			if err != nil {
-				if apierrors.IsNotFound(err) {
-					t.Logf("pod %s not found", name)
-					// keep polling
-					return false, nil
-				}
-				return false, err
-			}
-
-			return pod.Status.Phase == corev1.PodSucceeded, nil
-		})
-
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
 }

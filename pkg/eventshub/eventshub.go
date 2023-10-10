@@ -18,15 +18,12 @@ package eventshub
 
 import (
 	"context"
-	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"golang.org/x/sync/errgroup"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
-	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/pkg/resources/pod"
 )
 
 type envConfig struct {
@@ -101,8 +98,4 @@ func startEventGenerators(ctx context.Context, factories map[string]EventGenerat
 		})
 	}
 	return errs.Wait()
-}
-
-func WaitForCompleted(name string, timing ...time.Duration) feature.StepFn {
-	return pod.WaitForCompleted(name, timing...)
 }
