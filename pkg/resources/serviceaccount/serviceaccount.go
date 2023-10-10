@@ -19,14 +19,8 @@ package serviceaccount
 import (
 	"context"
 	"embed"
-	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
@@ -47,32 +41,6 @@ func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
 		if _, err := manifest.InstallYamlFS(ctx, yaml, cfg); err != nil {
 			t.Fatal(err)
-		}
-	}
-}
-
-// WaitForBeingAvailable waits until the given service account was created by
-// some 3rd party
-func WaitForBeingAvailable(name string, timing ...time.Duration) feature.StepFn {
-	return func(ctx context.Context, t feature.T) {
-		env := environment.FromContext(ctx)
-		interval, timeout := k8s.PollTimings(ctx, timing)
-		var lastErr error
-
-		err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-			_, err := client.Get(ctx).
-				CoreV1().
-				ServiceAccounts(env.Namespace()).
-				Get(ctx, name, metav1.GetOptions{})
-			if err != nil {
-				lastErr = err
-				return false, nil
-			}
-
-			return true, nil
-		})
-		if err != nil {
-			t.Fatalf("failed to get service account %s/%s: %v. Last error: %v", name, env.Namespace(), err, lastErr)
 		}
 	}
 }
