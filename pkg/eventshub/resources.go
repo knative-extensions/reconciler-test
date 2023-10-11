@@ -322,16 +322,38 @@ func generateOIDCToken(ctx context.Context, saName string, envs map[string]strin
 
 		headerB64, payloadB64, signatureB64 := parts[0], parts[1], parts[2]
 
-		signature, err := base64.StdEncoding.DecodeString(signatureB64)
+		signature, err := decodeBase64URL(signatureB64)
 		if err != nil {
-			// the signature may or may not encoded. When err != nil, it probably was not encoded --> use directly
-			signatureB64 = signatureB64[1:] // remove first char from signature --> invalidate
-		} else {
-			signatureB64 = base64.StdEncoding.EncodeToString([]byte(signature[1:])) // remove first char from signature --> invalidate
+			return "", fmt.Errorf("could not decode signature: %w", err)
 		}
+		signatureB64 = encodeBase64URL([]byte(signature[1:])) // remove first char from signature --> invalidate
 
 		token = fmt.Sprintf("%s.%s.%s", headerB64, payloadB64, signatureB64)
 	}
 
 	return token, nil
+}
+
+func decodeBase64URL(s string) ([]byte, error) {
+	s = strings.ReplaceAll(s, "-", "+")
+	s = strings.ReplaceAll(s, "_", "/")
+
+	// Pad with trailing '='s
+	switch len(s) % 4 {
+	case 2:
+		s += "=="
+	case 3:
+		s += "="
+	}
+
+	return base64.StdEncoding.DecodeString(s)
+}
+
+func encodeBase64URL(src []byte) string {
+	s := base64.StdEncoding.EncodeToString(src)
+	s = strings.ReplaceAll(s, "+", "-")
+	s = strings.ReplaceAll(s, "/", "_")
+	s = strings.ReplaceAll(s, "=", "")
+
+	return s
 }
