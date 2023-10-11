@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -33,12 +32,6 @@ import (
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
-)
-
-const (
-	// The interval and timeout used for checking events
-	DefaultRetryInterval = 4 * time.Second
-	DefaultRetryTimeout  = 4 * time.Minute
 )
 
 // EventInfoMatcher returns an error if the input event info doesn't match the criteria
