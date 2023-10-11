@@ -41,33 +41,6 @@ const (
 	DefaultRetryTimeout  = 4 * time.Minute
 )
 
-type timingsKey struct{}
-type timingsType struct {
-	interval time.Duration
-	timeout  time.Duration
-}
-
-// retryTimingsFromContext will get the previously set retry timing from context,
-// or return the defaults if not found.
-// - values from from context.
-// - defaults.
-func retryTimingsFromContext(ctx context.Context) (time.Duration, time.Duration) {
-	if t, ok := ctx.Value(timingsKey{}).(timingsType); ok {
-		return t.interval, t.timeout
-	}
-	return DefaultRetryInterval, DefaultRetryTimeout
-}
-
-// WithRetryTimings is an environment option to override default retry timings.
-func WithRetryTimings(interval, timeout time.Duration) environment.EnvOpts {
-	return func(ctx context.Context, env environment.Environment) (context.Context, error) {
-		return context.WithValue(ctx, timingsKey{}, timingsType{
-			interval: interval,
-			timeout:  timeout,
-		}), nil
-	}
-}
-
 // EventInfoMatcher returns an error if the input event info doesn't match the criteria
 type EventInfoMatcher func(EventInfo) error
 
@@ -248,7 +221,7 @@ func (ei *Store) waitAtLeastNMatch(ctx context.Context, f EventInfoMatcher, min 
 	var matchRet []EventInfo
 	var internalErr error
 
-	retryInterval, retryTimeout := retryTimingsFromContext(ctx)
+	retryInterval, retryTimeout := environment.PollTimingsFromContext(ctx)
 
 	wait.PollImmediate(retryInterval, retryTimeout, func() (bool, error) {
 		allMatch, sInfo, matchErrs, err := ei.Find(f)
