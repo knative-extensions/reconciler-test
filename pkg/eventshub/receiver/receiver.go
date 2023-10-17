@@ -218,16 +218,17 @@ func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		return
 	}
 
+	var statusCode int
 	var rejectErr error
 	if o.EnforceTLS && !isTLS(request) {
 		rejectErr = fmt.Errorf("failed to enforce TLS connection for request %s", request.URL.String())
+		statusCode = http.StatusBadRequest
 	}
 
-	var rejectErrStatusCode int
 	if o.oidcAudience != "" {
 		if err := o.validateJWT(request); err != nil {
 			rejectErr = err
-			rejectErrStatusCode = http.StatusUnauthorized
+			statusCode = http.StatusUnauthorized
 		}
 	}
 
@@ -264,6 +265,10 @@ func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		s = atomic.AddUint64(&o.seq, 1)
 	}
 
+	if shouldSkip {
+		statusCode = o.skipResponseCode
+	}
+
 	eventInfo := eventshub.EventInfo{
 		Error:       errString,
 		Event:       event,
@@ -274,6 +279,7 @@ func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		Sequence:    s,
 		Kind:        kind,
 		Connection:  eventshub.TLSConnectionStateToConnection(request.TLS),
+		StatusCode:  statusCode,
 	}
 
 	if err := o.EventLogs.Vent(eventInfo); err != nil {
@@ -290,18 +296,14 @@ func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 			writer.Header().Set(headerKey, headerValue)
 		}
 
-		if rejectErrStatusCode > 0 {
-			writer.WriteHeader(rejectErrStatusCode)
-		} else {
-			writer.WriteHeader(http.StatusBadRequest)
-		}
-
+		writer.WriteHeader(statusCode)
 	} else if shouldSkip {
 		// Trigger a redelivery
 		for headerKey, headerValue := range o.skipResponseHeaders {
 			writer.Header().Set(headerKey, headerValue)
 		}
-		writer.WriteHeader(o.skipResponseCode)
+
+		writer.WriteHeader(statusCode)
 		_, _ = writer.Write([]byte(o.skipResponseBody))
 	} else {
 		o.replyFunc(o.ctx, writer, eventInfo)
