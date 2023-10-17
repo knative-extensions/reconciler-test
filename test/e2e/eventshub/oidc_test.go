@@ -27,7 +27,6 @@ import (
 
 	cetest "github.com/cloudevents/sdk-go/v2/test"
 
-	"knative.dev/pkg/system"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/eventshub/assert"
@@ -42,7 +41,7 @@ func TestEventsHubOIDCAuth(t *testing.T) {
 	ctx, env := global.Environment(
 		environment.Managed(t),
 		environment.WithPollTimings(4*time.Second, 12*time.Minute),
-		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
