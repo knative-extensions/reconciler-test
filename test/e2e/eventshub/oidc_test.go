@@ -21,6 +21,7 @@ package eventshub_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -48,9 +49,7 @@ func TestEventsHubOIDCAuth(t *testing.T) {
 	)
 
 	env.Test(ctx, t, validToken())
-	env.Test(ctx, t, invalidAudience())
-	env.Test(ctx, t, expiredToken())
-	env.Test(ctx, t, corruptedSignatureToken())
+	env.TestSet(ctx, t, invalidTokens())
 }
 
 func validToken() *feature.Feature {
@@ -87,120 +86,68 @@ func validToken() *feature.Feature {
 	return f
 }
 
-func invalidAudience() *feature.Feature {
-	f := feature.NewFeatureNamed("OIDC - invalid audience")
+func invalidTokens() *feature.FeatureSet {
+	tests := []struct {
+		name   string
+		option eventshub.EventsHubOption
+	}{
+		{
+			name:   "invalid audience",
+			option: eventshub.OIDCInvalidAudience(),
+		},
+		{
+			name:   "invalid signature",
+			option: eventshub.OIDCCorruptedSignature(),
+		},
+		{
+			name:   "expired token",
+			option: eventshub.OIDCExpiredToken(),
+		},
+	}
 
-	sinkName := feature.MakeRandomK8sName("sink")
-	sourceName := feature.MakeRandomK8sName("source")
+	fs := &feature.FeatureSet{
+		Name: "OIDC: invalid tokens",
+	}
+	for i, test := range tests {
+		f := feature.NewFeatureNamed(test.name)
+		opt := test.option
 
-	event := cetest.FullEvent()
+		sinkName := feature.MakeRandomK8sName(fmt.Sprintf("sink-%d", i))
+		sourceName := feature.MakeRandomK8sName(fmt.Sprintf("source-%d", i))
+		sinkAudience := fmt.Sprintf("my-sink-audience-%d", i)
 
-	f.Setup("deploy receiver", eventshub.Install(sinkName,
-		eventshub.StartReceiver,
-		eventshub.OIDCReceiverAudience("my-sink-audience")))
+		event := cetest.FullEvent()
 
-	f.Requirement("deploy sender", func(ctx context.Context, t feature.T) {
-		eventshub.Install(sourceName,
-			eventshub.StartSenderToResource(eventshub.ReceiverGVR(ctx), sinkName),
-			eventshub.InputEvent(event),
-			eventshub.OIDCSinkAudience("some-other-audience"),
-		)(ctx, t)
-	})
+		f.Setup("deploy receiver", eventshub.Install(sinkName,
+			eventshub.StartReceiver,
+			eventshub.OIDCReceiverAudience(sinkAudience)))
 
-	f.Assert("Sink does not receive event", assert.OnStore(sinkName).
-		MatchReceivedEvent(cetest.HasId(event.ID())).
-		Not(),
-	)
+		f.Requirement("deploy sender", func(ctx context.Context, t feature.T) {
+			eventshub.Install(sourceName,
+				eventshub.StartSenderToResource(eventshub.ReceiverGVR(ctx), sinkName),
+				eventshub.InputEvent(event),
+				eventshub.OIDCSinkAudience(sinkAudience),
+				opt,
+			)(ctx, t)
+		})
 
-	f.Assert("Source sent event", assert.OnStore(sourceName).
-		MatchSentEvent(cetest.HasId(event.ID())).
-		Exact(1),
-	)
+		f.Assert("Source sends event", assert.OnStore(sourceName).
+			MatchSentEvent(cetest.HasId(event.ID())).
+			Exact(1),
+		)
 
-	f.Assert("Source gets 401 response", assert.OnStore(sourceName).
-		Match(assert.MatchStatusCode(401)).
-		Exact(1),
-	)
+		f.Assert("Sink rejects event", assert.OnStore(sinkName).
+			MatchRejectedEvent(cetest.HasId(event.ID())).
+			Exact(1),
+		)
 
-	return f
-}
+		f.Assert("Source gets 401 response", assert.OnStore(sourceName).
+			Match(assert.MatchStatusCode(401)).
+			Exact(1),
+		)
 
-func expiredToken() *feature.Feature {
-	f := feature.NewFeatureNamed("OIDC - expried token")
+		fs.Features = append(fs.Features, f)
+	}
 
-	sinkName := feature.MakeRandomK8sName("sink")
-	sourceName := feature.MakeRandomK8sName("source")
-	audience := "my-sink-audience"
-
-	event := cetest.FullEvent()
-
-	f.Setup("deploy receiver", eventshub.Install(sinkName,
-		eventshub.StartReceiver,
-		eventshub.OIDCReceiverAudience(audience)))
-
-	f.Requirement("deploy sender", func(ctx context.Context, t feature.T) {
-		eventshub.Install(sourceName,
-			eventshub.StartSenderToResource(eventshub.ReceiverGVR(ctx), sinkName),
-			eventshub.InputEvent(event),
-			eventshub.OIDCSinkAudience(audience),
-			eventshub.OIDCExpiredToken(),
-		)(ctx, t)
-	})
-
-	f.Assert("Sink does not receive event", assert.OnStore(sinkName).
-		MatchReceivedEvent(cetest.HasId(event.ID())).
-		Not(),
-	)
-
-	f.Assert("Source sent event", assert.OnStore(sourceName).
-		MatchSentEvent(cetest.HasId(event.ID())).
-		Exact(1),
-	)
-
-	f.Assert("Source gets 401 response", assert.OnStore(sourceName).
-		Match(assert.MatchStatusCode(401)).
-		Exact(1),
-	)
-
-	return f
-}
-
-func corruptedSignatureToken() *feature.Feature {
-	f := feature.NewFeatureNamed("OIDC - expried token")
-
-	sinkName := feature.MakeRandomK8sName("sink")
-	sourceName := feature.MakeRandomK8sName("source")
-	audience := "my-sink-audience"
-
-	event := cetest.FullEvent()
-
-	f.Setup("deploy receiver", eventshub.Install(sinkName,
-		eventshub.StartReceiver,
-		eventshub.OIDCReceiverAudience(audience)))
-
-	f.Requirement("deploy sender", func(ctx context.Context, t feature.T) {
-		eventshub.Install(sourceName,
-			eventshub.StartSenderToResource(eventshub.ReceiverGVR(ctx), sinkName),
-			eventshub.InputEvent(event),
-			eventshub.OIDCSinkAudience(audience),
-			eventshub.OIDCCorruptedSignature(),
-		)(ctx, t)
-	})
-
-	f.Assert("Sink does not receive event", assert.OnStore(sinkName).
-		MatchReceivedEvent(cetest.HasId(event.ID())).
-		Not(),
-	)
-
-	f.Assert("Source sent event", assert.OnStore(sourceName).
-		MatchSentEvent(cetest.HasId(event.ID())).
-		Exact(1),
-	)
-
-	f.Assert("Source gets 401 response", assert.OnStore(sourceName).
-		Match(assert.MatchStatusCode(401)).
-		Exact(1),
-	)
-
-	return f
+	return fs
 }
