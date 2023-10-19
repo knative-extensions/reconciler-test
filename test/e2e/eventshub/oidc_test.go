@@ -47,8 +47,8 @@ func TestEventsHubOIDCAuth(t *testing.T) {
 		k8s.WithEventListener,
 	)
 
-	env.Test(ctx, t, validToken())
-	env.TestSet(ctx, t, invalidTokens())
+	env.ParallelTest(ctx, t, validToken())
+	env.ParallelTestSet(ctx, t, invalidTokens())
 }
 
 func validToken() *feature.Feature {
