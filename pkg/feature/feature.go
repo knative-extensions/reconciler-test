@@ -23,7 +23,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/reconciler-test/pkg/environment"
 
 	"knative.dev/reconciler-test/pkg/state"
 )
@@ -229,7 +229,8 @@ func DeleteResources(ctx context.Context, t T, refs []corev1.ObjectReference) er
 
 	var lastResource corev1.ObjectReference // One still present resource
 
-	err := wait.Poll(time.Second, 4*time.Minute, func() (bool, error) {
+	interval, timeout := environment.PollTimingsFromContext(ctx)
+	err := wait.Poll(interval, timeout, func() (bool, error) {
 		for _, ref := range refs {
 			gv, err := schema.ParseGroupVersion(ref.APIVersion)
 			if err != nil {
