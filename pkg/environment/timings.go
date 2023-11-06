@@ -23,6 +23,8 @@ import (
 	"knative.dev/reconciler-test/pkg/state"
 )
 
+// this has been moved to state pkg to break cycle between environment and feature package,
+// keeping the consts here for backwards API compatibility
 const (
 	DefaultPollInterval = 3 * time.Second
 	DefaultPollTimeout  = 2 * time.Minute
