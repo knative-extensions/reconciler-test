@@ -198,6 +198,7 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	}
 
 	ctx := ContextWith(mr.c, env)
+	ctx = ContextWithPollTimings(ctx, *pollInterval, *pollTimeout)
 
 	for _, opt := range opts {
 		if nctx, err := opt(ctx, env); err != nil {
@@ -207,8 +208,6 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 		}
 	}
 	env.c = ctx
-
-	ctx = state.ContextWithPollTimings(ctx, *pollInterval, *pollTimeout)
 
 	log := logging.FromContext(ctx)
 	log.Infof("Environment settings: level %s, state %s, feature %q",
