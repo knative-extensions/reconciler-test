@@ -21,6 +21,7 @@ import (
 	"os"
 
 	v1 "k8s.io/api/core/v1"
+
 	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 	"knative.dev/reconciler-test/pkg/resources/deployment"
@@ -64,6 +65,89 @@ func Example_min() {
 	//       containers:
 	//       - name: user-container
 	//         image: baz
+}
+
+func Example_Volumes() {
+	ctx := testlog.NewContext()
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
+		"image":     "baz",
+		"selectors": map[string]string{"app": "foo"},
+	}
+
+	volumes := []v1.Volume{
+		{
+			Name: "cm",
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: "cm-name",
+					},
+				},
+			},
+		},
+		{
+			Name: "cm-2",
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: "cm-name",
+					},
+				},
+			},
+		},
+	}
+	volumeMounts := []v1.VolumeMount{
+		{
+			Name:      "cm",
+			MountPath: "/cm-mount-path",
+		},
+		{
+			Name:      "cm-2",
+			MountPath: "/cm-mount-path-2",
+		},
+	}
+	deployment.WithVolumes(volumes, volumeMounts)(cfg)
+
+	files, err := manifest.ExecuteYAML(ctx, yaml, images, cfg)
+
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: apps/v1
+	// kind: Deployment
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	// spec:
+	//   selector:
+	//     matchLabels:
+	//       app: "foo"
+	//   template:
+	//     metadata:
+	//       labels:
+	//         app: "foo"
+	//     spec:
+	//       containers:
+	//       - name: user-container
+	//         image: baz
+	//         volumeMounts:
+	//         - name: cm
+	//           mountPath: /cm-mount-path
+	//         - name: cm-2
+	//           mountPath: /cm-mount-path-2
+	//       volumes:
+	//       - name: cm
+	//         configMap:
+	//           name: cm-name
+	//       - name: cm-2
+	//         configMap:
+	//           name: cm-name
 }
 
 func Example_full() {
