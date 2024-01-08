@@ -45,7 +45,9 @@ const (
 	OIDCSinkAudienceEnv                    = "OIDC_SINK_AUDIENCE"
 	OIDCTokenEnv                           = "OIDC_TOKEN"
 
-	EnforceTLS = "ENFORCE_TLS"
+	EnforceTLS    = "ENFORCE_TLS"
+	tlsIssuerKind = "TLS_ISSUER_KIND"
+	tlsIssuerName = "TLS_ISSUER_NAME"
 )
 
 func ParseHeaders(serializedHeaders string) http.Header {
