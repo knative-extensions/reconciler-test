@@ -30,7 +30,7 @@ function test_setup() {
   wait_until_pods_running "$CERT_MANAGER_NAMESPACE" || fail_test "Failed to install cert manager"
 
   timeout 600 bash -c 'until kubectl apply -f third_party/cert-manager/02-trust-manager.yaml; do sleep 5; done'
-  wait_until_pods_running "$CERT_MANAGER_NAMESPACE" || fail_test "Failed to install cert manager"
+  wait_until_pods_running "$CERT_MANAGER_NAMESPACE" || fail_test "Failed to install trust manager"
 
   kubectl apply -f "${root_dir}/test/config" || return $?
 }
