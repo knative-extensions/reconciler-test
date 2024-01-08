@@ -14,4 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-true
+source $(dirname $0)/../vendor/knative.dev/hack/codegen-library.sh
+
+group "Updating cert-manager"
+
+${REPO_ROOT_DIR}/hack/update-cert-manager.sh
+
+group "Update deps post-codegen"
+
+# Make sure our dependencies are up-to-date
+${REPO_ROOT_DIR}/hack/update-deps.sh

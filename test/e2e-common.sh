@@ -19,11 +19,18 @@ set -Eeo pipefail
 root_dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
 readonly root_dir
 
+export CERT_MANAGER_NAMESPACE="cert-manager"
+
 source "${root_dir}/vendor/knative.dev/hack/e2e-tests.sh"
 
 function test_setup() {
-  kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml || return $?
-  wait_until_pods_running cert-manager || return $?
+  kubectl apply -f third_party/cert-manager/00-namespace.yaml
+
+  timeout 600 bash -c 'until kubectl apply -f third_party/cert-manager/01-cert-manager.yaml; do sleep 5; done'
+  wait_until_pods_running "$CERT_MANAGER_NAMESPACE" || fail_test "Failed to install cert manager"
+
+  timeout 600 bash -c 'until kubectl apply -f third_party/cert-manager/02-trust-manager.yaml; do sleep 5; done'
+  wait_until_pods_running "$CERT_MANAGER_NAMESPACE" || fail_test "Failed to install cert manager"
 
   kubectl apply -f "${root_dir}/test/config" || return $?
 }
