@@ -550,3 +550,14 @@ and then, reference the file in the `go test` command invocation:
 ```
 go test -v -count=1 -tags=e2e ./test/... --images.producer.file=images.yaml
 ```
+
+### Installing the resources for running reconciler-test E2E tests
+
+```shell
+./test/install.sh
+```
+
+# Updating cert-manager and trust-manager
+
+- Change versions in `./hack/update-cert-manager.sh`
+- Run `./hack/update-cert-manager.sh`
