@@ -20,6 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"log"
+	"os"
 	"regexp"
 	"sync"
 	"testing"
@@ -28,11 +32,19 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/test/logstream/v2"
 
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/milestone"
 	"knative.dev/reconciler-test/pkg/state"
+)
+
+var (
+	componentNamesByNamespace = map[string][]string{
+		"knative-eventing": []string{"eventing-controller", "eventing-webhook", "imc-controller", "imc-dispatcher", "mt-broker-controller", "mt-broker-filter", "mt-broker-ingress", "kafka-broker", "kafka-channel", "kafka-controller", "kafka-sink", "kafka-source", "kafka-webhook", "knative-kafka"},
+	}
 )
 
 // NewGlobalEnvironment creates a new global environment based on a
@@ -209,8 +221,8 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	}
 	env.c = ctx
 
-	log := logging.FromContext(ctx)
-	log.Infof("Environment settings: level %s, state %s, feature %q",
+	logger := logging.FromContext(ctx)
+	logger.Infof("Environment settings: level %s, state %s, feature %q",
 		env.l, env.s, env.featureMatch)
 	mr.initializersOnce.Do(func() {
 		for _, initializer := range mr.initializers {
@@ -365,12 +377,12 @@ func (mr *MagicEnvironment) ParallelTest(ctx context.Context, originalT *testing
 func (mr *MagicEnvironment) test(ctx context.Context, originalT *testing.T, f *feature.Feature) {
 	originalT.Helper() // Helper marks the calling function as a test helper function.
 
-	log := logging.FromContext(ctx)
-	f.DumpWith(log.Debug)
-	defer f.DumpWith(log.Debug) // Log feature state at the end of the run
+	logger := logging.FromContext(ctx)
+	f.DumpWith(logger.Debug)
+	defer f.DumpWith(logger.Debug) // Log feature state at the end of the run
 
 	if !mr.featureMatch.MatchString(f.Name) {
-		log.Warnf("Skipping feature '%s' assertions because --feature=%s  doesn't match", f.Name, mr.featureMatch.String())
+		logger.Warnf("Skipping feature '%s' assertions because --feature=%s  doesn't match", f.Name, mr.featureMatch.String())
 		return
 	}
 
@@ -395,9 +407,38 @@ func (mr *MagicEnvironment) test(ctx context.Context, originalT *testing.T, f *f
 	skipTeardown := false
 
 	originalT.Run(f.Name, func(t *testing.T) {
-
 		if isParallel(ctx) {
 			t.Parallel()
+		}
+
+		componentNames, ok := componentNamesByNamespace[mr.Namespace()]
+		if !ok {
+			componentNames = []string{}
+		}
+
+		artifacts := os.Getenv("ARTIFACTS")
+		file, err := os.CreateTemp(artifacts, fmt.Sprintf("%s-*.log", f.Name))
+		t.Cleanup(func() {
+			file.Close()
+		})
+		var callback logstream.Callback
+		if err != nil {
+			callback = logger.Infof
+		} else {
+			callback = log.New(io.Writer(file), "", log.LstdFlags).Printf
+		}
+
+		ls := logstream.New(ctx, kubeclient.Get(ctx), logstream.WithNamespaces(mr.Namespace()))
+
+		for _, component := range componentNames {
+			cancel, err := ls.StartStream(component, callback)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			t.Cleanup(func() {
+				cancel()
+			})
 		}
 
 		for _, timing := range feature.Timings() {
