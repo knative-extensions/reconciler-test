@@ -114,6 +114,20 @@ func MatchStatusCode(statusCode int) eventshub.EventInfoMatcher {
 	}
 }
 
+// MatchOIDCUser matches the OIDC username used for the request
+func MatchOIDCUser(username string) eventshub.EventInfoMatcher {
+	return func(info eventshub.EventInfo) error {
+		if info.OIDCUserInfo == nil {
+			return fmt.Errorf("event OIDC username don't match. Expected: '%s', Actual: nil", username)
+		}
+		if info.OIDCUserInfo.Username != username {
+			return fmt.Errorf("event OIDC username don't match. Expected: '%s', Actual: %s", username, info.OIDCUserInfo.Username)
+		}
+
+		return nil
+	}
+}
+
 // MatchHeartBeatsImageMessage matches that the data field of the event, in the format of the heartbeats image, contains the following msg field
 func MatchHeartBeatsImageMessage(expectedMsg string) cetest.EventMatcher {
 	return cetest.AllOf(
