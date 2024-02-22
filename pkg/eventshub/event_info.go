@@ -21,9 +21,10 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	v1 "k8s.io/api/authentication/v1"
 	"strings"
 	"time"
+
+	v1 "k8s.io/api/authentication/v1"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
