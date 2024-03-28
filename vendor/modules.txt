@@ -884,6 +884,7 @@ knative.dev/pkg/system
 knative.dev/pkg/system/testing
 knative.dev/pkg/test/helpers
 knative.dev/pkg/test/logging
+knative.dev/pkg/test/logstream/v2
 knative.dev/pkg/test/monitoring
 knative.dev/pkg/test/security
 knative.dev/pkg/test/zipkin
