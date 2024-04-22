@@ -135,6 +135,7 @@ func MatchOIDCUser(username string) eventshub.EventInfoMatcher {
 	}
 }
 
+// MatchOIDCUserFromResource matches the given resources OIDC identifier
 func MatchOIDCUserFromResource(gvr schema.GroupVersionResource, resourceName string) eventshub.EventInfoMatcherCtx {
 
 	type AuthenticatableType struct {
