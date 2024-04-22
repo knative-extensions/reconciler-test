@@ -135,7 +135,7 @@ func MatchOIDCUser(username string) eventshub.EventInfoMatcher {
 	}
 }
 
-func MatchOIDCUserFromResource(gvr schema.GroupVersionResource, name string) eventshub.EventInfoMatcherCtx {
+func MatchOIDCUserFromResource(gvr schema.GroupVersionResource, resourceName string) eventshub.EventInfoMatcherCtx {
 
 	type AuthenticatableType struct {
 		metav1.TypeMeta   `json:",inline"`
@@ -150,7 +150,7 @@ func MatchOIDCUserFromResource(gvr schema.GroupVersionResource, name string) eve
 
 		env := environment.FromContext(ctx)
 
-		us, err := dynamicclient.Get(ctx).Resource(gvr).Namespace(env.Namespace()).Get(ctx, name, metav1.GetOptions{})
+		us, err := dynamicclient.Get(ctx).Resource(gvr).Namespace(env.Namespace()).Get(ctx, resourceName, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("error getting resource: %w", err)
 		}
