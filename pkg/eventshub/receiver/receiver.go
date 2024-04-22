@@ -19,8 +19,6 @@ package receiver
 import (
 	"context"
 	"crypto/tls"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -228,18 +226,12 @@ func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	}
 
 	var oidcUser *authv1.UserInfo
-	var oidcClaims *eventshub.KubernetesClaims
 	if o.oidcAudience != "" {
 		var err error
 		oidcUser, err = o.verifyJWT(request)
 		if err != nil {
 			rejectErr = err
 			statusCode = http.StatusUnauthorized
-		} else {
-			oidcClaims, err = o.getOIDCClaims(request)
-			if err != nil {
-				logging.FromContext(o.ctx).Warnf("failed to get OIDC claims: %s", err)
-			}
 		}
 	}
 
@@ -292,7 +284,6 @@ func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		Connection:   eventshub.TLSConnectionStateToConnection(request.TLS),
 		StatusCode:   statusCode,
 		OIDCUserInfo: oidcUser,
-		OIDCClaims:   oidcClaims,
 	}
 
 	if err := o.EventLogs.Vent(eventInfo); err != nil {
@@ -365,35 +356,6 @@ func (o *Receiver) verifyJWT(request *http.Request) (*authv1.UserInfo, error) {
 	}
 
 	return &tokenReview.Status.User, nil
-}
-
-func (o *Receiver) getOIDCClaims(request *http.Request) (*eventshub.KubernetesClaims, error) {
-	authHeader := request.Header.Get("Authorization")
-	if authHeader == "" {
-		return nil, fmt.Errorf("could not get Authorization header")
-	}
-
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	if len(token) == len(authHeader) {
-		return nil, fmt.Errorf("could not get Bearer token from header")
-	}
-
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("could not split token into header, payload and signature")
-	}
-
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("could not decode payload: %w", err)
-	}
-
-	claims := &eventshub.KubernetesClaims{}
-	if err := json.Unmarshal(payload, &claims); err != nil {
-		return nil, fmt.Errorf("could not unmarshal JSON payload to claim struct: %w", err)
-	}
-
-	return claims, nil
 }
 
 func isTLS(request *http.Request) bool {

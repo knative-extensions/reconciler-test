@@ -92,9 +92,6 @@ type EventInfo struct {
 
 	// OIDCUserInfo is the user info of the subject of the OIDC token used in the request
 	OIDCUserInfo *v1.UserInfo `json:"oidcUserInfo,omitempty"`
-
-	// OIDCClaims are the claims of the OIDC token used in the request
-	OIDCClaims *KubernetesClaims `json:"oidcClaims,omitempty"`
 }
 
 // Pretty print the event. Meant for debugging.
@@ -194,13 +191,4 @@ func IsInsecureCipherSuite(conn *tls.ConnectionState) bool {
 		}
 	}
 	return res
-}
-
-type KubernetesClaims struct {
-	Issuer    string     `json:"iss,omitempty"`
-	Audience  []string   `json:"aud,omitempty"`
-	Subject   string     `json:"sub,omitempty"`
-	Expiry    *time.Time `json:"exp,omitempty"`
-	IssuedAt  *time.Time `json:"iat,omitempty"`
-	NotBefore *time.Time `json:"nbf,omitempty"`
 }
