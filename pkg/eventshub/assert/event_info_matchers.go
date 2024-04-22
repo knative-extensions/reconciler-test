@@ -17,7 +17,14 @@ limitations under the License.
 package assert
 
 import (
+	"context"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/reconciler-test/pkg/environment"
 	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -122,6 +129,44 @@ func MatchOIDCUser(username string) eventshub.EventInfoMatcher {
 		}
 		if info.OIDCUserInfo.Username != username {
 			return fmt.Errorf("event OIDC username don't match. Expected: '%s', Actual: %s", username, info.OIDCUserInfo.Username)
+		}
+
+		return nil
+	}
+}
+
+func MatchOIDCUserFromResource(gvr schema.GroupVersionResource, name string) eventshub.EventInfoMatcherCtx {
+
+	type AuthenticatableType struct {
+		metav1.TypeMeta   `json:",inline"`
+		metav1.ObjectMeta `json:"metadata,omitempty"`
+
+		Status struct {
+			Auth *duckv1.AuthStatus `json:"auth,omitempty"`
+		} `json:"status"`
+	}
+
+	return func(ctx context.Context, info eventshub.EventInfo) error {
+
+		env := environment.FromContext(ctx)
+
+		us, err := dynamicclient.Get(ctx).Resource(gvr).Namespace(env.Namespace()).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("error getting resource: %w", err)
+		}
+
+		obj := &AuthenticatableType{}
+		if err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, obj); err != nil {
+			return fmt.Errorf("error from DefaultUnstructured.Dynamiconverter. %w", err)
+		}
+
+		if obj.Status.Auth == nil || obj.Status.Auth.ServiceAccountName == nil {
+			return fmt.Errorf("resource does not have an OIDC service account set")
+		}
+
+		objFullSAName := fmt.Sprintf("system:serviceaccount:%s:%s", obj.GetNamespace(), *obj.Status.Auth.ServiceAccountName)
+		if objFullSAName != info.OIDCUserInfo.Username {
+			return fmt.Errorf("OIDC identity in event does not match identity of resource. Event: %q, resource: %q", info.OIDCUserInfo.Username, objFullSAName)
 		}
 
 		return nil
