@@ -159,12 +159,14 @@ func WithPollTimings(interval, timeout time.Duration) EnvOpts {
 //   - Cleanup,
 //   - WithTestLogger.
 func Managed(t feature.T) EnvOpts {
+	t = newTimestampLoggingT(t)
 	return UnionOpts(Cleanup(t), WithTestLogger(t))
 }
 
 // Cleanup is an environment option to register a cleanup that will call
 // Environment.Finish function at test end automatically.
 func Cleanup(t feature.T) EnvOpts {
+	t = newTimestampLoggingT(t)
 	return func(ctx context.Context, env Environment) (context.Context, error) {
 		if e, ok := env.(*MagicEnvironment); ok {
 			e.managedT = t
@@ -508,4 +510,29 @@ func FromContext(ctx context.Context) Environment {
 		return e
 	}
 	panic("no Environment found in context")
+}
+
+type timeLogging struct {
+	feature.T
+}
+
+func newTimestampLoggingT(t feature.T) feature.T {
+	if _, ok := t.(timeLogging); ok {
+		return t
+	}
+	return timeLogging{T: t}
+}
+
+func (tl timeLogging) Log(args ...interface{}) {
+	args = append([]interface{}{currentTimestampLogStr()}, args...)
+	tl.Log(args...)
+}
+
+func (tl timeLogging) Logf(format string, args ...interface{}) {
+	format = currentTimestampLogStr() + " " + format
+	tl.Logf(format, args...)
+}
+
+func currentTimestampLogStr() string {
+	return "[ " + time.Now().String() + " ]"
 }
