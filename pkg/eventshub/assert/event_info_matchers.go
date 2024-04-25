@@ -126,10 +126,10 @@ func MatchStatusCode(statusCode int) eventshub.EventInfoMatcher {
 func MatchOIDCUser(username string) eventshub.EventInfoMatcher {
 	return func(info eventshub.EventInfo) error {
 		if info.OIDCUserInfo == nil {
-			return fmt.Errorf("event OIDC username don't match. Expected: '%s', Actual: nil", username)
+			return fmt.Errorf("event OIDC usernames don't match: Expected %q, but no OIDC user info in the event", username)
 		}
 		if info.OIDCUserInfo.Username != username {
-			return fmt.Errorf("event OIDC username don't match. Expected: '%s', Actual: %s", username, info.OIDCUserInfo.Username)
+			return fmt.Errorf("event OIDC usernames don't match. Expected: %q, Actual: %q", username, info.OIDCUserInfo.Username)
 		}
 
 		return nil
@@ -159,7 +159,7 @@ func MatchOIDCUserFromResource(gvr schema.GroupVersionResource, resourceName str
 
 		obj := &AuthenticatableType{}
 		if err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, obj); err != nil {
-			return fmt.Errorf("error from DefaultUnstructured.Dynamiconverter. %w", err)
+			return fmt.Errorf("error from DefaultUnstructured.Dynamiconverter: %w", err)
 		}
 
 		if obj.Status.Auth == nil || obj.Status.Auth.ServiceAccountName == nil {
