@@ -27,6 +27,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -45,7 +48,16 @@ func testTimingConstraints(t *testing.T, isParallel bool) {
 	// with other tests.
 	t.Parallel()
 
-	ctx, env := global.Environment(environment.Managed(t))
+	nsLabelKey := "test-label"
+	nsLabelValue := "test-value"
+
+	ctx, env := global.Environment(
+		environment.Managed(t),
+		environment.WithNamespaceTransformFuncs(func(ns *corev1.Namespace) error {
+			ns.Labels[nsLabelKey] = nsLabelValue
+			return nil
+		}),
+	)
 
 	// Build the feature
 	feat := feature.NewFeature()
@@ -94,6 +106,21 @@ func testTimingConstraints(t *testing.T, isParallel bool) {
 		Must("bbb", incrementAssertCounter).
 		Must("ccc", incrementAssertCounter).
 		Must("ddd", incrementAssertCounter)
+
+	feat.Assert("namespace has label", func(ctx context.Context, t feature.T) {
+		ns, err := kubeclient.Get(ctx).
+			CoreV1().
+			Namespaces().
+			Get(ctx, environment.FromContext(ctx).Namespace(), metav1.GetOptions{})
+		if err != nil {
+			t.Fatal("failed to get namespace %q: %v", environment.FromContext(ctx).Namespace(), err)
+		}
+
+		if v, ok := ns.Labels[nsLabelKey]; !ok || v != nsLabelValue {
+			t.Errorf("expected namespace %q to have label %q equal to %q, got %q", environment.FromContext(ctx).Namespace(), nsLabelKey, nsLabelValue, v)
+		}
+	})
+
 	feat.Teardown("teardown0", incrementTeardownCounter)
 	feat.Teardown("teardown1", incrementTeardownCounter)
 
