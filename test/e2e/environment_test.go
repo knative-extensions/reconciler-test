@@ -67,23 +67,101 @@ func testTimingConstraints(t *testing.T, isParallel bool) {
 	requirementCounter := int32(0)
 	teardownCounter := int32(0)
 
+	setupGroupCounter := int32(0)
+	requirementGroupCounter := int32(0)
+	assertGroupCounter := int32(0)
+	teardownGroupCounter := int32(0)
+
+	feat.Group("my-group", func(f *feature.Feature) {
+		f.Setup("setup group", func(ctx context.Context, t feature.T) {
+			atomic.AddInt32(&setupGroupCounter, 1)
+			// group
+			verifyCounter(&requirementGroupCounter, 0, t)
+			verifyCounter(&assertGroupCounter, 0, t)
+			verifyCounter(&teardownGroupCounter, 0, t)
+
+			// feature
+			verifyCounter(&setupCounter, 0, t)
+			verifyCounter(&requirementCounter, 0, t)
+			verifyCounter(&assertCounter, 0, t)
+			verifyCounter(&teardownCounter, 0, t)
+		})
+		f.Requirement("requirement group", func(ctx context.Context, t feature.T) {
+			atomic.AddInt32(&requirementGroupCounter, 1)
+			// group
+			verifyCounter(&setupGroupCounter, 1, t)
+			verifyCounter(&assertGroupCounter, 0, t)
+			verifyCounter(&teardownGroupCounter, 0, t)
+
+			// feature
+			verifyCounter(&setupCounter, 0, t)
+			verifyCounter(&requirementCounter, 0, t)
+			verifyCounter(&assertCounter, 0, t)
+			verifyCounter(&teardownCounter, 0, t)
+		})
+		f.Assert("assert group", func(ctx context.Context, t feature.T) {
+			atomic.AddInt32(&assertGroupCounter, 1)
+			// group
+			verifyCounter(&setupGroupCounter, 1, t)
+			verifyCounter(&requirementGroupCounter, 1, t)
+			verifyCounter(&teardownGroupCounter, 0, t)
+
+			// feature
+			verifyCounter(&setupCounter, 0, t)
+			verifyCounter(&requirementCounter, 0, t)
+			verifyCounter(&assertCounter, 0, t)
+			verifyCounter(&teardownCounter, 0, t)
+		})
+		f.Teardown("teardown group", func(ctx context.Context, t feature.T) {
+			atomic.AddInt32(&teardownGroupCounter, 1)
+			// group
+			verifyCounter(&setupGroupCounter, 1, t)
+			verifyCounter(&requirementGroupCounter, 1, t)
+			verifyCounter(&assertGroupCounter, 1, t)
+
+			// feature
+			verifyCounter(&setupCounter, 0, t)
+			verifyCounter(&requirementCounter, 0, t)
+			verifyCounter(&assertCounter, 0, t)
+			verifyCounter(&teardownCounter, 0, t)
+		})
+	})
+
 	incrementSetupCounter := func(ctx context.Context, t feature.T) {
 		atomic.AddInt32(&setupCounter, 1)
 		verifyCounter(&requirementCounter, 0, t)
 		verifyCounter(&assertCounter, 0, t)
 		verifyCounter(&teardownCounter, 0, t)
+
+		// group
+		verifyCounter(&setupGroupCounter, 1, t)
+		verifyCounter(&requirementGroupCounter, 1, t)
+		verifyCounter(&assertGroupCounter, 1, t)
+		verifyCounter(&teardownGroupCounter, 1, t)
 	}
 	incrementRequirementCounter := func(ctx context.Context, t feature.T) {
 		verifyCounter(&setupCounter, 3, t)
 		atomic.AddInt32(&requirementCounter, 1)
 		verifyCounter(&assertCounter, 0, t)
 		verifyCounter(&teardownCounter, 0, t)
+
+		// group
+		verifyCounter(&setupGroupCounter, 1, t)
+		verifyCounter(&requirementGroupCounter, 1, t)
+		verifyCounter(&assertGroupCounter, 1, t)
+		verifyCounter(&teardownGroupCounter, 1, t)
 	}
 
 	incrementAssertCounter := func(ctx context.Context, t feature.T) {
 		verifyCounter(&requirementCounter, 5, t)
 		atomic.AddInt32(&assertCounter, 1)
 		verifyCounter(&teardownCounter, 0, t)
+
+		// group
+		verifyCounter(&setupGroupCounter, 1, t)
+		verifyCounter(&requirementGroupCounter, 1, t)
+		verifyCounter(&assertGroupCounter, 1, t)
+		verifyCounter(&teardownGroupCounter, 1, t)
 	}
 
 	incrementTeardownCounter := func(ctx context.Context, t feature.T) {
@@ -91,6 +169,12 @@ func testTimingConstraints(t *testing.T, isParallel bool) {
 		atomic.AddInt32(&teardownCounter, 1)
 		verifyCounter(&setupCounter, 3, t)
 		verifyCounter(&requirementCounter, 5, t)
+
+		// group
+		verifyCounter(&setupGroupCounter, 1, t)
+		verifyCounter(&requirementGroupCounter, 1, t)
+		verifyCounter(&assertGroupCounter, 1, t)
+		verifyCounter(&teardownGroupCounter, 1, t)
 	}
 
 	feat.Setup("setup1", incrementSetupCounter)
@@ -135,6 +219,7 @@ func testTimingConstraints(t *testing.T, isParallel bool) {
 	}
 
 	verifyCounter(&teardownCounter, 2, t)
+	verifyCounter(&teardownGroupCounter, 1, t)
 }
 
 func verifyCounter(counter *int32, expected int32, t feature.T) {
