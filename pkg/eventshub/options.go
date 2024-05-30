@@ -97,12 +97,54 @@ func StartSenderToResource(gvr schema.GroupVersionResource, name string) EventsH
 	}
 }
 
+// StartSenderToNamespacedResource starts the sender in the eventshub pointing to the provided resource
+// This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
+func StartSenderToNamespacedResource(gvr schema.GroupVersionResource, name, namespace string) EventsHubOption {
+	return func(ctx context.Context, envs map[string]string) error {
+		u, err := k8s.NamespacedAddress(ctx, gvr, name, namespace)
+		if err != nil {
+			return err
+		}
+		if u == nil {
+			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
+		}
+
+		if u.URL.Scheme == "https" {
+			return compose(StartSenderURLTLS(u.URL.String(), u.CACerts), oidcSinkAudience(u.Audience))(ctx, envs)
+		}
+
+		return compose(StartSenderURL(u.URL.String()), oidcSinkAudience(u.Audience))(ctx, envs)
+	}
+}
+
 // StartSenderToResourceTLS starts the sender in the eventshub pointing to the provided resource.
 // `caCerts` parameter is optional, if nil, it will fall back to use the addressable CA certs.
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
 func StartSenderToResourceTLS(gvr schema.GroupVersionResource, name string, caCerts *string) EventsHubOption {
 	return func(ctx context.Context, m map[string]string) error {
 		u, err := k8s.Address(ctx, gvr, name)
+		if err != nil {
+			return err
+		}
+		if u == nil {
+			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
+		}
+		u.URL.Scheme = "https"
+
+		if caCerts == nil && u.CACerts != nil {
+			caCerts = u.CACerts
+		}
+
+		return compose(StartSenderURLTLS(u.URL.String(), caCerts), oidcSinkAudience(u.Audience))(ctx, m)
+	}
+}
+
+// StartSenderToNamespacedResourceTLS starts the sender in the eventshub pointing to the provided namespaced resource.
+// `caCerts` parameter is optional, if nil, it will fall back to use the addressable CA certs.
+// This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
+func StartSenderToNamespacedResourceTLS(gvr schema.GroupVersionResource, name, namespace string, caCerts *string) EventsHubOption {
+	return func(ctx context.Context, m map[string]string) error {
+		u, err := k8s.NamespacedAddress(ctx, gvr, name, namespace)
 		if err != nil {
 			return err
 		}
