@@ -81,19 +81,8 @@ func StartSenderTLS(sinkSvc string, caCerts *string) EventsHubOption {
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
 func StartSenderToResource(gvr schema.GroupVersionResource, name string) EventsHubOption {
 	return func(ctx context.Context, envs map[string]string) error {
-		u, err := k8s.Address(ctx, gvr, name)
-		if err != nil {
-			return err
-		}
-		if u == nil {
-			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
-		}
-
-		if u.URL.Scheme == "https" {
-			return compose(StartSenderURLTLS(u.URL.String(), u.CACerts), oidcSinkAudience(u.Audience))(ctx, envs)
-		}
-
-		return compose(StartSenderURL(u.URL.String()), oidcSinkAudience(u.Audience))(ctx, envs)
+		env := environment.FromContext(ctx)
+		return StartSenderToNamespacedResource(gvr, name, env.Namespace())(ctx, envs)
 	}
 }
 
@@ -122,20 +111,8 @@ func StartSenderToNamespacedResource(gvr schema.GroupVersionResource, name, name
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
 func StartSenderToResourceTLS(gvr schema.GroupVersionResource, name string, caCerts *string) EventsHubOption {
 	return func(ctx context.Context, m map[string]string) error {
-		u, err := k8s.Address(ctx, gvr, name)
-		if err != nil {
-			return err
-		}
-		if u == nil {
-			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
-		}
-		u.URL.Scheme = "https"
-
-		if caCerts == nil && u.CACerts != nil {
-			caCerts = u.CACerts
-		}
-
-		return compose(StartSenderURLTLS(u.URL.String(), caCerts), oidcSinkAudience(u.Audience))(ctx, m)
+		env := environment.FromContext(ctx)
+		return StartSenderToNamespacedResourceTLS(gvr, name, env.Namespace(), caCerts)(ctx, m)
 	}
 }
 
