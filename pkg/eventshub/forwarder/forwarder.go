@@ -344,7 +344,7 @@ func (o *Forwarder) forwardFromFile(f string) {
 
 	// Vent the response info
 	if err := o.EventLogs.Vent(o.responseInfo(res, event)); err != nil {
-		logging.FromContext(o.ctx).Errorw("Failed to log response for forwarded event: ",
+		logging.FromContext(o.ctx).Errorw("Failed to log response for forwarded event",
 			zap.String("file", f),
 			zap.Error(err))
 	}
