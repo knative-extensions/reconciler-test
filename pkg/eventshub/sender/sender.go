@@ -233,7 +233,7 @@ func Start(ctx context.Context, logs *eventshub.EventLogs, clientOpts ...eventsh
 		span.End()
 
 		// Publish sent event info
-		if err := logs.Vent(env.sentInfo(event, req, err)); err != nil {
+		if err := logs.Vent(env.sentInfo(event, req, res, err)); err != nil {
 			return fmt.Errorf("cannot forward event info: %w", err)
 		}
 
@@ -303,7 +303,7 @@ func (g *generator) peerCertificatesReceived(counter uint64, state tls.Connectio
 	}
 }
 
-func (g *generator) sentInfo(event *cloudevents.Event, req *nethttp.Request, err error) eventshub.EventInfo {
+func (g *generator) sentInfo(event *cloudevents.Event, req *nethttp.Request, res *nethttp.Response, err error) eventshub.EventInfo {
 	var eventId string
 	if event != nil {
 		eventId = event.ID()
@@ -329,6 +329,9 @@ func (g *generator) sentInfo(event *cloudevents.Event, req *nethttp.Request, err
 		Time:     time.Now(),
 		Sequence: uint64(g.sequence),
 		SentId:   eventId,
+	}
+	if res != nil {
+		sentEventInfo.StatusCode = res.StatusCode
 	}
 
 	sentHeaders := make(nethttp.Header)
