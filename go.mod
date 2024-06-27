@@ -1,6 +1,6 @@
 module knative.dev/reconciler-test
 
-go 1.21
+go 1.22
 
 require (
 	github.com/cloudevents/conformance v0.2.0
@@ -22,7 +22,7 @@ require (
 	k8s.io/client-go v0.29.2
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
 	knative.dev/hack v0.0.0-20240607132042-09143140a254
-	knative.dev/pkg v0.0.0-20240614135239-339c22b8218c
+	knative.dev/pkg v0.0.0-20240626134149-3f6a546ac3a4
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -74,7 +74,7 @@ require (
 	golang.org/x/tools v0.22.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/api v0.183.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240521202816-d264139d666e // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
