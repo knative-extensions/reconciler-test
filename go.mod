@@ -15,14 +15,14 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.8.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.29.2
 	k8s.io/apimachinery v0.29.2
 	k8s.io/client-go v0.29.2
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e
-	knative.dev/hack v0.0.0-20240730131549-0a23232167bc
-	knative.dev/pkg v0.0.0-20240730131544-0e7ffe491d5e
+	knative.dev/hack v0.0.0-20240801232131-441a19fc9ead
+	knative.dev/pkg v0.0.0-20240805063731-c88d5dad9653
 	sigs.k8s.io/yaml v1.4.0
 )
 
