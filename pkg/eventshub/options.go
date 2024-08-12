@@ -234,6 +234,21 @@ func OIDCReceiverAudience(aud string) EventsHubOption {
 	return compose(envOption(OIDCReceiverAudienceEnv, aud), envOIDCEnabled())
 }
 
+// VerifyEventFormat has the receiver verify the event format when receiving events
+func VerifyEventFormat(format string) EventsHubOption {
+	return compose(envOption("EVENT_FORMAT", format))
+}
+
+// VerifyEventFormat has the receiver verify the event format is structured when receiving events
+func VerifyEventFormatStructured() EventsHubOption {
+	return VerifyEventFormat("json")
+}
+
+// VerifyEventFormat has the receiver verify the event format is binary when receiving events
+func VerifyEventFormatBinary() EventsHubOption {
+	return VerifyEventFormat("binary")
+}
+
 // --- Sender options
 
 // InitialSenderDelay defines how much the sender has to wait (in millisecond), when started, before start sending events.
