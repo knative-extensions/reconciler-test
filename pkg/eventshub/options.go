@@ -334,7 +334,7 @@ func OIDCCorruptedSignature() EventsHubOption {
 	return compose(envOption(OIDCGenerateCorruptedSignatureTokenEnv, "true"), envOIDCEnabled())
 }
 
-// OIDCSubject sets the name of the OIDC subject to use by the sender. Defaults to "oidc-<eventshub-name>"
+// OIDCSubject sets the name of the OIDC subject to use by the sender. If this option is not set, it defaults to "oidc-<eventshub-name>"
 func OIDCSubject(sub string) EventsHubOption {
 	return compose(envOption(OIDCSubjectEnv, sub), envOIDCEnabled())
 }
