@@ -124,6 +124,7 @@ func ExampleIstioAnnotation() {
 	}
 
 	manifest.WithIstioPodAnnotations(cfg)
+	manifest.WithIstioPodLabels(cfg)
 
 	files, err := manifest.ExecuteYAML(ctx, templates, images, cfg)
 	if err != nil {
@@ -153,6 +154,7 @@ func ExampleIstioAnnotation() {
 	//   namespace: example
 	//   labels:
 	//     app: eventshub-hubhub
+	//     sidecar.istio.io/inject: "true"
 	//   annotations:
 	//       proxy.istio.io/config: "{ 'holdApplicationUntilProxyStarts': true }"
 	//       sidecar.istio.io/inject: "true"
