@@ -21,6 +21,7 @@ import (
 	"os"
 
 	v1 "k8s.io/api/core/v1"
+
 	testlog "knative.dev/reconciler-test/pkg/logging"
 	"knative.dev/reconciler-test/pkg/manifest"
 	"knative.dev/reconciler-test/pkg/resources/pod"
