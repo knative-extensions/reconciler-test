@@ -157,6 +157,9 @@ func Example_full() {
 		"name":      "foo",
 		"namespace": "bar",
 		"image":     "baz",
+		"podlabels": map[string]string{
+			"existing-pod-label": "foo",
+		},
 	}
 
 	opts := []manifest.CfgFn{
@@ -171,6 +174,9 @@ func Example_full() {
 		}),
 		deployment.WithPodAnnotations(map[string]interface{}{
 			"pod-annotation": "foo",
+		}),
+		deployment.WithPodLabels(map[string]string{
+			"pod-label": "bar",
 		}),
 		deployment.WithReplicas(6),
 		deployment.WithImagePullPolicy(v1.PullNever),
@@ -214,6 +220,8 @@ func Example_full() {
 	//         pod-annotation: "foo"
 	//       labels:
 	//         app: "my-app"
+	//         existing-pod-label: "foo"
+	//         pod-label: "bar"
 	//     spec:
 	//       containers:
 	//       - name: user-container

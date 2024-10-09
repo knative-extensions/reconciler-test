@@ -78,12 +78,14 @@ func Example_full() {
 		"name":      "foo",
 		"namespace": "bar",
 		"image":     "baz",
+		"labels": map[string]string{
+			"app": "foo",
+		},
 	}
 
 	opts := []manifest.CfgFn{
-		job.WithLabels(map[string]string{
+		job.WithLabels(map[string]string{ //should get appended to cfg.labels
 			"color": "green",
-			"app":   "foo",
 			"bar":   "true",
 		}),
 		job.WithAnnotations(map[string]interface{}{
