@@ -249,6 +249,10 @@ func (o *Receiver) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	defer m.Finish(nil)
 
 	encoding := m.ReadEncoding()
+	if !verifyFormat(o.expectedFormat, encoding) {
+		rejectErr = fmt.Errorf("delivered event in wrong format, expected %s, received %s", *o.expectedFormat, encoding)
+		statusCode = http.StatusBadRequest
+	}
 
 	event, eventErr := cloudeventsbindings.ToEvent(context.TODO(), m)
 	headers := make(http.Header)
