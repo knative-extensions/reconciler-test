@@ -130,7 +130,7 @@ func Example_full() {
 	//         imagePullPolicy: Never
 }
 
-func Example_WithEnvs() {
+func Example_withEnvs() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -169,7 +169,7 @@ func Example_WithEnvs() {
 	//           value: "VALUE2"
 }
 
-func Example_WithPodAnnotations() {
+func Example_withPodAnnotations() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -203,7 +203,7 @@ func Example_WithPodAnnotations() {
 	//         image: baz
 }
 
-func Example_WithPodLabels() {
+func Example_withPodLabels() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -241,7 +241,7 @@ func Example_WithPodLabels() {
 	//         image: baz
 }
 
-func Example_WithImagePullPolicy() {
+func Example_withImagePullPolicy() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -273,7 +273,7 @@ func Example_WithImagePullPolicy() {
 	//         imagePullPolicy: Always
 }
 
-func Example_WithRestartPolicy() {
+func Example_withRestartPolicy() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -305,7 +305,7 @@ func Example_WithRestartPolicy() {
 	//         image: baz
 }
 
-func Example_WithBackoffLimit() {
+func Example_withBackoffLimit() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -337,7 +337,7 @@ func Example_WithBackoffLimit() {
 	//         image: baz
 }
 
-func Example_WithTTLSecondsAfterFinished() {
+func Example_withTTLSecondsAfterFinished() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
