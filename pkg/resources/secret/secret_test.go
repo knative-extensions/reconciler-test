@@ -103,7 +103,7 @@ func Example_full() {
 	//   key2: val2
 }
 
-func Example_WithData() {
+func Example_withData() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -133,7 +133,7 @@ func Example_WithData() {
 	//   version: Mw==
 }
 
-func Example_WithStringData() {
+func Example_withStringData() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -163,7 +163,7 @@ func Example_WithStringData() {
 	//   version: 3
 }
 
-func Example_WithType() {
+func Example_withType() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{

@@ -67,7 +67,7 @@ func Example_min() {
 	//         image: baz
 }
 
-func Example_Volumes() {
+func Example_volumes() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{

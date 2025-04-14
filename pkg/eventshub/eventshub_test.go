@@ -106,7 +106,7 @@ func Example() {
 	//           value: "bar"
 }
 
-func ExampleIstioAnnotation() {
+func Example_istioAnnotation() {
 	ctx := testlog.NewContext()
 	images := map[string]string{
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
@@ -187,7 +187,7 @@ func ExampleIstioAnnotation() {
 	//           value: "bar"
 }
 
-func ExampleNoReadiness() {
+func Example_noReadiness() {
 	ctx := testlog.NewContext()
 	images := map[string]string{
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",
@@ -280,7 +280,7 @@ func TestUnmarshal(t *testing.T) {
 
 }
 
-func ExampleForwarder() {
+func Example_forwarder() {
 	ctx := testlog.NewContext()
 	images := map[string]string{
 		"ko://knative.dev/reconciler-test/cmd/eventshub": "uri://a-real-container",

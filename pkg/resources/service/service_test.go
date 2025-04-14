@@ -118,7 +118,7 @@ func Example_full() {
 	//   externalName: my-external.name
 }
 
-func Example_WithSelectors() {
+func Example_withSelectors() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -157,7 +157,7 @@ func Example_WithSelectors() {
 	//       targetPort: 5678
 }
 
-func Example_WithType() {
+func Example_withType() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -191,7 +191,7 @@ func Example_WithType() {
 	//   type: LoadBalancer
 }
 
-func Example_WithExternalName() {
+func Example_withExternalName() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
@@ -225,7 +225,7 @@ func Example_WithExternalName() {
 	//   externalName: foo.bar
 }
 
-func Example_WithPorts() {
+func Example_withPorts() {
 	ctx := testlog.NewContext()
 	images := map[string]string{}
 	cfg := map[string]interface{}{
