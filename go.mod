@@ -15,14 +15,14 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sync v0.13.0
+	golang.org/x/sync v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.2
 	k8s.io/apimachinery v0.32.2
 	k8s.io/client-go v0.32.2
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
-	knative.dev/hack v0.0.0-20250424013725-c4037b0fe56b
-	knative.dev/pkg v0.0.0-20250424013628-d5e74d29daa3
+	knative.dev/hack v0.0.0-20250514121446-f525e187efdc
+	knative.dev/pkg v0.0.0-20250515022847-873230f3a48e
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -67,13 +67,13 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/term v0.31.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
-	golang.org/x/tools v0.32.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/api v0.183.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
