@@ -1,4 +1,4 @@
-# Copyright 2019 The Knative Authors
+# Copyright 2025 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: config-tracing
+  name: config-observability
   namespace: knative-reconciler-test
 data:
-  backend: "none"
-  debug: "false"
-  sample-rate: "0.1"
+  metrics-protocol: none
+  # metrics-endpoint can only be set if metrics-protocol is not none
+  # metrics-endpoint: http://collector.otel.svc.cluster.local
+  metrics-export-interval: 60s
+  runtime-profiling: enabled
+  tracing-protocol: none
+  # tracing-endpoint can only be set if tracing-protocol is not none
+  # tracing-endpoing: http://collector.otel.svc.cluster.local
+  tracing-sampling-rate: "1"

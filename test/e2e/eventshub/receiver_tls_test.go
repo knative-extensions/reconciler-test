@@ -45,7 +45,7 @@ func TestEventsHubReceiverTLS(t *testing.T) {
 		eventshub.WithTLS(t),
 		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 

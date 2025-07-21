@@ -48,7 +48,7 @@ func WithObservabilityConfig(ctx context.Context, env environment.Environment) (
 		return ctx, fmt.Errorf("error while serializing the %s config map in namespace %s: %+v", o11yconfigmap.Name(), knativeNamespace, errors.WithStack(err))
 	}
 
-	return context.WithValue(ctx, tracingConfigEnvKey{}, configSerialized), nil
+	return context.WithValue(ctx, observabilityCfgEnvKey{}, string(configSerialized)), nil
 }
 
 var _ environment.EnvOpts = WithTracingConfig
