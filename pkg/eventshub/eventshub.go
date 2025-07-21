@@ -52,7 +52,7 @@ func Start(eventLogFactories map[string]EventLogFactory, eventGeneratorFactories
 		logging.FromContext(ctx).Fatal("Unable to setup observability", err)
 	}
 
-	defer func ()  {
+	defer func() {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
