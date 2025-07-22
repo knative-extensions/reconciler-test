@@ -19,7 +19,7 @@ jobs:
 
     env:
       KO_DOCKER_REPO: kind.local
-      KIND_VERSION: ${{ matrix.kind-version }}
+      NODE_VERSION: ${{ matrix.k8s-version }}
 
     steps:
     - name: Set up Go
@@ -27,7 +27,7 @@ jobs:
       id: go
 
     - name: Check out code onto GOPATH
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
