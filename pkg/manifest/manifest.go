@@ -19,6 +19,7 @@ package manifest
 import (
 	"context"
 	"fmt"
+	"knative.dev/pkg/reconciler"
 	"strings"
 
 	"go.uber.org/zap"
@@ -101,7 +102,11 @@ func (f *YamlManifest) Apply(spec *unstructured.Unstructured) error {
 		if UpdateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
 			f.log.Info("Updating type ", spec.GroupVersionKind(), " name ", spec.GetName())
 
-			if _, err = f.client.Resource(gvr).Namespace(current.GetNamespace()).Update(context.Background(), current, v1.UpdateOptions{}); err != nil {
+			err = reconciler.RetryUpdateConflicts(func(i int) error {
+				_, err := f.client.Resource(gvr).Namespace(current.GetNamespace()).Update(context.Background(), current, v1.UpdateOptions{})
+				return err
+			})
+			if err != nil {
 				return fmt.Errorf("failed to update resource %v - Resource:\n%s", err, toYaml(spec))
 			}
 		}
