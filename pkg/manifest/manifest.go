@@ -19,8 +19,9 @@ package manifest
 import (
 	"context"
 	"fmt"
-	"knative.dev/pkg/reconciler"
 	"strings"
+
+	"knative.dev/pkg/reconciler"
 
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
