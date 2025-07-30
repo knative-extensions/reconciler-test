@@ -12,14 +12,14 @@ jobs:
     strategy:
       matrix:
         platform: [ ubuntu-latest ]
-        kind-version: [ 0.14.0 ]
+        k8s-version: [ v1.33.x ]
 
     name: e2e tests
     runs-on: ${{ matrix.platform }}
 
     env:
       KO_DOCKER_REPO: kind.local
-      KIND_VERSION: ${{ matrix.kind-version }}
+      NODE_VERSION: ${{ matrix.k8s-version }}
 
     steps:
     - name: Set up Go
@@ -27,50 +27,16 @@ jobs:
       id: go
 
     - name: Check out code onto GOPATH
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
-    - name: Install KinD ${{ matrix.kind-version }}
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        set -x
-
-        curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-$(uname)-amd64
-        chmod +x ./kind
-        sudo mv kind /usr/local/bin
-
-    - name: Create KinD Cluster
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      env:
-        NODE_IMAGE: 'kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6'
-      run: |
-        set -x
-
-        # KinD configuration.
-        cat > kind.yaml <<EOF
-        apiVersion: kind.x-k8s.io/v1alpha4
-        kind: Cluster
-        nodes:
-        - role: control-plane
-          image: ${NODE_IMAGE}
-        - role: worker
-          image: ${NODE_IMAGE}
-
-        kubeadmConfigPatches:
-          - |
-            apiVersion: kubeadm.k8s.io/v1beta2
-            kind: ClusterConfiguration
-            metadata:
-              name: config
-            apiServer:
-              extraArgs:
-                "service-account-issuer": "kubernetes.default.svc"
-                "service-account-signing-key-file": "/etc/kubernetes/pki/sa.key"
-        EOF
-
-        # Create a cluster!
-        kind create cluster --config kind.yaml
+    - name: Install KinD
+      uses: chainguard-dev/actions/setup-kind@16e2fd6603a1c6a1fbc880fdbb922b2e8e2be3e7
+      with:
+        k8s-version: ${{ matrix.k8s-version }}
+        kind-worker-count: 1
+        cluster-suffix: c${{ github.run_id }}.local
 
     - name: Run e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
