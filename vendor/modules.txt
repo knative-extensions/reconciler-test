@@ -1001,7 +1001,6 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/system/testing
 knative.dev/pkg/test/security
-knative.dev/pkg/tracing/config
 knative.dev/pkg/tracker
 # sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8
 ## explicit; go 1.23
