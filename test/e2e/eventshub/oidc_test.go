@@ -43,7 +43,7 @@ func TestEventsHubOIDCAuth(t *testing.T) {
 		environment.WithPollTimings(4*time.Second, 12*time.Minute),
 		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 

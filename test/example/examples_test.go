@@ -46,7 +46,7 @@ func TestRecorder(t *testing.T) {
 		environment.Managed(t), // Will call env.Finish() when the test exits.
 		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 
@@ -69,7 +69,7 @@ func TestProber(t *testing.T) {
 		environment.Managed(t), // Will call env.Finish() when the test exits.
 		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 

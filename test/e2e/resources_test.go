@@ -44,7 +44,7 @@ func TestCronJobInstall(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace("knative-reconciler-test"),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 		environment.Managed(t),
 	)
