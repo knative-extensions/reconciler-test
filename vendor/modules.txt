@@ -992,7 +992,6 @@ knative.dev/pkg/observability/configmap
 knative.dev/pkg/observability/metrics
 knative.dev/pkg/observability/metrics/k8s
 knative.dev/pkg/observability/metrics/prometheus
-knative.dev/pkg/observability/resource
 knative.dev/pkg/observability/runtime
 knative.dev/pkg/observability/tracing
 knative.dev/pkg/ptr
