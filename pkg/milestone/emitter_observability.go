@@ -43,7 +43,6 @@ import (
 	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/pkg/logging"
 	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/pkg/k8s"
 )
 
 const (
@@ -142,9 +141,6 @@ func NewObservabilityGatherer(ctx context.Context, observabilityNamespace string
 			}
 		}
 	}
-
-	// make sure the collector is ready
-	k8s.WaitForResourceReady(ctx, t, observabilityNamespace, otelCollectorName, otelCollectorResource)
 
 	return &ObservabilityEmitter{
 		ctx:                    ctx,
