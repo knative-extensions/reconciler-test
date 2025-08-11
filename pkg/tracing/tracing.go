@@ -17,29 +17,16 @@ limitations under the License.
 package observability
 
 import (
-	"context"
-
-	"go.uber.org/zap"
-	"knative.dev/pkg/logging"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/pkg/milestone"
+	"knative.dev/reconciler-test/pkg/observability"
 )
 
 // WithGatherer registers the observability gatherer with the environment and will
 // be receiving milestone events.
 // Deprecated: use observability.WithGatherer instead
 func WithGatherer(t feature.T) environment.EnvOpts {
-	return func(ctx context.Context, env environment.Environment) (context.Context, error) {
-		gatherer, err := milestone.NewObservabilityGatherer(ctx, env.Namespace())
-		if err == nil {
-			ctx, err = environment.WithEmitter(gatherer)(ctx, env)
-		}
-		if err != nil {
-			logging.FromContext(ctx).Error("failed to create observability gatherer", zap.Error(err))
-		}
-		return ctx, nil
-	}
+	return observability.WithGatherer(t)
 }
 
 func Cleanup() {}

@@ -30,7 +30,7 @@ import (
 // be receiving milestone events.
 func WithGatherer(t feature.T) environment.EnvOpts {
 	return func(ctx context.Context, env environment.Environment) (context.Context, error) {
-		gatherer, err := milestone.NewObservabilityGatherer(ctx, env.Namespace())
+		gatherer, err := milestone.NewObservabilityGatherer(ctx, env.Namespace(), t)
 		if err == nil {
 			ctx, err = environment.WithEmitter(gatherer)(ctx, env)
 		}

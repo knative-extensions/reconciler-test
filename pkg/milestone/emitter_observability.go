@@ -43,6 +43,7 @@ import (
 	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/pkg/logging"
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/k8s"
 )
 
 const (
@@ -87,11 +88,11 @@ type ObservabilityEmitter struct {
 	kubeClient             kubernetes.Interface
 	config                 *rest.Config
 	observabilityNamespace string
-	logger                 zap.SugaredLogger
+	logger                 *zap.SugaredLogger
 }
 
 // NewLogEmitter creates an Emitter that logs milestone events.
-func NewObservabilityGatherer(ctx context.Context, observabilityNamespace string) (*ObservabilityEmitter, error) {
+func NewObservabilityGatherer(ctx context.Context, observabilityNamespace string, t feature.T) (*ObservabilityEmitter, error) {
 	kubeClient := kubeclient.Get(ctx)
 	dynamicClient := dynamicclient.Get(ctx)
 	cfg := injection.GetConfig(ctx)
@@ -107,40 +108,50 @@ func NewObservabilityGatherer(ctx context.Context, observabilityNamespace string
 		otelCollectorMux.Lock()
 		defer otelCollectorMux.Unlock()
 
-		collector := &unstructured.Unstructured{
-			Object: map[string]any{
-				"apiVersion": "opentelemetry.io/v1alpha1",
-				"kind":       "OpenTelemetryCollector",
-				"metadata": map[string]string{
-					"name":      otelCollectorName,
-					"namespace": observabilityNamespace,
-				},
-				"spec": map[string]any{
-					"config": otelCollectorConfig,
-					"volume": map[string]any{
-						"name":     "file",
-						"emptyDir": map[string]any{},
-					},
-					"volumeMounts": map[string]any{
-						"name":      "file",
-						"mountPath": "/data",
-					},
-				},
-			},
-		}
-
-		_, err := otelCollectorClient.Create(ctx, collector, metav1.CreateOptions{})
-		if err != nil && !apierrs.IsAlreadyExists(err) {
+		// try again now that we have the lock
+		_, err := otelCollectorClient.Namespace(observabilityNamespace).Get(ctx, otelCollectorName, metav1.GetOptions{})
+		if err != nil && !apierrs.IsNotFound(err) {
 			return nil, err
+		} else if err != nil {
+			// the collector definitely does not exist, let's creat it
+			collector := &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "opentelemetry.io/v1alpha1",
+					"kind":       "OpenTelemetryCollector",
+					"metadata": map[string]string{
+						"name":      otelCollectorName,
+						"namespace": observabilityNamespace,
+					},
+					"spec": map[string]any{
+						"config": otelCollectorConfig,
+						"volume": map[string]any{
+							"name":     "file",
+							"emptyDir": map[string]any{},
+						},
+						"volumeMounts": map[string]any{
+							"name":      "file",
+							"mountPath": "/data",
+						},
+					},
+				},
+			}
+
+			_, err = otelCollectorClient.Create(ctx, collector, metav1.CreateOptions{})
+			if err != nil && !apierrs.IsAlreadyExists(err) {
+				return nil, err
+			}
 		}
 	}
+
+	// make sure the collector is ready
+	k8s.WaitForResourceReady(ctx, t, observabilityNamespace, otelCollectorName, otelCollectorResource)
 
 	return &ObservabilityEmitter{
 		ctx:                    ctx,
 		kubeClient:             kubeClient,
 		dynamicClient:          dynamicClient,
 		config:                 cfg,
-		observabilityNamespace: namespace,
+		observabilityNamespace: observabilityNamespace,
 		logger:                 logging.FromContext(ctx),
 	}, nil
 }
