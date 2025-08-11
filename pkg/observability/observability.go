@@ -28,7 +28,6 @@ import (
 
 // WithGatherer registers the observability gatherer with the environment and will
 // be receiving milestone events.
-// Deprecated: use observability.WithGatherer instead
 func WithGatherer(t feature.T) environment.EnvOpts {
 	return func(ctx context.Context, env environment.Environment) (context.Context, error) {
 		gatherer, err := milestone.NewObservabilityGatherer(ctx, env.Namespace())

@@ -91,7 +91,7 @@ type ObservabilityEmitter struct {
 }
 
 // NewLogEmitter creates an Emitter that logs milestone events.
-func NewObservabilityEmitter(ctx context.Context, observabilityNamespace string) (*ObservabilityEmitter, error) {
+func NewObservabilityGatherer(ctx context.Context, observabilityNamespace string) (*ObservabilityEmitter, error) {
 	kubeClient := kubeclient.Get(ctx)
 	dynamicClient := dynamicclient.Get(ctx)
 	cfg := injection.GetConfig(ctx)
