@@ -20,6 +20,7 @@ root_dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]:-$0}")")")"
 readonly root_dir
 
 export CERT_MANAGER_NAMESPACE="cert-manager"
+export OTEL_OPERATOR_NAMESPACE="opentelemetry-operator-system"
 
 source "${root_dir}/vendor/knative.dev/hack/e2e-tests.sh"
 
@@ -31,6 +32,9 @@ function test_setup() {
 
   timeout 600 bash -c 'until kubectl apply -f third_party/cert-manager/02-trust-manager.yaml; do sleep 5; done'
   wait_until_pods_running "$CERT_MANAGER_NAMESPACE" || fail_test "Failed to install trust manager"
+
+  kubectl apply -f third_party/otel/opentelemetry-operator.yaml
+  wait_until_pods_running "$OTEL_OPERATOR_NAMESPACE" || fail_test "Failed to install otel operator"
 
   kubectl apply -f "${root_dir}/test/config" || return $?
 }
