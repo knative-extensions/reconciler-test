@@ -40,8 +40,8 @@ type Flags interface {
 }
 
 type observabilityConfig struct {
-	observablityNamespace         string
-	configObservabilityNamespaces []string
+	observablityNamespace         string   // observablityNamespace is the namespace the collector will be installed in
+	configObservabilityNamespaces []string // configObservabilityNamespaces are the namespaces with config-observability cms to update
 }
 
 // Configuration holds a configuration options for standard GlobalEnvironment.
@@ -55,6 +55,17 @@ type Configuration struct {
 // ConfigurationOption allows to reconfigure default options, by returning
 // modified configuration.
 type ConfigurationOption func(Configuration) Configuration
+
+func WithObservability(observabilityNamespace string, configObservabilityNamespaces ...string) ConfigurationOption {
+	return func(c Configuration) Configuration {
+		c.observabilityCfg = &observabilityConfig{
+			observablityNamespace:         observabilityNamespace,
+			configObservabilityNamespaces: configObservabilityNamespaces,
+		}
+
+		return c
+	}
+}
 
 // NewStandardGlobalEnvironment will create a new global environment in a
 // standard way. The Kube client will be initialized within the
