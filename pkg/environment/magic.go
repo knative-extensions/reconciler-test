@@ -63,6 +63,7 @@ type MagicGlobalEnvironment struct {
 	initializers     []func()
 	initializersOnce sync.Once
 	teardownOnFail   bool
+	finalizers       []func()
 }
 
 type MagicEnvironment struct {
@@ -252,6 +253,16 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	})
 
 	return ctx, env
+}
+
+func (mr *MagicGlobalEnvironment) Cleanup() {
+	for _, finalizer := range mr.finalizers {
+		finalizer()
+	}
+}
+
+func (mr *MagicGlobalEnvironment) RegisterFinalizers(finalizers ...func()) {
+	mr.finalizers = append(mr.finalizers, finalizers...)
 }
 
 type postInitKey struct{}

@@ -34,6 +34,8 @@ type EnvOpts func(ctx context.Context, env Environment) (context.Context, error)
 // will be used for the feature testing.
 type GlobalEnvironment interface {
 	Environment(opts ...EnvOpts) (context.Context, Environment)
+	RegisterFinalizers(finalizers ...func())
+	Cleanup() // used to cleanup the global environment -> only call this once
 }
 
 // Environment is the ephemeral testing environment to test features.

@@ -24,6 +24,7 @@ import (
 
 	"knative.dev/reconciler-test/pkg/images/file"
 	testlog "knative.dev/reconciler-test/pkg/logging"
+	"knative.dev/reconciler-test/pkg/observability"
 )
 
 // Flags is used to pass flags implementation.
@@ -38,11 +39,17 @@ type Flags interface {
 	Parse(ctx context.Context) error
 }
 
+type observabilityConfig struct {
+	observablityNamespace         string
+	configObservabilityNamespaces []string
+}
+
 // Configuration holds a configuration options for standard GlobalEnvironment.
 type Configuration struct {
 	Flags
 	context.Context
 	*rest.Config
+	observabilityCfg *observabilityConfig
 }
 
 // ConfigurationOption allows to reconfigure default options, by returning
@@ -104,6 +111,26 @@ func NewStandardGlobalEnvironmentWithRestConfig(cfg *rest.Config, opts ...Config
 	}
 
 	ctx, startInformers = injection.EnableInjectionOrDie(ctx, config.Config)
+
+	if config.observabilityCfg != nil {
+		setupObservability := observability.SetupObservability(
+			ctx,
+			config.observabilityCfg.observablityNamespace,
+			config.observabilityCfg.configObservabilityNamespaces...,
+		)
+
+		cleanupObservability := observability.CleanupObservability(
+			ctx,
+			config.observabilityCfg.observablityNamespace,
+		)
+
+		// global is used to make instances of Environments, NewGlobalEnvironment
+		// is passing and saving the client injection enabled context as well as
+		// setting up informers and observability for use later.
+		env := NewGlobalEnvironment(ctx, startInformers, setupObservability)
+		env.RegisterFinalizers(cleanupObservability)
+		return env
+	}
 
 	// global is used to make instances of Environments, NewGlobalEnvironment
 	// is passing and saving the client injection enabled context for use later.
