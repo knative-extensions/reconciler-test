@@ -417,8 +417,8 @@ ctx, env := global.Environment(
     environment.Managed(t),
     // Set the knative namespace which holds the tracing config map.
     knative.WithKnativeNamespace(system.Namespace()),
-    // Configure tracing for the eventshub component.
-    knative.WithTracingConfig,
+    // Configure observability for the eventshub component.
+    knative.WithObservabilityConfig,
     // Configure logging for the eventshub component.
     knative.WithLoggingConfig,
     // Register the tracing listener which will gather event traces on env.Finish().
