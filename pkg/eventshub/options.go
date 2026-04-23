@@ -86,13 +86,14 @@ func StartSenderToResource(gvr schema.GroupVersionResource, name string) EventsH
 	}
 }
 
-// StartSenderToNamespacedResource starts the sender in the eventshub pointing to the provided resource
+// StartSenderToNamespacedResource starts the sender in the eventshub pointing to the provided resource.
+// It polls until the resource becomes addressable rather than doing a single point-in-time lookup.
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
 func StartSenderToNamespacedResource(gvr schema.GroupVersionResource, name, namespace string) EventsHubOption {
 	return func(ctx context.Context, envs map[string]string) error {
-		u, err := k8s.NamespacedAddress(ctx, gvr, name, namespace)
+		u, err := k8s.WaitForAddress(ctx, gvr, name)
 		if err != nil {
-			return err
+			return fmt.Errorf("timed out waiting for resource %v named %s to become addressable: %w", gvr, name, err)
 		}
 		if u == nil {
 			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
@@ -117,13 +118,14 @@ func StartSenderToResourceTLS(gvr schema.GroupVersionResource, name string, caCe
 }
 
 // StartSenderToNamespacedResourceTLS starts the sender in the eventshub pointing to the provided namespaced resource.
+// It polls until the resource becomes addressable rather than doing a single point-in-time lookup.
 // `caCerts` parameter is optional, if nil, it will fall back to use the addressable CA certs.
 // This can be used together with InputEvent, AddTracing, EnableIncrementalId, InputEncoding and InputHeader options
 func StartSenderToNamespacedResourceTLS(gvr schema.GroupVersionResource, name, namespace string, caCerts *string) EventsHubOption {
 	return func(ctx context.Context, m map[string]string) error {
-		u, err := k8s.NamespacedAddress(ctx, gvr, name, namespace)
+		u, err := k8s.WaitForAddress(ctx, gvr, name)
 		if err != nil {
-			return err
+			return fmt.Errorf("timed out waiting for resource %v named %s to become addressable: %w", gvr, name, err)
 		}
 		if u == nil {
 			return fmt.Errorf("resource %v named %s is not addressable", gvr, name)
