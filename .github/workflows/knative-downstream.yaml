@@ -34,22 +34,32 @@ jobs:
     env:
       GOPATH: ${{ github.workspace }}
     steps:
-    - name: Set up Go
-      uses: knative/actions/setup-go@main
-    - name: Install Dependencies
-      run: |
-        go install github.com/google/go-licenses@latest
-    - name: Checkout Upstream
-      uses: actions/checkout@v3
+    - uses: knative/actions/setup-go@main
+
+    - name: Checkout upstream at ${{ github.base_ref }}
+      uses: actions/checkout@v4
       with:
+        fetch-depth: 0
         path: upstream
-    - name: Checkout Downstream
-      uses: actions/checkout@v3
+
+    - name: Merge upstream
+      if: github.event_name == 'pull_request'
+      shell: bash
+      working-directory: upstream
+      run: |
+        if ! git config user.name > /dev/null; then
+          git config user.name "Knative Action"
+        fi
+        if ! git config user.email > /dev/null; then
+          git config user.email "action@knative.dev"
+        fi
+        git remote add upstream https://github.com/${{ github.repository }}.git
+        git fetch upstream ${{ github.base_ref }}
+        git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
+
+    - name: Checkout downstream at ${{ github.base_ref }}
+      uses: actions/checkout@v4
       with:
+        ref: ${{ github.base_ref }}
         repository: ${{ matrix.repo }}
         path: downstream
-    - name: Test Downstream
-      uses: knative/actions/go/downstream-test@main
-      with:
-        upstream-path: upstream
-        downstream-path: downstream
