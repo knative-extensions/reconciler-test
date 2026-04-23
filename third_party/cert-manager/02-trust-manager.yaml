@@ -844,43 +844,6 @@ spec:
           defaultMode: 420
           secretName: trust-manager-tls
 ---
-# Source: trust-manager/templates/webhook.yaml
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  name: trust-manager
-  labels:
-    app: trust-manager
-    app.kubernetes.io/name: trust-manager
-    helm.sh/chart: trust-manager-v0.22.1
-    app.kubernetes.io/instance: cert-manager
-    app.kubernetes.io/version: "v0.22.1"
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    cert-manager.io/inject-ca-from: "cert-manager/trust-manager"
-webhooks:
-  - name: trust.cert-manager.io
-    rules:
-      - apiGroups:
-          - "trust.cert-manager.io"
-        apiVersions:
-          - v1alpha1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - bundles
-    admissionReviewVersions: ["v1"]
-    timeoutSeconds: 5
-    failurePolicy: Fail
-    sideEffects: None
-    clientConfig:
-
-      service:
-        name: trust-manager
-        namespace: cert-manager
-        path: /validate-trust-cert-manager-io-v1alpha1-bundle
----
 # Source: trust-manager/templates/certificate.yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -920,3 +883,40 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 spec:
   selfSigned: {}
+---
+# Source: trust-manager/templates/webhook.yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: trust-manager
+  labels:
+    app: trust-manager
+    app.kubernetes.io/name: trust-manager
+    helm.sh/chart: trust-manager-v0.22.1
+    app.kubernetes.io/instance: cert-manager
+    app.kubernetes.io/version: "v0.22.1"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    cert-manager.io/inject-ca-from: "cert-manager/trust-manager"
+webhooks:
+  - name: trust.cert-manager.io
+    rules:
+      - apiGroups:
+          - "trust.cert-manager.io"
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - bundles
+    admissionReviewVersions: ["v1"]
+    timeoutSeconds: 5
+    failurePolicy: Fail
+    sideEffects: None
+    clientConfig:
+
+      service:
+        name: trust-manager
+        namespace: cert-manager
+        path: /validate-trust-cert-manager-io-v1alpha1-bundle
