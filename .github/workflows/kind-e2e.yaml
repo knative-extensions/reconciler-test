@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         platform: [ ubuntu-latest ]
-        k8s-version: [ v1.33.x ]
+        k8s-version: [ v1.34.x ]
 
     name: e2e tests
     runs-on: ${{ matrix.platform }}
@@ -27,12 +27,12 @@ jobs:
       id: go
 
     - name: Check out code onto GOPATH
-      uses: actions/checkout@v4
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
     - name: Install KinD
-      uses: chainguard-dev/actions/setup-kind@16e2fd6603a1c6a1fbc880fdbb922b2e8e2be3e7
+      uses: chainguard-dev/actions/setup-kind@127740c4cc23cb47120860698b0fd91a803bab32 # main
       with:
         k8s-version: ${{ matrix.k8s-version }}
         kind-worker-count: 1
