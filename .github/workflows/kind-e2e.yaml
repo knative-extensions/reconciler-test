@@ -20,6 +20,7 @@ jobs:
     env:
       KO_DOCKER_REPO: kind.local
       NODE_VERSION: ${{ matrix.k8s-version }}
+      CLUSTER_DOMAIN: c${{ github.run_id }}.local
 
     steps:
     - name: Set up Go
