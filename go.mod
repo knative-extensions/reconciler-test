@@ -17,15 +17,15 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
 	go.uber.org/atomic v1.9.0
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/sync v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.35.4
 	k8s.io/apimachinery v0.35.4
 	k8s.io/client-go v0.35.4
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
-	knative.dev/hack v0.0.0-20260421155212-aeb7b4a9bf96
-	knative.dev/pkg v0.0.0-20260422015212-ec452872dcc1
+	knative.dev/hack v0.0.0-20260428014158-b2a37f1b6e7b
+	knative.dev/pkg v0.0.0-20260505204821-021ad709ec68
 	sigs.k8s.io/yaml v1.6.0
 )
 
