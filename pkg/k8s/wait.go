@@ -502,12 +502,20 @@ func PodLogs(ctx context.Context, podName, containerName, namespace string) ([]b
 // WaitForAddress waits until a resource has an address.
 // Timing is optional but if provided is [interval, timeout].
 func WaitForAddress(ctx context.Context, gvr schema.GroupVersionResource, name string, timing ...time.Duration) (*duckv1.Addressable, error) {
+	env := environment.FromContext(ctx)
+	return WaitForNamespacedAddress(ctx, gvr, name, env.Namespace(), timing...)
+}
+
+// WaitForNamespacedAddress waits until a resource in a specific namespace has
+// an address.
+// Timing is optional but if provided is [interval, timeout].
+func WaitForNamespacedAddress(ctx context.Context, gvr schema.GroupVersionResource, name, namespace string, timing ...time.Duration) (*duckv1.Addressable, error) {
 	interval, timeout := PollTimings(ctx, timing)
 
 	var addr *duckv1.Addressable
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		var err error
-		addr, err = Address(ctx, gvr, name)
+		addr, err = NamespacedAddress(ctx, gvr, name, namespace)
 		if err == nil && addr == nil {
 			// keep polling
 			return false, nil
