@@ -15,6 +15,8 @@ package logging_test
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"testing"
 
 	"go.uber.org/zap/zapcore"
@@ -28,5 +30,22 @@ func TestLevelFromEnvironment(t *testing.T) {
 	got := logging.LevelFromEnvironment(context.TODO())
 	if got != want {
 		t.Errorf("want: %+v, got: %+v", want, got)
+	}
+}
+
+func TestLevelFromEnvironment_invalidFallsBackToDebug(t *testing.T) {
+	if os.Getenv("RECONCILER_TEST_INVALID_LEVEL_CHILD") == "1" {
+		got := logging.LevelFromEnvironment(context.TODO())
+		if got != zapcore.DebugLevel {
+			os.Exit(2)
+		}
+		os.Exit(0)
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=^TestLevelFromEnvironment_invalidFallsBackToDebug$")
+	cmd.Env = append(os.Environ(), "RECONCILER_TEST_INVALID_LEVEL_CHILD=1", "TEST_LOGGER_LEVEL=not-a-level")
+	err := cmd.Run()
+	if err != nil {
+		t.Fatalf("invalid TEST_LOGGER_LEVEL must not os.Exit the process (got %v)", err)
 	}
 }
