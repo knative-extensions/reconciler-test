@@ -24,8 +24,8 @@ require (
 	k8s.io/apimachinery v0.36.5
 	k8s.io/client-go v0.36.5
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
-	knative.dev/hack v0.0.0-20261023132104-4a15c76c8f70
-	knative.dev/pkg v0.0.0-20261026113028-cfa0ac991c5a
+	knative.dev/hack v0.0.0-20261106011541-9aee2b079953
+	knative.dev/pkg v0.0.0-20261110182720-ae1437a8b141
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -67,7 +67,7 @@ require (
 	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/spf13/pflag v1.1.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.47.0 // indirect
