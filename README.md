@@ -404,6 +404,7 @@ file under `$ARTIFACTS/traces/<namespace>.json` and will be collected only for
 failed tests.
 
 To enable collecting traces from Zipkin, set up the test environment as follows:
+
 ```go
 
 import (
@@ -427,6 +428,7 @@ ctx, env := global.Environment(
 ```
 
 The TestMain function should include the cleanup code for Zipkin:
+
 ```go
 func TestMain(m *testing.M) {
     os.Exit(func() int {
@@ -440,16 +442,17 @@ func TestMain(m *testing.M) {
 ```
 
 Traces can be viewed as follows:
+
 - Start a Zipkin container on localhost:
-   ```
-   $ docker run -d -p 9411:9411 ghcr.io/openzipkin/zipkin:2
-   ```
+  ```
+  $ docker run -d -p 9411:9411 ghcr.io/openzipkin/zipkin:2
+  ```
 - Send traces to the Zipkin endpoint:
-   ```
-   $ curl -v localhost:9411/api/v2/spans \
-     -H 'Content-Type: application/json' \
-     -d @$ARTIFACTS/traces/<namespace>.json
-   ```
+  ```
+  $ curl -v localhost:9411/api/v2/spans \
+    -H 'Content-Type: application/json' \
+    -d @$ARTIFACTS/traces/<namespace>.json
+  ```
 - View traces in Zipkin UI at `http://localhost:9411/zipkin`
 
 ### Running Tests
